@@ -1,5 +1,6 @@
 // lib/pages/course_selection.dart
 import 'package:flutter/material.dart';
+import 'package:prototype/components/timetable/calendar_item.dart';
 
 class CourseSelectionPage extends StatefulWidget {
   const CourseSelectionPage({super.key});
@@ -133,6 +134,7 @@ class _CourseSelectionPageState extends State<CourseSelectionPage> {
       (name: '計算機概論', dayIndex: 0, startPeriod: 1, length: 3),
       (name: '微積分 I', dayIndex: 2, startPeriod: 5, length: 2),
       (name: '物理實驗', dayIndex: 4, startPeriod: 9, length: 3),
+      (name: '體育', dayIndex: 1, startPeriod: 3, length: 2),
     ];
 
     return mockCourses.map((course) {
@@ -143,18 +145,10 @@ class _CourseSelectionPageState extends State<CourseSelectionPage> {
         height: course.length * rowHeight,
         child: Padding(
           padding: const EdgeInsets.all(2.0),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.blue.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: Colors.blue.withValues(alpha: 0.5)),
-            ),
-            padding: const EdgeInsets.all(4),
-            child: Text(
-              course.name,
-              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-              overflow: TextOverflow.ellipsis,
-            ),
+          child: CalendarItem(
+            courseName: course.name,
+            length: course.length,
+            onTap: () => print('Tapped ${course.name}'),
           ),
         ),
       );

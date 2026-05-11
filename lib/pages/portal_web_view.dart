@@ -63,6 +63,11 @@ class _PortalWebViewPageState extends State<PortalWebViewPage> {
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: '重新整理',
+            onPressed: () => _webViewController?.reload(),
+          ),
           if (widget.authEntryUrl != null)
             IconButton(
               icon: const Icon(Icons.login),

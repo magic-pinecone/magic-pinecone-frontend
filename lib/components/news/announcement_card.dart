@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:prototype/components/common/label.dart'; // Import Label component
+import 'package:prototype/components/common/label.dart';
 
-/// Card for displaying campus announcements.
 class AnnouncementCard extends StatelessWidget {
   const AnnouncementCard({
     super.key,
     required this.title,
-    required this.label, // Added label parameter to fix compilation error
-    this.date = '2024-05-20', // Default date for placeholder info
+    required this.label,
+    this.date = '2024-05-20',
     this.onTap,
   });
 
@@ -33,9 +32,7 @@ class AnnouncementCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Category label using the standalone Label component
                   Label(text: label, color: colorScheme.primary),
-                  // Date row with event icon
                   Row(
                     children: [
                       Icon(
@@ -56,7 +53,6 @@ class AnnouncementCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              // Bold title with overflow handling
               Text(
                 title,
                 style: const TextStyle(
@@ -73,4 +69,3 @@ class AnnouncementCard extends StatelessWidget {
     );
   }
 }
-
