@@ -1,11 +1,11 @@
-# Magic Pinecone / Open-NCU Frontend Prototype
+# magic-pinecone-frontend
 
 <p align="center">
   <img src="docs/assets/screenshot_home.png" width="300" />
   <img src="docs/assets/screenshot_timetable.png" width="300" />
 </p>
 
-A Flutter-based frontend prototype for the NCU campus service and course selection application.
+A Flutter-based frontend for Magic Pinecone（神奇松果）the NCU campus service and course selection application.
 
 ## Features
 
