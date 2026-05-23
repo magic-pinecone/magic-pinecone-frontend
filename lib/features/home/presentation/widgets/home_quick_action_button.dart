@@ -17,7 +17,6 @@ class HomeQuickActionButton extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Expanded(
-      flex: 1,
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(

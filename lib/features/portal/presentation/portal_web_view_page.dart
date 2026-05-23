@@ -83,8 +83,6 @@ class _PortalWebViewPageState extends State<PortalWebViewPage> {
               initialUrlRequest: URLRequest(url: WebUri.uri(widget.targetUrl)),
               pullToRefreshController: _pullToRefreshController,
               initialSettings: InAppWebViewSettings(
-                javaScriptEnabled: true,
-                domStorageEnabled: true,
                 useOnDownloadStart: true,
                 isInspectable: kDebugMode,
               ),
@@ -95,7 +93,7 @@ class _PortalWebViewPageState extends State<PortalWebViewPage> {
                 _handlePageEvent(url);
               },
               onLoadStop: (controller, url) {
-                _pullToRefreshController?.endRefreshing();
+                unawaited(_pullToRefreshController?.endRefreshing());
                 _handlePageEvent(url);
               },
               onUpdateVisitedHistory: (controller, url, _) {
@@ -103,7 +101,7 @@ class _PortalWebViewPageState extends State<PortalWebViewPage> {
               },
               onProgressChanged: (controller, progress) {
                 if (progress == 100) {
-                  _pullToRefreshController?.endRefreshing();
+                  unawaited(_pullToRefreshController?.endRefreshing());
                 }
                 if (!mounted) return;
                 setState(() => _progress = progress);
@@ -120,8 +118,10 @@ class _PortalWebViewPageState extends State<PortalWebViewPage> {
     final webViewController = _webViewController;
     if (authEntryUrl == null || webViewController == null) return;
 
-    webViewController.loadUrl(
-      urlRequest: URLRequest(url: WebUri.uri(authEntryUrl)),
+    unawaited(
+      webViewController.loadUrl(
+        urlRequest: URLRequest(url: WebUri.uri(authEntryUrl)),
+      ),
     );
   }
 

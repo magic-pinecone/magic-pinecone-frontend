@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:prototype/core/app/app_scope.dart';
 import 'package:prototype/core/widgets/owned_change_notifier_builder.dart';
@@ -235,60 +237,62 @@ class _CourseSelectionPageContent extends StatelessWidget {
     final period = controller.periods[periodIndex];
     final days = controller.visibleDays;
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.8,
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            Text(
-              '新增課程 (週${days[day]} 第$period 節)',
-              style: TextStyle(
-                fontSize: 18,
-                color: colorScheme.primary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 15),
-            TextField(
-              decoration: InputDecoration(
-                hintText: '搜尋課程',
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: colorScheme.surfaceContainerHighest,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
-                  borderSide: BorderSide.none,
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (context) => Container(
+          height: MediaQuery.of(context).size.height * 0.8,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              Text(
+                '新增課程 (週${days[day]} 第$period 節)',
+                style: TextStyle(
+                  fontSize: 18,
+                  color: colorScheme.primary,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-            ),
-            const SizedBox(height: 15),
-            Expanded(
-              child: ListView(
-                children: const [
-                  Card(
-                    child: ListTile(
-                      title: Text('計算機概論'),
-                      subtitle: Text('通識中心'),
-                      trailing: Icon(Icons.add_circle_outline),
-                    ),
+              const SizedBox(height: 15),
+              TextField(
+                decoration: InputDecoration(
+                  hintText: '搜尋課程',
+                  prefixIcon: const Icon(Icons.search),
+                  filled: true,
+                  fillColor: colorScheme.surfaceContainerHighest,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(15),
+                    borderSide: BorderSide.none,
                   ),
-                  Card(
-                    child: ListTile(
-                      title: Text('英文閱讀'),
-                      subtitle: Text('語言中心'),
-                      trailing: Icon(Icons.add_circle_outline),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 15),
+              Expanded(
+                child: ListView(
+                  children: const [
+                    Card(
+                      child: ListTile(
+                        title: Text('計算機概論'),
+                        subtitle: Text('通識中心'),
+                        trailing: Icon(Icons.add_circle_outline),
+                      ),
+                    ),
+                    Card(
+                      child: ListTile(
+                        title: Text('英文閱讀'),
+                        subtitle: Text('語言中心'),
+                        trailing: Icon(Icons.add_circle_outline),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -301,61 +305,63 @@ class _CourseSelectionPageContent extends StatelessWidget {
         controller.periods[course.startPeriodIndex + course.length - 1];
     final colorScheme = Theme.of(context).colorScheme;
 
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24.0)),
-      ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 28.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    course.name,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24.0)),
+        ),
+        builder: (context) => Padding(
+          padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 28.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      course.name,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                ),
-                Chip(label: Text(course.category)),
-              ],
-            ),
-            const SizedBox(height: 16.0),
-            _CourseDetailRow(
-              icon: Icons.schedule,
-              label: '上課時間',
-              value: '週$dayLabel 第 $startPeriod-$endPeriod 節',
-            ),
-            const SizedBox(height: 12.0),
-            _CourseDetailRow(
-              icon: Icons.location_on_outlined,
-              label: '上課地點',
-              value: course.location,
-            ),
-            const SizedBox(height: 12.0),
-            _CourseDetailRow(
-              icon: Icons.info_outline,
-              label: '課程分類',
-              value: course.category,
-            ),
-            const SizedBox(height: 20.0),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: () => Navigator.of(context).pop(),
-                style: FilledButton.styleFrom(
-                  backgroundColor: colorScheme.primary,
-                ),
-                child: const Text('關閉'),
+                  Chip(label: Text(course.category)),
+                ],
               ),
-            ),
-          ],
+              const SizedBox(height: 16.0),
+              _CourseDetailRow(
+                icon: Icons.schedule,
+                label: '上課時間',
+                value: '週$dayLabel 第 $startPeriod-$endPeriod 節',
+              ),
+              const SizedBox(height: 12.0),
+              _CourseDetailRow(
+                icon: Icons.location_on_outlined,
+                label: '上課地點',
+                value: course.location,
+              ),
+              const SizedBox(height: 12.0),
+              _CourseDetailRow(
+                icon: Icons.info_outline,
+                label: '課程分類',
+                value: course.category,
+              ),
+              const SizedBox(height: 20.0),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: colorScheme.primary,
+                  ),
+                  child: const Text('關閉'),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

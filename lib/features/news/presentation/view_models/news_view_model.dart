@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:prototype/features/news/data/news_digest_repository.dart';
-import 'package:prototype/features/news/models/news_digest_item.dart';
 import 'package:prototype/features/news/data/scholarship_repository.dart';
+import 'package:prototype/features/news/models/news_digest_item.dart';
 import 'package:prototype/features/news/models/scholarship_item.dart';
 
 class NewsViewModel extends ChangeNotifier {

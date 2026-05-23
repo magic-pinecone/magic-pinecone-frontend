@@ -67,7 +67,7 @@ class _MagicPineconeAppState extends State<MagicPineconeApp> {
             child: Scaffold(
               body: IndexedStack(
                 index: _currentIndex,
-                children: List.generate(5, (i) => _buildTabNavigator(i)),
+                children: List.generate(5, _buildTabNavigator),
               ),
               bottomNavigationBar: NavigationBar(
                 onDestinationSelected: (int index) {

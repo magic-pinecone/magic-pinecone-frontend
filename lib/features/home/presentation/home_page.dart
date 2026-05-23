@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:prototype/core/app/app_scope.dart';
 import 'package:prototype/core/navigation/app_routes.dart';
@@ -47,7 +49,7 @@ class HomePage extends StatelessWidget {
       slivers: [
         HomeSectionHeader(
           title: '接下來的課程',
-          onTap: () => context.pushCourseSelection(),
+          onTap: () => unawaited(context.pushCourseSelection<void>()),
         ),
         SliverToBoxAdapter(
           child: SizedBox(
@@ -82,7 +84,10 @@ class HomePage extends StatelessWidget {
   ) {
     return SliverMainAxisGroup(
       slivers: [
-        HomeSectionHeader(title: '捷徑', onTap: () => context.pushPortal()),
+        HomeSectionHeader(
+          title: '捷徑',
+          onTap: () => unawaited(context.pushPortal<void>()),
+        ),
         SliverPadding(
           padding: const EdgeInsets.symmetric(
             horizontal: _horizontalPadding,
@@ -156,9 +161,13 @@ class HomePage extends StatelessWidget {
   void _openQuickAction(BuildContext context, HomeQuickActionItem item) {
     switch (item.destination) {
       case HomeCourseSelectionDestination():
-        context.pushCourseSelection();
+        unawaited(context.pushCourseSelection<void>());
       case HomePortalDestination(:final initialSearchQuery):
-        context.pushPortal(initialSearchQuery: initialSearchQuery ?? '');
+        unawaited(
+          context.pushPortal<void>(
+            initialSearchQuery: initialSearchQuery ?? '',
+          ),
+        );
     }
   }
 }

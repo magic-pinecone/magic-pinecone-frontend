@@ -8,7 +8,7 @@ class HomeViewModel extends ChangeNotifier {
     _coursePreviews = List.unmodifiable(dashboard.coursePreviews);
     _shortcuts = List.unmodifiable(dashboard.shortcuts);
     _quickActionRows = dashboard.quickActionRows
-        .map((row) => List<HomeQuickActionItem>.unmodifiable(row))
+        .map(List<HomeQuickActionItem>.unmodifiable)
         .toList(growable: false);
   }
 

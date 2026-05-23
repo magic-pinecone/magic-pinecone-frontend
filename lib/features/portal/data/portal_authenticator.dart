@@ -25,14 +25,14 @@ class PortalAuthenticator {
       initialUrlRequest: URLRequest(
         url: WebUri.uri(Uri.parse("https://portal.ncu.edu.tw")),
       ),
-      initialSettings: InAppWebViewSettings(javaScriptEnabled: true),
+      initialSettings: InAppWebViewSettings(),
       onLoadStop: (controller, url) async {
         // Assuming the portal sets a global JS variable `window.token` upon successful login
         final token = await controller.evaluateJavascript(
           source: "window.token;",
         );
         if (!completer.isCompleted) {
-          completer.complete(token);
+          completer.complete(token?.toString());
         }
       },
     );

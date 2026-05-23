@@ -53,7 +53,7 @@ class CalendarItem extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(4),
-        side: BorderSide(color: color.withValues(alpha: 0.5), width: 1),
+        side: BorderSide(color: color.withValues(alpha: 0.5)),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(

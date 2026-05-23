@@ -15,10 +15,7 @@ class AppTheme {
 
   static final light = ThemeData(
     brightness: Brightness.light,
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: Colors.blue,
-      brightness: Brightness.light,
-    ),
+    colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
     scaffoldBackgroundColor: Colors.grey.shade50,
     appBarTheme: const AppBarTheme(elevation: 0, scrolledUnderElevation: 0.5),
     cardTheme: CardThemeData(
