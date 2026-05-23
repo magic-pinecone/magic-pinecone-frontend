@@ -1,0 +1,21 @@
+import 'package:dio/dio.dart';
+import 'package:prototype/features/course_selection/data/dtos/course_dto.dart';
+import 'package:retrofit/retrofit.dart';
+
+part 'course_api_service.g.dart';
+
+@RestApi()
+abstract class CourseApiService {
+  factory CourseApiService(Dio dio, {String? baseUrl}) = _CourseApiService;
+  @GET('/course')
+  Future<CourseResultDto> getCourse({
+    @Query('title') String? keyword,
+    @Query('class_no') String? classNo,
+    @Query('serial_no') String? serialNo,
+    @Query('department_id') String? departmentId,
+    @Query('college_id') String? collegeId,
+    @Query('course_type') String? courseType,
+    @Query('skip') int? offset,
+    @Query('limit') int? limit,
+  });
+}
