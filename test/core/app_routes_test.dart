@@ -20,10 +20,10 @@ void main() {
 
   test('AppRoutes exposes stable route names for major flows', () {
     expect(AppRoutes.tabRoot(AppTab.portal).settings.name, 'tab/portal');
-    expect(AppRoutes.courseSelection().settings.name, 'course-selection');
-    expect(AppRoutes.portal().settings.name, 'portal');
+    expect(AppRoutes.courseSelection<void>().settings.name, 'course-selection');
+    expect(AppRoutes.portal<void>().settings.name, 'portal');
     expect(
-      AppRoutes.portal(initialSearchQuery: '成績查詢').settings.name,
+      AppRoutes.portal<void>(initialSearchQuery: '成績查詢').settings.name,
       'portal/search',
     );
   });

@@ -53,6 +53,40 @@ void main() {
 
     expect(notifier.wasDisposed, isFalse);
   });
+
+  testWidgets('OwnedChangeNotifierBuilder switches injected notifiers', (
+    tester,
+  ) async {
+    final firstNotifier = FakeNotifier();
+    final secondNotifier = FakeNotifier();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: OwnedChangeNotifierBuilder<FakeNotifier>(
+          notifier: firstNotifier,
+          create: (_) => FakeNotifier(),
+          onReady: (notifier) => notifier.markReady(),
+          builder: (_, notifier) => Text('ready:${notifier.readyCount}'),
+        ),
+      ),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: OwnedChangeNotifierBuilder<FakeNotifier>(
+          notifier: secondNotifier,
+          create: (_) => FakeNotifier(),
+          onReady: (notifier) => notifier.markReady(),
+          builder: (_, notifier) => Text('ready:${notifier.readyCount}'),
+        ),
+      ),
+    );
+
+    expect(firstNotifier.readyCount, 1);
+    expect(firstNotifier.wasDisposed, isFalse);
+    expect(secondNotifier.readyCount, 1);
+    expect(find.text('ready:1'), findsOneWidget);
+  });
 }
 
 class FakeNotifier extends ChangeNotifier {

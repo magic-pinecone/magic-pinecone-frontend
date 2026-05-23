@@ -8,8 +8,8 @@ import 'package:prototype/features/home/data/home_dashboard_repository.dart';
 import 'package:prototype/features/home/presentation/view_models/home_view_model.dart';
 import 'package:prototype/features/news/data/news_digest_repository.dart';
 import 'package:prototype/features/news/presentation/view_models/news_view_model.dart';
-import 'package:prototype/features/portal/presentation/view_models/portal_session_controller.dart';
 import 'package:prototype/features/portal/data/portal_shortcut_repository.dart';
+import 'package:prototype/features/portal/presentation/view_models/portal_session_controller.dart';
 import 'package:prototype/features/settings/data/settings_repository.dart';
 import 'package:prototype/features/settings/presentation/view_models/settings_view_model.dart';
 
