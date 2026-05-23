@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:prototype/core/app/app_scope.dart';
 import 'package:prototype/core/widgets/owned_change_notifier_builder.dart';
@@ -18,7 +20,7 @@ class NewsPage extends StatelessWidget {
     return OwnedChangeNotifierBuilder<NewsViewModel>(
       notifier: viewModel,
       create: (context) => AppScope.of(context).createNewsViewModel(),
-      onReady: (viewModel) => viewModel.load(),
+      onReady: (viewModel) => unawaited(viewModel.load()),
       builder: (context, viewModel) => DefaultTabController(
         length: _tabs.length,
         child: Scaffold(
