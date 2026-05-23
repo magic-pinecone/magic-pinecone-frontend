@@ -11,7 +11,11 @@ List<PortalShortcutSection> get defaultPortalShortcutSections => [
       _portalSystemShortcut('NCU Mail', Icons.mail, '/system/129'),
       _portalSystemShortcut('成績查詢', Icons.grading, '/system/incu-studentscore'),
       _portalSystemShortcut('人事系統', Icons.badge, '/system/humanoauth'),
-      _portalSystemShortcut('Portal 首頁', Icons.home_outlined, '/'),
+      _portalSystemShortcut(
+        '圖書館服務平台',
+        Icons.local_library,
+        '/system/library-cloud-services',
+      ),
       _portalSystemShortcut('宿舍網路系統', Icons.wifi, '/system/dormnet'),
     ],
   ),
