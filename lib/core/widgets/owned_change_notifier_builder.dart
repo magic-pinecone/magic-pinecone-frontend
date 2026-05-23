@@ -30,19 +30,32 @@ class OwnedChangeNotifierBuilder<T extends ChangeNotifier>
 class _OwnedChangeNotifierBuilderState<T extends ChangeNotifier>
     extends State<OwnedChangeNotifierBuilder<T>> {
   T? _notifier;
-  late final bool _ownsNotifier;
+  bool _ownsNotifier = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_notifier != null) return;
+    _initializeNotifier();
+  }
 
+  @override
+  void didUpdateWidget(covariant OwnedChangeNotifierBuilder<T> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.notifier == oldWidget.notifier) return;
+    if (_ownsNotifier) {
+      _notifier?.dispose();
+    }
+    // always reset the notifier when the widget updates, to handle both injected and created cases
+    _notifier = null;
+    _initializeNotifier();
+  }
+
+  void _initializeNotifier() {
+    if (_notifier != null) return;
     _ownsNotifier = widget.notifier == null;
     _notifier = widget.notifier ?? widget.create(context);
-    final onReady = widget.onReady;
-    if (onReady != null) {
-      onReady(_notifier!);
-    }
+    widget.onReady?.call(_notifier!);
   }
 
   @override
