@@ -38,6 +38,12 @@ class _MagicPineconeAppState extends State<MagicPineconeApp> {
   }
 
   @override
+  void dispose() {
+    _dependencies.appThemeController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: _dependencies.appThemeController,

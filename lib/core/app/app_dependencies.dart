@@ -93,4 +93,8 @@ class AppDependencies {
   CourseSelectionController createCourseSelectionController() {
     return CourseSelectionController(repository: courseScheduleRepository);
   }
+
+  void dispose() {
+    appThemeController.dispose();
+  }
 }
