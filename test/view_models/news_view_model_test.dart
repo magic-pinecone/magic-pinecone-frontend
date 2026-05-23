@@ -12,10 +12,10 @@ void main() {
       final repository = FakeScholarshipRepository(
         result: const [
           ScholarshipItem(
-            category: ScholarshipCategory.scholarship,
+            id: 1,
+            category: '獎學金',
             title: 'Test scholarship',
-            startDate: '2026-01-01',
-            endDate: '2026-02-01',
+            contentSummary: '申請資訊摘要',
           ),
         ],
       );
