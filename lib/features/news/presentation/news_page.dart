@@ -222,7 +222,7 @@ class _NewsTabContent extends StatelessWidget {
         return AnnouncementCard(
           label: item.tabLabel,
           title: item.title,
-          date: item.contentSummary ?? '最新公告',
+          date: item.contentSummary,
         );
       },
     );

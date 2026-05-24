@@ -24,16 +24,16 @@ class ScholarshipResponseDto {
     required this.id,
     required this.category,
     required this.title,
-    this.contentSummary,
+    required this.contentSummary,
     this.downloadLink,
   });
 
   final int id;
   final String category;
   final String title;
-  final String? contentSummary;
+  final String contentSummary;
   final String? downloadLink;
 
-  factory ScholarshipResponseDto.fromJson(Map<String, Object?> json) =>
+  factory ScholarshipResponseDto.fromJson(Map<String, dynamic> json) =>
       _$ScholarshipResponseDtoFromJson(json);
 }
