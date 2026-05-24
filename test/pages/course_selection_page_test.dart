@@ -1,46 +1,66 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prototype/features/course_selection/data/course_schedule_repository.dart';
+import 'package:prototype/features/course_selection/data/course_repository.dart';
 import 'package:prototype/features/course_selection/models/course_schedule_models.dart';
 import 'package:prototype/features/course_selection/presentation/course_selection_page.dart';
 import 'package:prototype/features/course_selection/presentation/view_models/course_selection_controller.dart';
 
 void main() {
-  testWidgets('CourseSelectionPage hides weekends by default', (tester) async {
+  testWidgets('CourseSelectionPage renders loaded courses', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         home: CourseSelectionPage(
           controller: CourseSelectionController(
-            repository: const FakeCourseScheduleRepository(),
+            repository: FakeCourseRepository(
+              result: const CourseSearchResult(
+                totalCount: 1,
+                courses: [
+                  CourseItem(
+                    serialNo: '12345',
+                    classNo: 'CS101',
+                    title: '程式設計',
+                    credit: 3,
+                    teachers: ['王小明'],
+                    classTimes: ['1-1', '1-2'],
+                    admitCount: 42,
+                    limitCount: 60,
+                    courseType: 'REQUIRED',
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
     );
 
-    expect(find.text('一'), findsOneWidget);
-    expect(find.text('五'), findsOneWidget);
-    expect(find.text('六'), findsNothing);
-    expect(find.text('日'), findsNothing);
-  });
-
-  testWidgets('CourseSelectionPage shows weekends after toggle', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: CourseSelectionPage(
-          controller: CourseSelectionController(
-            repository: const FakeCourseScheduleRepository(),
-          ),
-        ),
-      ),
-    );
-
-    await tester.tap(find.byType(Switch));
     await tester.pumpAndSettle();
 
-    expect(find.text('六'), findsOneWidget);
-    expect(find.text('日'), findsOneWidget);
+    expect(find.text('課程查詢'), findsOneWidget);
+    expect(find.text('程式設計'), findsOneWidget);
+    expect(find.text('CS101 · 3 學分 · 王小明'), findsOneWidget);
+    expect(find.text('共 1 門課程'), findsOneWidget);
+  });
+
+  testWidgets('CourseSelectionPage searches by submitted keyword', (
+    tester,
+  ) async {
+    final repository = FakeCourseRepository();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CourseSelectionPage(
+          controller: CourseSelectionController(repository: repository),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(SearchBar), '資料結構');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    expect(repository.requests.last.keyword, '資料結構');
   });
 
   testWidgets('CourseSelectionPage shows course details sheet', (tester) async {
@@ -48,49 +68,87 @@ void main() {
       MaterialApp(
         home: CourseSelectionPage(
           controller: CourseSelectionController(
-            repository: const FakeCourseScheduleRepository(
-              courses: [
-                ScheduledCourse(
-                  name: '計算機概論',
-                  dayIndex: 0,
-                  startPeriodIndex: 1,
-                  length: 3,
-                  location: '工程五館 A207',
-                ),
-              ],
+            repository: FakeCourseRepository(
+              result: const CourseSearchResult(
+                totalCount: 1,
+                courses: [
+                  CourseItem(
+                    serialNo: '12345',
+                    classNo: 'CS101',
+                    title: '程式設計',
+                    credit: 3,
+                    teachers: ['王小明'],
+                    classTimes: ['1-1', '1-2'],
+                    admitCount: 42,
+                    limitCount: 60,
+                    waitCount: 3,
+                    collegeId: 'EECS',
+                    departmentId: 'CS',
+                    courseType: 'REQUIRED',
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
 
-    await tester.tap(find.text('計算機概論'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('程式設計'));
     await tester.pumpAndSettle();
 
-    expect(find.text('計算機概論'), findsWidgets);
-    expect(find.text('上課時間'), findsOneWidget);
-    expect(find.text('週一 第 2-4 節'), findsOneWidget);
-    expect(find.text('工程五館 A207'), findsOneWidget);
+    expect(find.text('課號'), findsOneWidget);
+    expect(find.text('CS101 / 12345'), findsOneWidget);
+    expect(find.text('選課人數'), findsOneWidget);
+    expect(find.text('42 / 60 · 候補 3'), findsOneWidget);
   });
 }
 
-class FakeCourseScheduleRepository implements CourseScheduleRepository {
-  const FakeCourseScheduleRepository({
-    this.courses = const [],
-    this.weekDays = const ['一', '二', '三', '四', '五', '六', '日'],
-    this.periods = const ['1', '2', '3', '4'],
+class FakeCourseRepository implements CourseRepository {
+  FakeCourseRepository({
+    this.result = const CourseSearchResult(totalCount: 0, courses: []),
+    this.error,
   });
 
-  final List<ScheduledCourse> courses;
-  final List<String> weekDays;
-  final List<String> periods;
+  final CourseSearchResult result;
+  final Object? error;
+  final List<CourseSearchRequest> requests = [];
 
   @override
-  CourseScheduleSnapshot loadSchedule() {
-    return CourseScheduleSnapshot(
-      courses: courses,
-      weekDays: weekDays,
-      periods: periods,
+  Future<CourseSearchResult> searchCourses({
+    String? keyword,
+    String? classNo,
+    String? serialNo,
+    String? departmentId,
+    String? collegeId,
+    String? courseType,
+    int offset = 0,
+    int limit = 100,
+  }) async {
+    requests.add(
+      CourseSearchRequest(
+        keyword: keyword,
+        courseType: courseType,
+        offset: offset,
+        limit: limit,
+      ),
     );
+    if (error != null) throw error!;
+    return result;
   }
+}
+
+class CourseSearchRequest {
+  const CourseSearchRequest({
+    this.keyword,
+    this.courseType,
+    required this.offset,
+    required this.limit,
+  });
+
+  final String? keyword;
+  final String? courseType;
+  final int offset;
+  final int limit;
 }
