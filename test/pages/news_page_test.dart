@@ -16,10 +16,10 @@ void main() {
             repository: FakeScholarshipRepository(
               result: const [
                 ScholarshipItem(
-                  category: ScholarshipCategory.scholarship,
+                  id: 1,
+                  category: '獎學金',
                   title: '校內獎學金申請公告',
-                  startDate: '2026-05-01',
-                  endDate: '2026-05-31',
+                  contentSummary: '申請期限與資格摘要',
                 ),
               ],
             ),
