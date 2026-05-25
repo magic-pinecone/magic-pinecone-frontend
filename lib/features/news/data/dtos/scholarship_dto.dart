@@ -24,16 +24,33 @@ class ScholarshipResponseDto {
     required this.id,
     required this.category,
     required this.title,
-    this.contentSummary,
+    required this.contentSummary,
     this.downloadLink,
   });
 
   final int id;
   final String category;
   final String title;
-  final String? contentSummary;
+  @JsonKey(fromJson: _contentSummaryFromJson)
+  final String contentSummary;
   final String? downloadLink;
 
-  factory ScholarshipResponseDto.fromJson(Map<String, Object?> json) =>
+  factory ScholarshipResponseDto.fromJson(Map<String, dynamic> json) =>
       _$ScholarshipResponseDtoFromJson(json);
+}
+
+String _contentSummaryFromJson(Object? value) {
+  return switch (value) {
+    null => '',
+    final String summary => summary,
+    final Map<String, dynamic> fields =>
+      fields.entries
+          .map((entry) => '${entry.key}: ${entry.value ?? ''}')
+          .join('\n'),
+    final Map<Object?, Object?> fields =>
+      fields.entries
+          .map((entry) => '${entry.key}: ${entry.value ?? ''}')
+          .join('\n'),
+    _ => value.toString(),
+  };
 }

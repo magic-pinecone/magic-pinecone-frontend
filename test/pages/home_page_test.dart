@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:prototype/core/app/app_dependencies.dart';
 import 'package:prototype/core/app/app_scope.dart';
+import 'package:prototype/features/course_selection/data/course_repository.dart';
+import 'package:prototype/features/course_selection/models/course_schedule_models.dart';
 import 'package:prototype/features/home/data/home_dashboard_repository.dart';
 import 'package:prototype/features/home/models/home_dashboard_models.dart';
 import 'package:prototype/features/home/presentation/home_page.dart';
@@ -51,7 +53,7 @@ void main() {
     await tester.tap(find.text('選課系統'));
     await tester.pumpAndSettle();
 
-    expect(find.text('課表'), findsOneWidget);
+    expect(find.text('課程查詢'), findsOneWidget);
   });
 
   testWidgets('HomePage portal quick action opens filtered portal page', (
@@ -84,9 +86,28 @@ void main() {
 
 Widget _buildTestApp(Widget child) {
   return AppScope(
-    dependencies: AppDependencies(),
+    dependencies: AppDependencies(courseRepository: FakeCourseRepository()),
     child: MaterialApp(home: child),
   );
+}
+
+class FakeCourseRepository implements CourseRepository {
+  @override
+  Future<CourseSearchResult> searchCourses({
+    String? keyword,
+    String? classNo,
+    String? serialNo,
+    String? departmentId,
+    String? collegeId,
+    String? courseType,
+    List<int>? credits,
+    bool? hasVacancy,
+    List<String>? classTimes,
+    int offset = 0,
+    int limit = 100,
+  }) async {
+    return const CourseSearchResult(totalCount: 0, courses: []);
+  }
 }
 
 class FakeHomeDashboardRepository implements HomeDashboardRepository {

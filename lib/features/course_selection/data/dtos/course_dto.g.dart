@@ -22,13 +22,17 @@ CourseResponseDto _$CourseResponseDtoFromJson(Map<String, dynamic> json) =>
       serialNo: json['serial_no'] as String,
       classNo: json['class_no'] as String,
       title: json['title'] as String,
-      credit: (json['credit'] as num).toDouble(),
-      teachers: (json['teachers'] as List<dynamic>)
-          .map((e) => e as String)
-          .toList(),
-      classTimes: (json['class_times'] as List<dynamic>)
-          .map((e) => e as String)
-          .toList(),
+      credit: (json['credit'] as num).toInt(),
+      teachers:
+          (json['teachers'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          [],
+      classTimes:
+          (json['class_times'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          [],
       passwordCard: json['password_card'] as String?,
       limitCnt: (json['limit_cnt'] as num?)?.toInt(),
       admitCnt: (json['admit_cnt'] as num?)?.toInt(),

@@ -33,7 +33,7 @@ void main() {
     expect(course.serialNo, '53001');
     expect(course.classNo, 'CE1001-*');
     expect(course.title, '計算機概論I');
-    expect(course.credit, 3.0);
+    expect(course.credit, 3);
     expect(course.passwordCard, isNull);
     expect(course.teachers, ['施國琛']);
     expect(course.classTimes, ['4-1', '4-2', '4-3']);
@@ -43,5 +43,26 @@ void main() {
     expect(course.collegeId, 'collegeI5');
     expect(course.departmentId, 'deptI1I5002I0');
     expect(course.courseType, 'REQUIRED');
+  });
+
+  test('CourseResponseDto defaults optional list fields from OpenAPI', () {
+    final result = CourseResultDto.fromJson(const {
+      'total_count': 1,
+      'courses': [
+        {
+          'serial_no': '53002',
+          'class_no': 'CE1002-*',
+          'title': '計算機概論II',
+          'credit': 3.0,
+        },
+      ],
+    });
+
+    final course = result.courses.single;
+    expect(result.lastUpdated, isNull);
+    expect(course.teachers, isEmpty);
+    expect(course.classTimes, isEmpty);
+    expect(course.passwordCard, isNull);
+    expect(course.limitCnt, isNull);
   });
 }

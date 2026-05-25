@@ -38,9 +38,11 @@ class CourseResponseDto {
   final String serialNo;
   final String classNo;
   final String title;
-  final double credit;
+  final int credit;
   final String? passwordCard;
+  @JsonKey(defaultValue: <String>[])
   final List<String> teachers;
+  @JsonKey(defaultValue: <String>[])
   final List<String> classTimes;
   final int? limitCnt;
   final int? admitCnt;

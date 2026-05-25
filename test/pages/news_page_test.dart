@@ -8,7 +8,7 @@ import 'package:prototype/features/news/presentation/news_page.dart';
 import 'package:prototype/features/news/presentation/view_models/news_view_model.dart';
 
 void main() {
-  testWidgets('NewsPage renders fetched news and digest panel', (tester) async {
+  testWidgets('NewsPage renders fetched news', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         home: NewsPage(
@@ -19,7 +19,10 @@ void main() {
                   id: 1,
                   category: '獎學金',
                   title: '校內獎學金申請公告',
-                  contentSummary: '申請期限與資格摘要',
+                  contentSummary:
+                      '開始日期: 2026-05-07\n'
+                      '結束日期: 2026-06-04\n'
+                      '申請資格: 不拘',
                 ),
               ],
             ),
@@ -31,9 +34,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('校內獎學金申請公告'), findsOneWidget);
-    expect(find.text('今日整理'), findsOneWidget);
-    expect(find.text('本週課務重點'), findsOneWidget);
-    expect(find.text('獎助資訊提醒'), findsOneWidget);
+    expect(find.text('2026-05-07 - 2026-06-04'), findsOneWidget);
+    expect(find.text('申請資格: 不拘'), findsOneWidget);
+    expect(find.text('今日整理'), findsNothing);
   });
 }
 

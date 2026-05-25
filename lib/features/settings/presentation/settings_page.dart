@@ -62,6 +62,17 @@ class _SettingsPageContent extends StatelessWidget {
               ),
               const SizedBox(height: 20.0),
               Text(
+                '後端服務',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 10.0),
+              _BackendEndpointCard(viewModel: viewModel),
+              const SizedBox(height: 20.0),
+              Text(
                 '專案資訊',
                 style: TextStyle(
                   fontSize: 18,
@@ -120,6 +131,91 @@ class _SettingsPageContent extends StatelessWidget {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _BackendEndpointCard extends StatefulWidget {
+  const _BackendEndpointCard({required this.viewModel});
+
+  final SettingsViewModel viewModel;
+
+  @override
+  State<_BackendEndpointCard> createState() => _BackendEndpointCardState();
+}
+
+class _BackendEndpointCardState extends State<_BackendEndpointCard> {
+  late final TextEditingController _controller;
+
+  SettingsViewModel get viewModel => widget.viewModel;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: viewModel.backendBaseUrl);
+  }
+
+  @override
+  void didUpdateWidget(covariant _BackendEndpointCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (viewModel.backendBaseUrl != _controller.text) {
+      _controller.text = viewModel.backendBaseUrl;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: _controller,
+              decoration: InputDecoration(
+                labelText: 'Backend URL',
+                hintText: 'http://localhost:18080',
+                errorText: viewModel.backendBaseUrlError,
+                prefixIcon: const Icon(Icons.dns_outlined),
+                border: const OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.url,
+              textInputAction: TextInputAction.done,
+              autocorrect: false,
+              onSubmitted: viewModel.updateBackendBaseUrl,
+            ),
+            const SizedBox(height: 12.0),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: viewModel.resetBackendBaseUrl,
+                    icon: const Icon(Icons.restart_alt),
+                    label: const Text('重設'),
+                  ),
+                ),
+                const SizedBox(width: 12.0),
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () =>
+                        viewModel.updateBackendBaseUrl(_controller.text),
+                    icon: const Icon(Icons.check),
+                    label: const Text('套用'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

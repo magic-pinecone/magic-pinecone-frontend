@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:prototype/core/app/app_backend_config.dart';
 import 'package:prototype/core/app/app_dependencies.dart';
 import 'package:prototype/core/app/app_theme.dart';
-import 'package:prototype/features/course_selection/data/course_schedule_repository.dart';
+import 'package:prototype/features/course_selection/data/course_repository.dart';
 import 'package:prototype/features/course_selection/presentation/view_models/course_selection_controller.dart';
 import 'package:prototype/features/home/data/home_dashboard_repository.dart';
 import 'package:prototype/features/home/presentation/view_models/home_view_model.dart';
@@ -19,6 +20,21 @@ void main() {
 
     expect(dependencies.appThemeController, isA<AppThemeController>());
     expect(dependencies.appThemeController.value, ThemeMode.system);
+    expect(
+      dependencies.appBackendConfigController.baseUrl,
+      defaultBackendBaseUrl,
+    );
+    expect(dependencies.dio.options.baseUrl, defaultBackendBaseUrl);
+  });
+
+  test('AppDependencies syncs backend base URL to Dio', () {
+    final dependencies = AppDependencies();
+
+    dependencies.appBackendConfigController.setBaseUrl('http://127.0.0.1:8000');
+
+    expect(dependencies.dio.options.baseUrl, 'http://127.0.0.1:8000');
+
+    dependencies.dispose();
   });
 
   test(
@@ -37,10 +53,7 @@ void main() {
         dependencies.createCourseSelectionController(),
         isA<CourseSelectionController>(),
       );
-      expect(
-        dependencies.courseScheduleRepository,
-        isA<CourseScheduleRepository>(),
-      );
+      expect(dependencies.courseRepository, isA<CourseRepository>());
       expect(
         dependencies.homeDashboardRepository,
         isA<HomeDashboardRepository>(),
