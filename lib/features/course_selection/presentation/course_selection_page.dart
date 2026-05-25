@@ -189,10 +189,19 @@ class _SearchPanel extends StatelessWidget {
                       ? null
                       : (_) => unawaited(controller.toggleCredit(credit)),
                 ),
+            ],
+          ),
+          const SizedBox(height: 12.0),
+          Text('進階選項', style: Theme.of(context).textTheme.labelLarge),
+          const SizedBox(height: 8.0),
+          Wrap(
+            spacing: 8.0,
+            runSpacing: 8.0,
+            children: [
               FilterChip(
-                avatar: const Icon(Icons.event_available_outlined, size: 18.0),
-                label: const Text('有名額'),
+                label: const Text('僅顯示尚有名額的課程'),
                 selected: controller.hasVacancy == true,
+                showCheckmark: false,
                 onSelected: controller.isLoading
                     ? null
                     : (selected) => unawaited(
@@ -201,7 +210,7 @@ class _SearchPanel extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 4.0),
+          const SizedBox(height: 8.0),
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
@@ -257,6 +266,7 @@ class _ClassTimePickerSheetState extends State<_ClassTimePickerSheet> {
     '2',
     '3',
     '4',
+    'Z',
     '5',
     '6',
     '7',
@@ -292,6 +302,17 @@ class _ClassTimePickerSheetState extends State<_ClassTimePickerSheet> {
                       '上課時段',
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
+                  ),
+                  ListenableBuilder(
+                    listenable: controller,
+                    builder: (context, _) {
+                      return TextButton(
+                        onPressed: controller.classTimes.isEmpty
+                            ? null
+                            : () => unawaited(controller.clearClassTimes()),
+                        child: const Text('清除'),
+                      );
+                    },
                   ),
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),

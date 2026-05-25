@@ -94,6 +94,12 @@ class CourseSelectionController extends ChangeNotifier {
     await search();
   }
 
+  Future<void> clearClassTimes() async {
+    if (_classTimes.isEmpty) return;
+    _classTimes.clear();
+    await search();
+  }
+
   Future<void> clearFilters() async {
     if (!hasActiveFilter) return;
     _keyword = '';

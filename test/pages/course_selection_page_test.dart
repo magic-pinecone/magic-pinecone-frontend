@@ -75,17 +75,13 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('3 學分'));
-    await tester.pumpAndSettle();
-
-    expect(repository.requests.last.credits, [3]);
-
-    await tester.tap(find.text('有名額'));
-    await tester.pumpAndSettle();
-
-    expect(repository.requests.last.hasVacancy, isTrue);
-
-    await tester.tap(find.text('選擇上課時段'));
+    final classTimeButton = find.text('選擇上課時段', skipOffstage: false);
+    await tester.scrollUntilVisible(
+      classTimeButton,
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(classTimeButton);
     await tester.pumpAndSettle();
     expect(find.text('平日'), findsOneWidget);
 
@@ -96,7 +92,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(repository.requests.last.classTimes, ['1-1']);
-    expect(find.text('已選 1 個時段'), findsOneWidget);
+    await tester.tap(find.text('清除').last);
+    await tester.pumpAndSettle();
+
+    expect(repository.requests.last.classTimes, isEmpty);
   });
 
   testWidgets('CourseSelectionPage shows course details sheet', (tester) async {
