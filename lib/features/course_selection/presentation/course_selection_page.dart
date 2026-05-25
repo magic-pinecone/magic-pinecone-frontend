@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:prototype/core/app/app_scope.dart';
+import 'package:prototype/core/navigation/app_routes.dart';
 import 'package:prototype/core/widgets/owned_change_notifier_builder.dart';
 import 'package:prototype/features/course_selection/models/course_schedule_models.dart';
 import 'package:prototype/features/course_selection/presentation/view_models/course_selection_controller.dart';
@@ -718,6 +719,13 @@ class _CourseDetailsSheet extends StatelessWidget {
             const SizedBox(height: 12.0),
             SizedBox(
               width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () => _openCourseDetailUrl(context),
+                child: const Text('課程詳細資訊'),
+              ),
+            ),
+            SizedBox(
+              width: double.infinity,
               child: FilledButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: const Text('關閉'),
@@ -725,6 +733,18 @@ class _CourseDetailsSheet extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _openCourseDetailUrl(BuildContext context) {
+    final navigator = Navigator.of(context);
+    final targetUrl = Uri.parse(course.detailUrlWithParams);
+
+    navigator.pop();
+    unawaited(
+      navigator.push(
+        AppRoutes.portalWebView(title: course.title, targetUrl: targetUrl),
       ),
     );
   }

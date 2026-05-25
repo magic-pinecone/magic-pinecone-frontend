@@ -27,6 +27,9 @@ class CourseItem {
     this.courseType,
   });
 
+  final String detailUrl =
+      "https://cis.ncu.edu.tw/Course/main/support/courseDetail.html?crs=";
+
   final String serialNo;
   final String classNo;
   final String title;
@@ -77,6 +80,8 @@ class CourseItem {
     if (base.isEmpty) return '候補 $waiting';
     return '$base · 候補 $waiting';
   }
+
+  String get detailUrlWithParams => '$detailUrl$serialNo';
 }
 
 class ScheduledCourse {

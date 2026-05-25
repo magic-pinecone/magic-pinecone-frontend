@@ -137,6 +137,7 @@ void main() {
     expect(find.text('CS101 / 12345'), findsOneWidget);
     expect(find.text('選課人數'), findsOneWidget);
     expect(find.text('42 / 60 · 候補 3'), findsOneWidget);
+    expect(find.text('課程詳細資訊'), findsOneWidget);
   });
 }
 
