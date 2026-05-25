@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:prototype/core/app/app_backend_config.dart';
 import 'package:prototype/core/app/app_theme.dart';
 import 'package:prototype/features/settings/data/settings_repository.dart';
 import 'package:prototype/features/settings/models/settings_models.dart';
@@ -8,8 +9,10 @@ import 'package:prototype/features/settings/presentation/view_models/settings_vi
 void main() {
   test('SettingsViewModel exposes repository data and theme state', () {
     final themeController = AppThemeController();
+    final backendConfigController = AppBackendConfigController();
     final viewModel = SettingsViewModel(
       appThemeController: themeController,
+      appBackendConfigController: backendConfigController,
       repository: const FakeSettingsRepository(),
     );
 
@@ -21,6 +24,16 @@ void main() {
     themeController.value = ThemeMode.dark;
 
     expect(viewModel.isDarkMode, isTrue);
+
+    viewModel.updateBackendBaseUrl('http://127.0.0.1:8000/');
+
+    expect(viewModel.backendBaseUrl, 'http://127.0.0.1:8000');
+    expect(viewModel.backendBaseUrlError, isNull);
+
+    viewModel.updateBackendBaseUrl('localhost:8000');
+
+    expect(viewModel.backendBaseUrl, 'http://127.0.0.1:8000');
+    expect(viewModel.backendBaseUrlError, isNotNull);
   });
 }
 

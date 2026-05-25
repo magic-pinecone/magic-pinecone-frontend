@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:prototype/core/app/app_backend_config.dart';
 import 'package:prototype/core/app/app_theme.dart';
 import 'package:prototype/features/course_selection/data/course_api_service.dart';
 import 'package:prototype/features/course_selection/data/course_repository.dart';
@@ -17,6 +18,7 @@ import 'package:prototype/features/settings/presentation/view_models/settings_vi
 
 class AppDependencies {
   AppDependencies({
+    AppBackendConfigController? appBackendConfigController,
     AppThemeController? appThemeController,
     HomeDashboardRepository? homeDashboardRepository,
     NewsDigestRepository? newsDigestRepository,
@@ -29,6 +31,8 @@ class AppDependencies {
     PortalAuthenticator? portalAuthenticator,
     ScholarshipRepository? scholarshipRepository,
   }) : this._internal(
+         appBackendConfigController:
+             appBackendConfigController ?? AppBackendConfigController(),
          appThemeController: appThemeController ?? AppThemeController(),
          homeDashboardRepository:
              homeDashboardRepository ?? const StaticHomeDashboardRepository(),
@@ -38,7 +42,7 @@ class AppDependencies {
              portalShortcutRepository ?? const StaticPortalShortcutRepository(),
          settingsRepository:
              settingsRepository ?? const StaticSettingsRepository(),
-         dio: dio ?? Dio(BaseOptions(baseUrl: 'http://localhost:18080')),
+         dio: dio ?? Dio(),
          courseApiService: courseApiService,
          courseRepository: courseRepository,
          scholarshipApiService: scholarshipApiService,
@@ -47,6 +51,7 @@ class AppDependencies {
        );
 
   AppDependencies._internal({
+    required this.appBackendConfigController,
     required this.appThemeController,
     required this.homeDashboardRepository,
     required this.newsDigestRepository,
@@ -59,6 +64,9 @@ class AppDependencies {
     required this.portalAuthenticator,
     ScholarshipRepository? scholarshipRepository,
   }) {
+    _syncBackendBaseUrl();
+    appBackendConfigController.addListener(_syncBackendBaseUrl);
+
     final courseService = courseApiService ?? CourseApiService(dio);
     this.courseApiService = courseService;
     this.courseRepository =
@@ -71,6 +79,7 @@ class AppDependencies {
         RemoteScholarshipRepository(service: apiService);
   }
 
+  final AppBackendConfigController appBackendConfigController;
   final AppThemeController appThemeController;
   final HomeDashboardRepository homeDashboardRepository;
   final NewsDigestRepository newsDigestRepository;
@@ -90,6 +99,7 @@ class AppDependencies {
   SettingsViewModel createSettingsViewModel() {
     return SettingsViewModel(
       appThemeController: appThemeController,
+      appBackendConfigController: appBackendConfigController,
       repository: settingsRepository,
     );
   }
@@ -113,6 +123,12 @@ class AppDependencies {
   }
 
   void dispose() {
+    appBackendConfigController.removeListener(_syncBackendBaseUrl);
+    appBackendConfigController.dispose();
     appThemeController.dispose();
+  }
+
+  void _syncBackendBaseUrl() {
+    dio.options.baseUrl = appBackendConfigController.baseUrl;
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:prototype/core/app/app_backend_config.dart';
 import 'package:prototype/core/app/app_theme.dart';
 import 'package:prototype/features/settings/data/settings_repository.dart';
 import 'package:prototype/features/settings/models/settings_models.dart';
@@ -15,6 +16,7 @@ void main() {
         home: SettingsPage(
           viewModel: SettingsViewModel(
             appThemeController: AppThemeController(),
+            appBackendConfigController: AppBackendConfigController(),
             repository: const FakeSettingsRepository(),
           ),
         ),
@@ -23,9 +25,39 @@ void main() {
 
     expect(find.text('顯示與偏好'), findsOneWidget);
     expect(find.text('深色模式'), findsOneWidget);
+    expect(find.text('後端服務'), findsOneWidget);
+    expect(find.text('Backend URL'), findsOneWidget);
     expect(find.text('專案資訊'), findsOneWidget);
     expect(find.text('Magic Pinecone'), findsOneWidget);
     expect(find.text('首頁與快速功能已串成實際流程'), findsOneWidget);
+  });
+
+  testWidgets('SettingsPage updates backend URL from form', (tester) async {
+    final backendConfigController = AppBackendConfigController();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SettingsPage(
+          viewModel: SettingsViewModel(
+            appThemeController: AppThemeController(),
+            appBackendConfigController: backendConfigController,
+            repository: const FakeSettingsRepository(),
+          ),
+        ),
+      ),
+    );
+
+    await tester.enterText(find.byType(TextField), 'http://127.0.0.1:8000');
+    await tester.tap(find.text('套用'));
+    await tester.pump();
+
+    expect(backendConfigController.baseUrl, 'http://127.0.0.1:8000');
+
+    await tester.enterText(find.byType(TextField), 'localhost:8000');
+    await tester.tap(find.text('套用'));
+    await tester.pump();
+
+    expect(find.text('請輸入 http 或 https 開頭的網址'), findsOneWidget);
   });
 }
 
