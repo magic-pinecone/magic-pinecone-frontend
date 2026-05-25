@@ -28,4 +28,37 @@ void main() {
       'https://example.com/file.pdf',
     );
   });
+
+  test(
+    'ScholarshipResultDto parses nullable map content summary from OpenAPI',
+    () {
+      final result = ScholarshipResultDto.fromJson(const {
+        'total_count': 2,
+        'scholarships': [
+          {
+            'id': 8,
+            'category': '招募資訊',
+            'title': '校內工讀招募',
+            'content_summary': {
+              '開始日期': '2026-05-07',
+              '結束日期': '2026-06-04',
+              '申請資格': '不拘',
+            },
+          },
+          {
+            'id': 9,
+            'category': '獎學金',
+            'title': '獎學金公告',
+            'content_summary': null,
+          },
+        ],
+      });
+
+      expect(
+        result.scholarships.first.contentSummary,
+        '開始日期: 2026-05-07\n結束日期: 2026-06-04\n申請資格: 不拘',
+      );
+      expect(result.scholarships.last.contentSummary, isEmpty);
+    },
+  );
 }

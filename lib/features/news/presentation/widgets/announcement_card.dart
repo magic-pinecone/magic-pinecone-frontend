@@ -7,12 +7,14 @@ class AnnouncementCard extends StatelessWidget {
     required this.title,
     required this.label,
     this.date = '2024-05-20',
+    this.summary,
     this.onTap,
   });
 
   final String title;
   final String label;
   final String date;
+  final String? summary;
   final VoidCallback? onTap;
 
   @override
@@ -62,6 +64,18 @@ class AnnouncementCard extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
+              if (summary != null && summary!.trim().isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  summary!,
+                  style: TextStyle(
+                    color: colorScheme.onSurfaceVariant,
+                    fontSize: 13,
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ],
           ),
         ),

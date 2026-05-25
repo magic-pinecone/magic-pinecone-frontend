@@ -27,6 +27,8 @@ void main() {
         '工讀地點': '諮商輔導中心',
         '工讀類型': '',
       });
+      expect(item.dateText, '2026-05-07 - 2026-06-04');
+      expect(item.summaryPreview, '申請資格: 不拘\n工讀單位: 諮商輔導中心\n工讀地點: 諮商輔導中心');
     },
   );
 }

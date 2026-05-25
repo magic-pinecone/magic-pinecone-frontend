@@ -24,6 +24,6 @@ ScholarshipResponseDto _$ScholarshipResponseDtoFromJson(
   id: (json['id'] as num).toInt(),
   category: json['category'] as String,
   title: json['title'] as String,
-  contentSummary: json['content_summary'] as String,
+  contentSummary: _contentSummaryFromJson(json['content_summary']),
   downloadLink: json['download_link'] as String?,
 );
