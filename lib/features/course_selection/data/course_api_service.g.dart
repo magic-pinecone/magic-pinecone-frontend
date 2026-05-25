@@ -27,7 +27,7 @@ class _CourseApiService implements CourseApiService {
     String? departmentId,
     String? collegeId,
     String? courseType,
-    List<double>? credits,
+    List<int>? credits,
     bool? hasVacancy,
     List<String>? classTimes,
     int? offset,

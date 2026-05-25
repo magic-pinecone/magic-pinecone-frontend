@@ -80,7 +80,7 @@ class FakeCourseRepository implements CourseRepository {
     String? departmentId,
     String? collegeId,
     String? courseType,
-    List<double>? credits,
+    List<int>? credits,
     bool? hasVacancy,
     List<String>? classTimes,
     int offset = 0,
@@ -127,7 +127,7 @@ class CourseSearchRequest {
   final String? departmentId;
   final String? collegeId;
   final String? courseType;
-  final List<double>? credits;
+  final List<int>? credits;
   final bool? hasVacancy;
   final List<String>? classTimes;
   final int offset;

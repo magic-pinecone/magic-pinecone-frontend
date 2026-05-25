@@ -33,7 +33,7 @@ void main() {
     expect(course.serialNo, '53001');
     expect(course.classNo, 'CE1001-*');
     expect(course.title, '計算機概論I');
-    expect(course.credit, 3.0);
+    expect(course.credit, 3);
     expect(course.passwordCard, isNull);
     expect(course.teachers, ['施國琛']);
     expect(course.classTimes, ['4-1', '4-2', '4-3']);

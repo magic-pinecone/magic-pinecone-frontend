@@ -120,7 +120,7 @@ class _CourseSelectionPageContent extends StatelessWidget {
 class _SearchPanel extends StatelessWidget {
   const _SearchPanel({required this.controller});
 
-  static const _creditOptions = <double>[1, 2, 3, 4];
+  static const _creditOptions = <int>[1, 2, 3, 4];
 
   final CourseSelectionController controller;
 
@@ -183,7 +183,7 @@ class _SearchPanel extends StatelessWidget {
             children: [
               for (final credit in _creditOptions)
                 FilterChip(
-                  label: Text('${credit.toInt()} 學分'),
+                  label: Text('$credit 學分'),
                   selected: controller.credits.contains(credit),
                   onSelected: controller.isLoading
                       ? null

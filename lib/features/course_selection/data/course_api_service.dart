@@ -15,7 +15,7 @@ abstract class CourseApiService {
     @Query('department_id') String? departmentId,
     @Query('college_id') String? collegeId,
     @Query('course_type') String? courseType,
-    @Query('credits') List<double>? credits,
+    @Query('credits') List<int>? credits,
     @Query('has_vacancy') bool? hasVacancy,
     @Query('class_times') List<String>? classTimes,
     @Query('skip') int? offset,

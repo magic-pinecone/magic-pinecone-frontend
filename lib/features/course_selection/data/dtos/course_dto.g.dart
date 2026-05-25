@@ -22,7 +22,7 @@ CourseResponseDto _$CourseResponseDtoFromJson(Map<String, dynamic> json) =>
       serialNo: json['serial_no'] as String,
       classNo: json['class_no'] as String,
       title: json['title'] as String,
-      credit: (json['credit'] as num).toDouble(),
+      credit: (json['credit'] as num).toInt(),
       teachers:
           (json['teachers'] as List<dynamic>?)
               ?.map((e) => e as String)

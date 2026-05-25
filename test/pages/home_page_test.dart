@@ -100,7 +100,7 @@ class FakeCourseRepository implements CourseRepository {
     String? departmentId,
     String? collegeId,
     String? courseType,
-    List<double>? credits,
+    List<int>? credits,
     bool? hasVacancy,
     List<String>? classTimes,
     int offset = 0,

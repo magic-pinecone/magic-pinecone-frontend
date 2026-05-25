@@ -30,7 +30,7 @@ class CourseItem {
   final String serialNo;
   final String classNo;
   final String title;
-  final double credit;
+  final int credit;
   final String? passwordCard;
   final List<String> teachers;
   final List<String> classTimes;
@@ -46,12 +46,7 @@ class CourseItem {
   String get classTimeText =>
       classTimes.isEmpty ? '時間未定' : classTimes.join('、');
 
-  String get creditText {
-    if (credit == credit.roundToDouble()) {
-      return credit.toInt().toString();
-    }
-    return credit.toString();
-  }
+  String get creditText => credit.toString();
 
   String get courseTypeText {
     return switch (courseType) {

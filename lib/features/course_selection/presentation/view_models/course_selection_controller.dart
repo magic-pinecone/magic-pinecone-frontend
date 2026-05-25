@@ -15,7 +15,7 @@ class CourseSelectionController extends ChangeNotifier {
   DateTime? _lastUpdated;
   String _keyword = '';
   String? _courseType;
-  final Set<double> _credits = {};
+  final Set<int> _credits = {};
   bool? _hasVacancy;
   final Set<String> _classTimes = {};
 
@@ -26,7 +26,7 @@ class CourseSelectionController extends ChangeNotifier {
   DateTime? get lastUpdated => _lastUpdated;
   String get keyword => _keyword;
   String? get courseType => _courseType;
-  List<double> get credits => List.unmodifiable(_sortedCredits);
+  List<int> get credits => List.unmodifiable(_sortedCredits);
   bool? get hasVacancy => _hasVacancy;
   List<String> get classTimes => List.unmodifiable(_sortedClassTimes);
   bool get hasActiveFilter =>
@@ -74,7 +74,7 @@ class CourseSelectionController extends ChangeNotifier {
     await search();
   }
 
-  Future<void> toggleCredit(double value) async {
+  Future<void> toggleCredit(int value) async {
     if (!_credits.add(value)) {
       _credits.remove(value);
     }
@@ -110,7 +110,7 @@ class CourseSelectionController extends ChangeNotifier {
     await search();
   }
 
-  List<double> get _sortedCredits {
+  List<int> get _sortedCredits {
     return _credits.toList()..sort();
   }
 
