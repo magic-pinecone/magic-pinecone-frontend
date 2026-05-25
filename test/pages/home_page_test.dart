@@ -100,6 +100,9 @@ class FakeCourseRepository implements CourseRepository {
     String? departmentId,
     String? collegeId,
     String? courseType,
+    List<double>? credits,
+    bool? hasVacancy,
+    List<String>? classTimes,
     int offset = 0,
     int limit = 100,
   }) async {

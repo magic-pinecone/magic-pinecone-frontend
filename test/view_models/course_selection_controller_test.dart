@@ -31,15 +31,21 @@ void main() {
       expect(controller.courses.single.title, '程式設計');
     });
 
-    test('passes search keyword and course type to repository', () async {
+    test('passes search keyword and filters to repository', () async {
       final repository = FakeCourseRepository();
       final controller = CourseSelectionController(repository: repository);
 
       await controller.search(keyword: '資料結構');
       await controller.setCourseType('REQUIRED');
+      await controller.toggleCredit(3);
+      await controller.setHasVacancy(true);
+      await controller.toggleClassTime('1-1');
 
       expect(repository.requests.last.keyword, '資料結構');
       expect(repository.requests.last.courseType, 'REQUIRED');
+      expect(repository.requests.last.credits, [3]);
+      expect(repository.requests.last.hasVacancy, isTrue);
+      expect(repository.requests.last.classTimes, ['1-1']);
     });
 
     test('stores error when repository throws', () async {
@@ -74,6 +80,9 @@ class FakeCourseRepository implements CourseRepository {
     String? departmentId,
     String? collegeId,
     String? courseType,
+    List<double>? credits,
+    bool? hasVacancy,
+    List<String>? classTimes,
     int offset = 0,
     int limit = 100,
   }) async {
@@ -85,6 +94,9 @@ class FakeCourseRepository implements CourseRepository {
         departmentId: departmentId,
         collegeId: collegeId,
         courseType: courseType,
+        credits: credits,
+        hasVacancy: hasVacancy,
+        classTimes: classTimes,
         offset: offset,
         limit: limit,
       ),
@@ -102,6 +114,9 @@ class CourseSearchRequest {
     this.departmentId,
     this.collegeId,
     this.courseType,
+    this.credits,
+    this.hasVacancy,
+    this.classTimes,
     required this.offset,
     required this.limit,
   });
@@ -112,6 +127,9 @@ class CourseSearchRequest {
   final String? departmentId;
   final String? collegeId;
   final String? courseType;
+  final List<double>? credits;
+  final bool? hasVacancy;
+  final List<String>? classTimes;
   final int offset;
   final int limit;
 }

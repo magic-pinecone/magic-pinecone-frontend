@@ -27,6 +27,9 @@ class _CourseApiService implements CourseApiService {
     String? departmentId,
     String? collegeId,
     String? courseType,
+    List<double>? credits,
+    bool? hasVacancy,
+    List<String>? classTimes,
     int? offset,
     int? limit,
   }) async {
@@ -38,6 +41,9 @@ class _CourseApiService implements CourseApiService {
       r'department_id': departmentId,
       r'college_id': collegeId,
       r'course_type': courseType,
+      r'credits': credits,
+      r'has_vacancy': hasVacancy,
+      r'class_times': classTimes,
       r'skip': offset,
       r'limit': limit,
     };

@@ -15,6 +15,9 @@ class CourseSelectionController extends ChangeNotifier {
   DateTime? _lastUpdated;
   String _keyword = '';
   String? _courseType;
+  final Set<double> _credits = {};
+  bool? _hasVacancy;
+  final Set<String> _classTimes = {};
 
   List<CourseItem> get courses => _courses;
   bool get isLoading => _isLoading;
@@ -23,7 +26,15 @@ class CourseSelectionController extends ChangeNotifier {
   DateTime? get lastUpdated => _lastUpdated;
   String get keyword => _keyword;
   String? get courseType => _courseType;
-  bool get hasActiveFilter => _keyword.isNotEmpty || _courseType != null;
+  List<double> get credits => List.unmodifiable(_sortedCredits);
+  bool? get hasVacancy => _hasVacancy;
+  List<String> get classTimes => List.unmodifiable(_sortedClassTimes);
+  bool get hasActiveFilter =>
+      _keyword.isNotEmpty ||
+      _courseType != null ||
+      _credits.isNotEmpty ||
+      _hasVacancy != null ||
+      _classTimes.isNotEmpty;
 
   Future<void> load() {
     return search();
@@ -42,6 +53,9 @@ class CourseSelectionController extends ChangeNotifier {
       final result = await _repository.searchCourses(
         keyword: _keyword,
         courseType: _courseType,
+        credits: _sortedCredits,
+        hasVacancy: _hasVacancy,
+        classTimes: _sortedClassTimes,
       );
       _courses = List.unmodifiable(result.courses);
       _totalCount = result.totalCount;
@@ -60,10 +74,41 @@ class CourseSelectionController extends ChangeNotifier {
     await search();
   }
 
+  Future<void> toggleCredit(double value) async {
+    if (!_credits.add(value)) {
+      _credits.remove(value);
+    }
+    await search();
+  }
+
+  Future<void> setHasVacancy(bool? value) async {
+    if (_hasVacancy == value) return;
+    _hasVacancy = value;
+    await search();
+  }
+
+  Future<void> toggleClassTime(String value) async {
+    if (!_classTimes.add(value)) {
+      _classTimes.remove(value);
+    }
+    await search();
+  }
+
   Future<void> clearFilters() async {
     if (!hasActiveFilter) return;
     _keyword = '';
     _courseType = null;
+    _credits.clear();
+    _hasVacancy = null;
+    _classTimes.clear();
     await search();
+  }
+
+  List<double> get _sortedCredits {
+    return _credits.toList()..sort();
+  }
+
+  List<String> get _sortedClassTimes {
+    return _classTimes.toList()..sort();
   }
 }

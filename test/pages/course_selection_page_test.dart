@@ -63,6 +63,42 @@ void main() {
     expect(repository.requests.last.keyword, '資料結構');
   });
 
+  testWidgets('CourseSelectionPage applies filter chips', (tester) async {
+    final repository = FakeCourseRepository();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CourseSelectionPage(
+          controller: CourseSelectionController(repository: repository),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('3 學分'));
+    await tester.pumpAndSettle();
+
+    expect(repository.requests.last.credits, [3]);
+
+    await tester.tap(find.text('有名額'));
+    await tester.pumpAndSettle();
+
+    expect(repository.requests.last.hasVacancy, isTrue);
+
+    await tester.tap(find.text('選擇上課時段'));
+    await tester.pumpAndSettle();
+    expect(find.text('平日'), findsOneWidget);
+
+    await tester.tap(find.text('全週'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('一 1'));
+    await tester.pumpAndSettle();
+
+    expect(repository.requests.last.classTimes, ['1-1']);
+    expect(find.text('已選 1 個時段'), findsOneWidget);
+  });
+
   testWidgets('CourseSelectionPage shows course details sheet', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -123,6 +159,9 @@ class FakeCourseRepository implements CourseRepository {
     String? departmentId,
     String? collegeId,
     String? courseType,
+    List<double>? credits,
+    bool? hasVacancy,
+    List<String>? classTimes,
     int offset = 0,
     int limit = 100,
   }) async {
@@ -130,6 +169,9 @@ class FakeCourseRepository implements CourseRepository {
       CourseSearchRequest(
         keyword: keyword,
         courseType: courseType,
+        credits: credits,
+        hasVacancy: hasVacancy,
+        classTimes: classTimes,
         offset: offset,
         limit: limit,
       ),
@@ -143,12 +185,18 @@ class CourseSearchRequest {
   const CourseSearchRequest({
     this.keyword,
     this.courseType,
+    this.credits,
+    this.hasVacancy,
+    this.classTimes,
     required this.offset,
     required this.limit,
   });
 
   final String? keyword;
   final String? courseType;
+  final List<double>? credits;
+  final bool? hasVacancy;
+  final List<String>? classTimes;
   final int offset;
   final int limit;
 }

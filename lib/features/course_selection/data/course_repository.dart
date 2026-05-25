@@ -10,6 +10,9 @@ abstract class CourseRepository {
     String? departmentId,
     String? collegeId,
     String? courseType,
+    List<double>? credits,
+    bool? hasVacancy,
+    List<String>? classTimes,
     int offset = 0,
     int limit = 100,
   });
@@ -29,6 +32,9 @@ class RemoteCourseRepository implements CourseRepository {
     String? departmentId,
     String? collegeId,
     String? courseType,
+    List<double>? credits,
+    bool? hasVacancy,
+    List<String>? classTimes,
     int offset = 0,
     int limit = 100,
   }) async {
@@ -39,6 +45,9 @@ class RemoteCourseRepository implements CourseRepository {
       departmentId: _normalize(departmentId),
       collegeId: _normalize(collegeId),
       courseType: _normalize(courseType),
+      credits: _normalizeList(credits),
+      hasVacancy: hasVacancy,
+      classTimes: _normalizeList(classTimes),
       offset: offset,
       limit: limit,
     );
@@ -49,6 +58,11 @@ class RemoteCourseRepository implements CourseRepository {
     final normalized = value?.trim();
     if (normalized == null || normalized.isEmpty) return null;
     return normalized;
+  }
+
+  List<T>? _normalizeList<T>(List<T>? values) {
+    if (values == null || values.isEmpty) return null;
+    return values;
   }
 }
 

@@ -120,6 +120,8 @@ class _CourseSelectionPageContent extends StatelessWidget {
 class _SearchPanel extends StatelessWidget {
   const _SearchPanel({required this.controller});
 
+  static const _creditOptions = <double>[1, 2, 3, 4];
+
   final CourseSelectionController controller;
 
   @override
@@ -139,6 +141,8 @@ class _SearchPanel extends StatelessWidget {
                 unawaited(controller.search(keyword: value)),
           ),
           const SizedBox(height: 12.0),
+          Text('課程類型', style: Theme.of(context).textTheme.labelLarge),
+          const SizedBox(height: 8.0),
           Wrap(
             spacing: 8.0,
             runSpacing: 8.0,
@@ -170,11 +174,301 @@ class _SearchPanel extends StatelessWidget {
                 ),
             ],
           ),
+          const SizedBox(height: 12.0),
+          Text('學分', style: Theme.of(context).textTheme.labelLarge),
+          const SizedBox(height: 8.0),
+          Wrap(
+            spacing: 8.0,
+            runSpacing: 8.0,
+            children: [
+              for (final credit in _creditOptions)
+                FilterChip(
+                  label: Text('${credit.toInt()} 學分'),
+                  selected: controller.credits.contains(credit),
+                  onSelected: controller.isLoading
+                      ? null
+                      : (_) => unawaited(controller.toggleCredit(credit)),
+                ),
+              FilterChip(
+                avatar: const Icon(Icons.event_available_outlined, size: 18.0),
+                label: const Text('有名額'),
+                selected: controller.hasVacancy == true,
+                onSelected: controller.isLoading
+                    ? null
+                    : (selected) => unawaited(
+                        controller.setHasVacancy(selected ? true : null),
+                      ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4.0),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: controller.isLoading
+                  ? null
+                  : () => _showClassTimePicker(context),
+              icon: const Icon(Icons.schedule_outlined),
+              label: Text(_classTimeButtonText),
+            ),
+          ),
           if (controller.error != null && controller.courses.isNotEmpty) ...[
             const SizedBox(height: 10.0),
             Text('更新失敗，保留目前結果', style: TextStyle(color: colorScheme.error)),
           ],
         ],
+      ),
+    );
+  }
+
+  String get _classTimeButtonText {
+    final count = controller.classTimes.length;
+    if (count == 0) return '選擇上課時段';
+    return '已選 $count 個時段';
+  }
+
+  void _showClassTimePicker(BuildContext context) {
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        showDragHandle: true,
+        isScrollControlled: true,
+        builder: (context) {
+          return _ClassTimePickerSheet(controller: controller);
+        },
+      ),
+    );
+  }
+}
+
+class _ClassTimePickerSheet extends StatefulWidget {
+  const _ClassTimePickerSheet({required this.controller});
+
+  final CourseSelectionController controller;
+
+  @override
+  State<_ClassTimePickerSheet> createState() => _ClassTimePickerSheetState();
+}
+
+class _ClassTimePickerSheetState extends State<_ClassTimePickerSheet> {
+  static const _weekDays = ['一', '二', '三', '四', '五', '六', '日'];
+  static const _periods = [
+    '1',
+    '2',
+    '3',
+    '4',
+    '5',
+    '6',
+    '7',
+    '8',
+    '9',
+    'A',
+    'B',
+    'C',
+    'D',
+  ];
+
+  int _visibleDayCount = 5;
+
+  CourseSelectionController get controller => widget.controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final visibleDays = _weekDays.take(_visibleDayCount).toList();
+
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 16.0 + bottomInset),
+        child: SizedBox(
+          height: MediaQuery.sizeOf(context).height * 0.72,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '上課時段',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('完成'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12.0),
+              SegmentedButton<int>(
+                segments: const [
+                  ButtonSegment(value: 5, label: Text('平日')),
+                  ButtonSegment(value: 7, label: Text('全週')),
+                ],
+                selected: {_visibleDayCount},
+                onSelectionChanged: (values) {
+                  setState(() => _visibleDayCount = values.single);
+                },
+              ),
+              const SizedBox(height: 12.0),
+              Expanded(
+                child: ListenableBuilder(
+                  listenable: controller,
+                  builder: (context, _) {
+                    return _ClassTimeGrid(
+                      days: visibleDays,
+                      periods: _periods,
+                      controller: controller,
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ClassTimeGrid extends StatelessWidget {
+  const _ClassTimeGrid({
+    required this.days,
+    required this.periods,
+    required this.controller,
+  });
+
+  final List<String> days;
+  final List<String> periods;
+  final CourseSelectionController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const rowHeaderWidth = 34.0;
+        const cellGap = 6.0;
+        final totalGapWidth = cellGap * (days.length - 1);
+        final availableWidth =
+            constraints.maxWidth - rowHeaderWidth - totalGapWidth;
+        final cellSize = (availableWidth / days.length).clamp(0.0, 54.0);
+
+        return SingleChildScrollView(
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  SizedBox(width: rowHeaderWidth),
+                  for (
+                    var dayIndex = 0;
+                    dayIndex < days.length;
+                    dayIndex++
+                  ) ...[
+                    SizedBox(
+                      width: cellSize,
+                      height: 28.0,
+                      child: Center(
+                        child: Text(
+                          days[dayIndex],
+                          style: Theme.of(context).textTheme.labelLarge,
+                        ),
+                      ),
+                    ),
+                    if (dayIndex < days.length - 1)
+                      const SizedBox(width: cellGap),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 6.0),
+              for (final period in periods) ...[
+                Row(
+                  children: [
+                    SizedBox(
+                      width: rowHeaderWidth,
+                      height: cellSize,
+                      child: Center(
+                        child: Text(
+                          period,
+                          style: Theme.of(context).textTheme.labelMedium,
+                        ),
+                      ),
+                    ),
+                    for (
+                      var dayIndex = 0;
+                      dayIndex < days.length;
+                      dayIndex++
+                    ) ...[
+                      _ClassTimeGridCell(
+                        dayLabel: days[dayIndex],
+                        period: period,
+                        value: '${dayIndex + 1}-$period',
+                        size: cellSize,
+                        controller: controller,
+                        colorScheme: colorScheme,
+                      ),
+                      if (dayIndex < days.length - 1)
+                        const SizedBox(width: cellGap),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: cellGap),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ClassTimeGridCell extends StatelessWidget {
+  const _ClassTimeGridCell({
+    required this.dayLabel,
+    required this.period,
+    required this.value,
+    required this.size,
+    required this.controller,
+    required this.colorScheme,
+  });
+
+  final String dayLabel;
+  final String period;
+  final String value;
+  final double size;
+  final CourseSelectionController controller;
+  final ColorScheme colorScheme;
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = controller.classTimes.contains(value);
+
+    return Tooltip(
+      message: '$dayLabel $period',
+      child: SizedBox.square(
+        dimension: size,
+        child: InkWell(
+          onTap: controller.isLoading
+              ? null
+              : () => unawaited(controller.toggleClassTime(value)),
+          borderRadius: BorderRadius.circular(8.0),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            curve: Curves.easeOut,
+            decoration: BoxDecoration(
+              color: selected
+                  ? colorScheme.primaryContainer
+                  : colorScheme.surface,
+              border: Border.all(
+                color: selected
+                    ? colorScheme.primary
+                    : colorScheme.outlineVariant,
+              ),
+              borderRadius: BorderRadius.circular(8.0),
+            ),
+          ),
+        ),
       ),
     );
   }
