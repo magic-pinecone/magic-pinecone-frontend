@@ -38,7 +38,7 @@ class AppDependencies {
              portalShortcutRepository ?? const StaticPortalShortcutRepository(),
          settingsRepository:
              settingsRepository ?? const StaticSettingsRepository(),
-         dio: dio ?? Dio(BaseOptions(baseUrl: 'http://localhost:8000')),
+         dio: dio ?? Dio(BaseOptions(baseUrl: 'http://localhost:18080')),
          courseApiService: courseApiService,
          courseRepository: courseRepository,
          scholarshipApiService: scholarshipApiService,
