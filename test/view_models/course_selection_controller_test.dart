@@ -35,17 +35,57 @@ void main() {
       final repository = FakeCourseRepository();
       final controller = CourseSelectionController(repository: repository);
 
+      await controller.search(keyword: '  資料結構  ');
+      await controller.setCourseType('REQUIRED');
+      await controller.toggleCredit(4);
+      await controller.toggleCredit(2);
+      await controller.setHasVacancy(true);
+      await controller.toggleClassTime('5-2');
+      await controller.toggleClassTime('1-1');
+
+      expect(repository.requests.last.keyword, '資料結構');
+      expect(repository.requests.last.courseType, 'REQUIRED');
+      expect(repository.requests.last.credits, [2, 4]);
+      expect(repository.requests.last.hasVacancy, isTrue);
+      expect(repository.requests.last.classTimes, ['1-1', '5-2']);
+      expect(controller.hasActiveFilter, isTrue);
+    });
+
+    test('clearFilters resets every filter and reloads once', () async {
+      final repository = FakeCourseRepository();
+      final controller = CourseSelectionController(repository: repository);
+
       await controller.search(keyword: '資料結構');
       await controller.setCourseType('REQUIRED');
       await controller.toggleCredit(3);
       await controller.setHasVacancy(true);
       await controller.toggleClassTime('1-1');
 
-      expect(repository.requests.last.keyword, '資料結構');
-      expect(repository.requests.last.courseType, 'REQUIRED');
-      expect(repository.requests.last.credits, [3]);
-      expect(repository.requests.last.hasVacancy, isTrue);
-      expect(repository.requests.last.classTimes, ['1-1']);
+      final requestCountBeforeClear = repository.requests.length;
+
+      await controller.clearFilters();
+
+      expect(repository.requests, hasLength(requestCountBeforeClear + 1));
+      expect(controller.keyword, isEmpty);
+      expect(controller.courseType, isNull);
+      expect(controller.credits, isEmpty);
+      expect(controller.hasVacancy, isNull);
+      expect(controller.classTimes, isEmpty);
+      expect(controller.hasActiveFilter, isFalse);
+      expect(repository.requests.last.keyword, isEmpty);
+      expect(repository.requests.last.courseType, isNull);
+      expect(repository.requests.last.credits, isEmpty);
+      expect(repository.requests.last.hasVacancy, isNull);
+      expect(repository.requests.last.classTimes, isEmpty);
+    });
+
+    test('clearFilters is a no-op when no filters are active', () async {
+      final repository = FakeCourseRepository();
+      final controller = CourseSelectionController(repository: repository);
+
+      await controller.clearFilters();
+
+      expect(repository.requests, isEmpty);
     });
 
     test('stores error when repository throws', () async {
@@ -59,6 +99,36 @@ void main() {
       expect(controller.error, isA<StateError>());
       expect(controller.courses, isEmpty);
     });
+
+    test('failed refresh keeps previous results visible', () async {
+      final repository = FakeCourseRepository(
+        results: [
+          const CourseSearchResult(
+            totalCount: 1,
+            courses: [
+              CourseItem(
+                serialNo: '12345',
+                classNo: 'CS101',
+                title: '程式設計',
+                credit: 3,
+                teachers: ['王小明'],
+                classTimes: ['1-1'],
+              ),
+            ],
+          ),
+        ],
+        errors: [StateError('network failed')],
+      );
+      final controller = CourseSelectionController(repository: repository);
+
+      await controller.load();
+      await controller.search();
+
+      expect(controller.isLoading, isFalse);
+      expect(controller.error, isA<StateError>());
+      expect(controller.courses.single.title, '程式設計');
+      expect(controller.totalCount, 1);
+    });
   });
 }
 
@@ -66,10 +136,15 @@ class FakeCourseRepository implements CourseRepository {
   FakeCourseRepository({
     this.result = const CourseSearchResult(totalCount: 0, courses: []),
     this.error,
-  });
+    List<CourseSearchResult>? results,
+    List<Object>? errors,
+  }) : _results = List<CourseSearchResult>.of(results ?? const []),
+       _errors = List<Object>.of(errors ?? const []);
 
   final CourseSearchResult result;
   final Object? error;
+  final List<CourseSearchResult> _results;
+  final List<Object> _errors;
   final List<CourseSearchRequest> requests = [];
 
   @override
@@ -101,6 +176,8 @@ class FakeCourseRepository implements CourseRepository {
         limit: limit,
       ),
     );
+    if (_results.isNotEmpty) return _results.removeAt(0);
+    if (_errors.isNotEmpty) throw _errors.removeAt(0);
     if (error != null) throw error!;
     return result;
   }
