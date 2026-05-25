@@ -370,73 +370,84 @@ class _ClassTimeGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         const rowHeaderWidth = 34.0;
-        const cellGap = 6.0;
+        const cellGap = 4.0;
         final totalGapWidth = cellGap * (days.length - 1);
         final availableWidth =
             constraints.maxWidth - rowHeaderWidth - totalGapWidth;
-        final cellSize = (availableWidth / days.length).clamp(0.0, 54.0);
+        final cellWidth = (availableWidth / days.length).clamp(0.0, 54.0);
+        const cellHeight = 30.0;
 
         return SingleChildScrollView(
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  SizedBox(width: rowHeaderWidth),
-                  for (
-                    var dayIndex = 0;
-                    dayIndex < days.length;
-                    dayIndex++
-                  ) ...[
-                    SizedBox(
-                      width: cellSize,
-                      height: 28.0,
-                      child: Center(
-                        child: Text(
-                          days[dayIndex],
-                          style: Theme.of(context).textTheme.labelLarge,
-                        ),
-                      ),
-                    ),
-                    if (dayIndex < days.length - 1)
-                      const SizedBox(width: cellGap),
-                  ],
-                ],
-              ),
-              const SizedBox(height: 6.0),
-              for (final period in periods) ...[
+          child: Center(
+            child: Column(
+              children: [
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    SizedBox(
-                      width: rowHeaderWidth,
-                      height: cellSize,
-                      child: Center(
-                        child: Text(
-                          period,
-                          style: Theme.of(context).textTheme.labelMedium,
-                        ),
-                      ),
-                    ),
+                    SizedBox(width: rowHeaderWidth),
                     for (
                       var dayIndex = 0;
                       dayIndex < days.length;
                       dayIndex++
                     ) ...[
-                      _ClassTimeGridCell(
-                        dayLabel: days[dayIndex],
-                        period: period,
-                        value: '${dayIndex + 1}-$period',
-                        size: cellSize,
-                        controller: controller,
-                        colorScheme: colorScheme,
+                      SizedBox(
+                        width: cellWidth,
+                        height: 24.0,
+                        child: Center(
+                          child: Text(
+                            days[dayIndex],
+                            style: Theme.of(context).textTheme.labelLarge,
+                          ),
+                        ),
                       ),
                       if (dayIndex < days.length - 1)
                         const SizedBox(width: cellGap),
                     ],
                   ],
                 ),
-                const SizedBox(height: cellGap),
+                const SizedBox(height: 4.0),
+                for (
+                  var periodIndex = 0;
+                  periodIndex < periods.length;
+                  periodIndex++
+                ) ...[
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: rowHeaderWidth,
+                        height: cellHeight,
+                        child: Center(
+                          child: Text(
+                            periods[periodIndex],
+                            style: Theme.of(context).textTheme.labelMedium,
+                          ),
+                        ),
+                      ),
+                      for (
+                        var dayIndex = 0;
+                        dayIndex < days.length;
+                        dayIndex++
+                      ) ...[
+                        _ClassTimeGridCell(
+                          dayLabel: days[dayIndex],
+                          period: periods[periodIndex],
+                          value: '${dayIndex + 1}-${periods[periodIndex]}',
+                          width: cellWidth,
+                          height: cellHeight,
+                          controller: controller,
+                          colorScheme: colorScheme,
+                        ),
+                        if (dayIndex < days.length - 1)
+                          const SizedBox(width: cellGap),
+                      ],
+                    ],
+                  ),
+                  if (periodIndex < periods.length - 1)
+                    const SizedBox(height: cellGap),
+                ],
               ],
-            ],
+            ),
           ),
         );
       },
@@ -449,7 +460,8 @@ class _ClassTimeGridCell extends StatelessWidget {
     required this.dayLabel,
     required this.period,
     required this.value,
-    required this.size,
+    required this.width,
+    required this.height,
     required this.controller,
     required this.colorScheme,
   });
@@ -457,7 +469,8 @@ class _ClassTimeGridCell extends StatelessWidget {
   final String dayLabel;
   final String period;
   final String value;
-  final double size;
+  final double width;
+  final double height;
   final CourseSelectionController controller;
   final ColorScheme colorScheme;
 
@@ -467,8 +480,9 @@ class _ClassTimeGridCell extends StatelessWidget {
 
     return Tooltip(
       message: '$dayLabel $period',
-      child: SizedBox.square(
-        dimension: size,
+      child: SizedBox(
+        width: width,
+        height: height,
         child: InkWell(
           onTap: controller.isLoading
               ? null
