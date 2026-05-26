@@ -1,11 +1,10 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:prototype/features/course_selection/data/dtos/course_dto.dart';
 import 'package:retrofit/retrofit.dart';
 
 part 'course_api_service.g.dart';
 
-@RestApi(parser: Parser.FlutterCompute)
+@RestApi()
 abstract class CourseApiService {
   factory CourseApiService(Dio dio, {String? baseUrl}) = _CourseApiService;
   @GET('/course')
@@ -23,6 +22,3 @@ abstract class CourseApiService {
     @Query('limit') int? limit,
   });
 }
-
-CourseResultDto deserializeCourseResultDto(Map<String, dynamic> json) =>
-    CourseResultDto.fromJson(json);
