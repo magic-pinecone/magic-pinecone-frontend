@@ -9,6 +9,8 @@ class AnnouncementCard extends StatelessWidget {
     this.date = '2024-05-20',
     this.summary,
     this.onTap,
+    this.actionLabel,
+    this.onActionPressed,
   });
 
   final String title;
@@ -16,6 +18,8 @@ class AnnouncementCard extends StatelessWidget {
   final String date;
   final String? summary;
   final VoidCallback? onTap;
+  final String? actionLabel;
+  final VoidCallback? onActionPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -66,14 +70,38 @@ class AnnouncementCard extends StatelessWidget {
               ),
               if (summary != null && summary!.trim().isNotEmpty) ...[
                 const SizedBox(height: 8),
-                Text(
-                  summary!,
-                  style: TextStyle(
-                    color: colorScheme.onSurfaceVariant,
-                    fontSize: 13,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        summary!,
+                        style: TextStyle(
+                          color: colorScheme.onSurfaceVariant,
+                          fontSize: 13,
+                        ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (actionLabel != null && onActionPressed != null) ...[
+                      const SizedBox(width: 12),
+                      FilledButton.icon(
+                        onPressed: onActionPressed,
+                        icon: const Icon(Icons.open_in_browser),
+                        label: Text(actionLabel!),
+                      ),
+                    ],
+                  ],
+                ),
+              ] else if (actionLabel != null && onActionPressed != null) ...[
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: FilledButton.icon(
+                    onPressed: onActionPressed,
+                    icon: const Icon(Icons.open_in_browser),
+                    label: Text(actionLabel!),
                   ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ],

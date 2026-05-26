@@ -101,6 +101,9 @@ class _PortalPageContent extends StatelessWidget {
           ).showSnackBar(const SnackBar(content: Text('此功能尚未設定連結')));
           return Future.value();
         }
+        if (destination.openExternally) {
+          return InAppBrowser.openWithSystemBrowser(url: WebUri.uri(targetUrl));
+        }
         return Navigator.of(context).push(
           AppRoutes.portalWebView(
             title: title,
