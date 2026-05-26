@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:prototype/core/app/app_scope.dart';
+import 'package:prototype/core/navigation/app_routes.dart';
 import 'package:prototype/core/widgets/owned_change_notifier_builder.dart';
 import 'package:prototype/features/news/models/scholarship_item.dart';
 import 'package:prototype/features/news/presentation/view_models/news_view_model.dart';
@@ -114,8 +116,30 @@ class _NewsTabContent extends StatelessWidget {
           title: item.title,
           date: item.dateText,
           summary: item.summaryPreview,
+          onTap: () => _openScholarshipApplication(context, item),
+          actionLabel: '查看',
+          onActionPressed: () => _openScholarshipInBrowser(item),
         );
       },
+    );
+  }
+
+  void _openScholarshipApplication(BuildContext context, ScholarshipItem item) {
+    unawaited(
+      Navigator.of(context).push(
+        AppRoutes.portalWebView(
+          title: item.title,
+          targetUrl: item.applicationSearchUrl,
+        ),
+      ),
+    );
+  }
+
+  void _openScholarshipInBrowser(ScholarshipItem item) {
+    unawaited(
+      InAppBrowser.openWithSystemBrowser(
+        url: WebUri.uri(item.applicationSearchUrl),
+      ),
     );
   }
 }

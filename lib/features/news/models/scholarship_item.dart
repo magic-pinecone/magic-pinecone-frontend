@@ -13,6 +13,13 @@ class ScholarshipItem {
   final String contentSummary;
   final String? downloadLink;
 
+  Uri get applicationSearchUrl {
+    return Uri.https('cis.ncu.edu.tw', '/Scholarship', {
+      'searchJob': title,
+      'ChooseType': category == '招募資訊' ? 'parttime' : 'scholar',
+    });
+  }
+
   /// Maps to the tab label used in the news page.
   String get tabLabel {
     return category == '招募資訊' ? '工讀職缺' : category;
