@@ -49,7 +49,7 @@ class _ScholarshipApiService implements ScholarshipApiService {
     final _result = await _dio.fetch<Map<String, dynamic>>(_options);
     late ScholarshipResultDto _value;
     try {
-      _value = ScholarshipResultDto.fromJson(_result.data!);
+      _value = await compute(deserializeScholarshipResultDto, _result.data!);
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options, response: _result);
       rethrow;

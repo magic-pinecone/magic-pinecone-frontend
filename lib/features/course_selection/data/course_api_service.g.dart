@@ -63,7 +63,7 @@ class _CourseApiService implements CourseApiService {
     final _result = await _dio.fetch<Map<String, dynamic>>(_options);
     late CourseResultDto _value;
     try {
-      _value = CourseResultDto.fromJson(_result.data!);
+      _value = await compute(deserializeCourseResultDto, _result.data!);
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options, response: _result);
       rethrow;
