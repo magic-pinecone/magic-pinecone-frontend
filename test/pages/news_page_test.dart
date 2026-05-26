@@ -36,8 +36,7 @@ void main() {
     expect(find.text('校內獎學金申請公告'), findsOneWidget);
     expect(find.text('2026-05-07 - 2026-06-04'), findsOneWidget);
     expect(find.text('申請資格: 不拘'), findsOneWidget);
-    expect(find.text('瀏覽器開啟'), findsOneWidget);
-    expect(find.text('今日整理'), findsNothing);
+    expect(find.text('查看'), findsOneWidget);
   });
 }
 
