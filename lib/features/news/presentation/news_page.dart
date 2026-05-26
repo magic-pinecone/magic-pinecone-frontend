@@ -34,24 +34,24 @@ class NewsPage extends StatelessWidget {
               tabs: _tabs.map((t) => Tab(text: t)).toList(),
             ),
           ),
-          body: ListenableBuilder(
-            listenable: viewModel,
-            builder: (context, _) {
-              // TODO: Add the planned digest section
-              return TabBarView(
-                children: _tabs
-                    .map(
-                      (tab) => _NewsTabContent(
+          body: TabBarView(
+            children: _tabs
+                .map(
+                  (tab) => ListenableBuilder(
+                    listenable: viewModel,
+                    builder: (context, _) {
+                      // TODO: Add the planned digest section
+                      return _NewsTabContent(
                         category: tab,
                         items: viewModel.items,
                         isLoading: viewModel.isLoading,
                         error: viewModel.error,
                         onRetry: viewModel.load,
-                      ),
-                    )
-                    .toList(),
-              );
-            },
+                      );
+                    },
+                  ),
+                )
+                .toList(),
           ),
         ),
       ),

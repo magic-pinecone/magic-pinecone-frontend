@@ -34,75 +34,95 @@ class _CourseSelectionPageContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: controller,
-      builder: (context, _) {
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text(
-              '課程查詢',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            actions: [
-              IconButton(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          '課程查詢',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        actions: [
+          ListenableBuilder(
+            listenable: controller,
+            builder: (context, _) {
+              return IconButton(
                 tooltip: '重新整理',
                 onPressed: controller.isLoading
                     ? null
                     : () => unawaited(controller.search()),
                 icon: const Icon(Icons.refresh),
-              ),
-            ],
+              );
+            },
           ),
-          body: RefreshIndicator(
-            onRefresh: controller.search,
-            child: CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(child: _SearchPanel(controller: controller)),
-                SliverToBoxAdapter(
-                  child: _ResultSummary(controller: controller),
-                ),
-                if (controller.isLoading && controller.courses.isEmpty)
-                  const SliverFillRemaining(
+        ],
+      ),
+      body: RefreshIndicator(
+        onRefresh: controller.search,
+        child: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: ListenableBuilder(
+                listenable: controller,
+                builder: (context, _) {
+                  return _SearchPanel(controller: controller);
+                },
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: ListenableBuilder(
+                listenable: controller,
+                builder: (context, _) {
+                  return _ResultSummary(controller: controller);
+                },
+              ),
+            ),
+            ListenableBuilder(
+              listenable: controller,
+              builder: (context, _) {
+                if (controller.isLoading && controller.courses.isEmpty) {
+                  return const SliverFillRemaining(
                     hasScrollBody: false,
                     child: Center(child: CircularProgressIndicator()),
-                  )
-                else if (controller.error != null && controller.courses.isEmpty)
-                  SliverFillRemaining(
+                  );
+                }
+                if (controller.error != null && controller.courses.isEmpty) {
+                  return SliverFillRemaining(
                     hasScrollBody: false,
                     child: _ErrorState(
                       onRetry: () => unawaited(controller.search()),
                     ),
-                  )
-                else if (controller.courses.isEmpty)
-                  const SliverFillRemaining(
+                  );
+                }
+                if (controller.courses.isEmpty) {
+                  return const SliverFillRemaining(
                     hasScrollBody: false,
                     child: _EmptyState(),
-                  )
-                else
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(
-                      _horizontalPadding,
-                      4.0,
-                      _horizontalPadding,
-                      20.0,
-                    ),
-                    sliver: SliverList.separated(
-                      itemCount: controller.courses.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 8.0),
-                      itemBuilder: (context, index) {
-                        final course = controller.courses[index];
-                        return _CourseListTile(
-                          course: course,
-                          onTap: () => _showCourseDetails(context, course),
-                        );
-                      },
-                    ),
+                  );
+                }
+
+                return SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(
+                    _horizontalPadding,
+                    4.0,
+                    _horizontalPadding,
+                    20.0,
                   ),
-              ],
+                  sliver: SliverList.separated(
+                    itemCount: controller.courses.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 8.0),
+                    itemBuilder: (context, index) {
+                      final course = controller.courses[index];
+                      return _CourseListTile(
+                        course: course,
+                        onTap: () => _showCourseDetails(context, course),
+                      );
+                    },
+                  ),
+                );
+              },
             ),
-          ),
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 
