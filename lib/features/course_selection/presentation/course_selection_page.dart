@@ -34,95 +34,77 @@ class _CourseSelectionPageContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          '課程查詢',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        actions: [
-          ListenableBuilder(
-            listenable: controller,
-            builder: (context, _) {
-              return IconButton(
+    // 1. 讓 ListenableBuilder 回到最外層包裹整個 Scaffold，徹底解除 Sliver 閃退危機
+    return ListenableBuilder(
+      listenable: controller,
+      builder: (context, _) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text(
+              '課程查詢',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            actions: [
+              IconButton(
                 tooltip: '重新整理',
                 onPressed: controller.isLoading
                     ? null
                     : () => unawaited(controller.search()),
                 icon: const Icon(Icons.refresh),
-              );
-            },
+              ),
+            ],
           ),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: controller.search,
-        child: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(
-              child: ListenableBuilder(
-                listenable: controller,
-                builder: (context, _) {
-                  return _SearchPanel(controller: controller);
-                },
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: ListenableBuilder(
-                listenable: controller,
-                builder: (context, _) {
-                  return _ResultSummary(controller: controller);
-                },
-              ),
-            ),
-            ListenableBuilder(
-              listenable: controller,
-              builder: (context, _) {
-                if (controller.isLoading && controller.courses.isEmpty) {
-                  return const SliverFillRemaining(
+          body: RefreshIndicator(
+            onRefresh: controller.search,
+            child: CustomScrollView(
+              slivers: [
+                // 2. 內部回歸乾淨的 Sliver 結構，不再需要一堆雜亂的局部 Builder 和 Adapter
+                SliverToBoxAdapter(child: _SearchPanel(controller: controller)),
+                SliverToBoxAdapter(
+                  child: _ResultSummary(controller: controller),
+                ),
+                if (controller.isLoading && controller.courses.isEmpty)
+                  const SliverFillRemaining(
                     hasScrollBody: false,
                     child: Center(child: CircularProgressIndicator()),
-                  );
-                }
-                if (controller.error != null && controller.courses.isEmpty) {
-                  return SliverFillRemaining(
+                  )
+                else if (controller.error != null && controller.courses.isEmpty)
+                  SliverFillRemaining(
                     hasScrollBody: false,
                     child: _ErrorState(
                       onRetry: () => unawaited(controller.search()),
                     ),
-                  );
-                }
-                if (controller.courses.isEmpty) {
-                  return const SliverFillRemaining(
+                  )
+                else if (controller.courses.isEmpty)
+                  const SliverFillRemaining(
                     hasScrollBody: false,
                     child: _EmptyState(),
-                  );
-                }
-
-                return SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(
-                    _horizontalPadding,
-                    4.0,
-                    _horizontalPadding,
-                    20.0,
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(
+                      _horizontalPadding,
+                      4.0,
+                      _horizontalPadding,
+                      20.0,
+                    ),
+                    sliver: SliverList.separated(
+                      itemCount: controller.courses.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 8.0),
+                      itemBuilder: (context, index) {
+                        final course = controller.courses[index];
+                        return _CourseListTile(
+                          course: course,
+                          onTap: () => _showCourseDetails(context, course),
+                        );
+                      },
+                    ),
                   ),
-                  sliver: SliverList.separated(
-                    itemCount: controller.courses.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 8.0),
-                    itemBuilder: (context, index) {
-                      final course = controller.courses[index];
-                      return _CourseListTile(
-                        course: course,
-                        onTap: () => _showCourseDetails(context, course),
-                      );
-                    },
-                  ),
-                );
-              },
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -137,7 +119,6 @@ class _CourseSelectionPageContent extends StatelessWidget {
     );
   }
 }
-
 class _SearchPanel extends StatelessWidget {
   const _SearchPanel({required this.controller});
 
@@ -205,7 +186,7 @@ class _SearchPanel extends StatelessWidget {
               for (final credit in _creditOptions)
                 FilterChip(
                   label: Text('$credit 學分'),
-                  selected: controller.credits.contains(credit),
+                  selected: controller.hasCredit(credit),
                   onSelected: controller.isLoading
                       ? null
                       : (_) => unawaited(controller.toggleCredit(credit)),
