@@ -63,6 +63,99 @@ void main() {
     expect(repository.requests.last.keyword, '資料結構');
   });
 
+  testWidgets('CourseSelectionPage switches to the old timetable from menu', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CourseSelectionPage(
+          controller: CourseSelectionController(
+            repository: FakeCourseRepository(),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('切換課程工具'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('課表'));
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('重新整理'), findsNothing);
+    expect(find.text('計算機概論'), findsOneWidget);
+    expect(find.text('微積分 I'), findsOneWidget);
+  });
+
+  testWidgets('CourseSelectionPage opens AI course helper chat from menu', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CourseSelectionPage(
+          controller: CourseSelectionController(
+            repository: FakeCourseRepository(),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('切換課程工具'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('AI 選課小幫手'));
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('重新整理'), findsNothing);
+    expect(find.textContaining('我是 AI 選課小幫手'), findsOneWidget);
+  });
+
+  testWidgets('CourseSelectionPage syncs selected course to timetable', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CourseSelectionPage(
+          controller: CourseSelectionController(
+            repository: FakeCourseRepository(
+              result: const CourseSearchResult(
+                totalCount: 1,
+                courses: [
+                  CourseItem(
+                    serialNo: '12345',
+                    classNo: 'CS101',
+                    title: '程式設計',
+                    credit: 3,
+                    teachers: ['王小明'],
+                    classTimes: ['1-1', '1-2'],
+                    courseType: 'REQUIRED',
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final syncButton = find.widgetWithText(FilledButton, '加入');
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -220));
+    await tester.pumpAndSettle();
+    await tester.tap(syncButton);
+    await tester.pumpAndSettle();
+
+    expect(find.text('已加入'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('切換課程工具'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('課表'));
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('重新整理'), findsNothing);
+    expect(find.text('程式設計'), findsOneWidget);
+  });
+
   testWidgets('CourseSelectionPage applies filter chips', (tester) async {
     final repository = FakeCourseRepository();
 
