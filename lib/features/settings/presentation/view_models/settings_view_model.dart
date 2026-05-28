@@ -34,6 +34,10 @@ class SettingsViewModel extends ChangeNotifier {
     _appThemeController.toggle();
   }
 
+  void setDarkMode(bool enabled) {
+    _appThemeController.setDarkMode(enabled);
+  }
+
   void updateBackendBaseUrl(String value) {
     if (_appBackendConfigController.setBaseUrl(value)) {
       _backendBaseUrlError = null;

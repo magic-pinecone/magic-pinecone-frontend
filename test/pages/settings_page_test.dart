@@ -8,6 +8,39 @@ import 'package:prototype/features/settings/presentation/settings_page.dart';
 import 'package:prototype/features/settings/presentation/view_models/settings_view_model.dart';
 
 void main() {
+  testWidgets('SettingsPage reflects system dark mode on first render', (
+    tester,
+  ) async {
+    final themeController = AppThemeController();
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData.light(),
+        darkTheme: ThemeData.dark(),
+        themeMode: themeController.value,
+        home: SettingsPage(
+          viewModel: SettingsViewModel(
+            appThemeController: themeController,
+            appBackendConfigController: AppBackendConfigController(),
+            repository: const FakeSettingsRepository(),
+          ),
+        ),
+      ),
+    );
+
+    final tile = tester.widget<SwitchListTile>(find.byType(SwitchListTile));
+
+    expect(tile.value, isTrue);
+    expect(find.text('開啟'), findsOneWidget);
+
+    await tester.tap(find.byType(SwitchListTile));
+    await tester.pump();
+
+    expect(themeController.value, ThemeMode.light);
+  });
+
   testWidgets('SettingsPage renders theme and project info sections', (
     tester,
   ) async {

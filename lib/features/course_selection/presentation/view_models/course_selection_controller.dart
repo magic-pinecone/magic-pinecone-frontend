@@ -27,6 +27,7 @@ class CourseSelectionController extends ChangeNotifier {
   String get keyword => _keyword;
   String? get courseType => _courseType;
   List<int> get credits => List.unmodifiable(_sortedCredits);
+  bool hasCredit(int credit) => _credits.contains(credit);
   bool? get hasVacancy => _hasVacancy;
   List<String> get classTimes => List.unmodifiable(_sortedClassTimes);
   bool get hasActiveFilter =>

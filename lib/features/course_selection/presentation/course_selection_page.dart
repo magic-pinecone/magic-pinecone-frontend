@@ -185,7 +185,7 @@ class _SearchPanel extends StatelessWidget {
               for (final credit in _creditOptions)
                 FilterChip(
                   label: Text('$credit 學分'),
-                  selected: controller.credits.contains(credit),
+                  selected: controller.hasCredit(credit),
                   onSelected: controller.isLoading
                       ? null
                       : (_) => unawaited(controller.toggleCredit(credit)),
@@ -306,12 +306,13 @@ class _ClassTimePickerSheetState extends State<_ClassTimePickerSheet> {
                   ),
                   ListenableBuilder(
                     listenable: controller,
-                    builder: (context, _) {
+                    child: const Text('清除'),
+                    builder: (context, child) {
                       return TextButton(
                         onPressed: controller.classTimes.isEmpty
                             ? null
                             : () => unawaited(controller.clearClassTimes()),
-                        child: const Text('清除'),
+                        child: child!,
                       );
                     },
                   ),

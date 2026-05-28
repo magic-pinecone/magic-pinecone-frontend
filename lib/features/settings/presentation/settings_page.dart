@@ -35,7 +35,14 @@ class _SettingsPageContent extends StatelessWidget {
       ),
       body: ListenableBuilder(
         listenable: viewModel,
-        builder: (context, _) {
+        child: _ProjectInfoSection(viewModel: viewModel),
+        builder: (context, child) {
+          final isDarkMode = switch (viewModel.themeMode) {
+            ThemeMode.dark => true,
+            ThemeMode.light => false,
+            ThemeMode.system => Theme.of(context).brightness == Brightness.dark,
+          };
+
           return ListView(
             padding: const EdgeInsets.fromLTRB(16.0, 12.0, 16.0, 24.0),
             children: [
@@ -52,12 +59,12 @@ class _SettingsPageContent extends StatelessWidget {
                 margin: EdgeInsets.zero,
                 child: SwitchListTile(
                   title: const Text('深色模式'),
-                  subtitle: Text(viewModel.isDarkMode ? '開啟' : '關閉'),
+                  subtitle: Text(isDarkMode ? '開啟' : '關閉'),
                   secondary: Icon(
-                    viewModel.isDarkMode ? Icons.dark_mode : Icons.light_mode,
+                    isDarkMode ? Icons.dark_mode : Icons.light_mode,
                   ),
-                  value: viewModel.isDarkMode,
-                  onChanged: (_) => viewModel.toggleTheme(),
+                  value: isDarkMode,
+                  onChanged: viewModel.setDarkMode,
                 ),
               ),
               const SizedBox(height: 20.0),
@@ -72,66 +79,78 @@ class _SettingsPageContent extends StatelessWidget {
               const SizedBox(height: 10.0),
               _BackendEndpointCard(viewModel: viewModel),
               const SizedBox(height: 20.0),
-              Text(
-                '專案資訊',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 10.0),
-              Card(
-                margin: EdgeInsets.zero,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.info_outline, color: colorScheme.primary),
-                          const SizedBox(width: 10.0),
-                          Expanded(
-                            child: Text(
-                              viewModel.appName,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            'v${viewModel.appVersion}',
-                            style: TextStyle(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12.0),
-                      Text(
-                        viewModel.summary,
-                        style: TextStyle(color: colorScheme.onSurfaceVariant),
-                      ),
-                      const SizedBox(height: 16.0),
-                      for (
-                        var i = 0;
-                        i < viewModel.statusItems.length;
-                        i++
-                      ) ...[
-                        _StatusRow(item: viewModel.statusItems[i]),
-                        if (i < viewModel.statusItems.length - 1)
-                          const SizedBox(height: 8.0),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
+              child!,
             ],
           );
         },
       ),
+    );
+  }
+}
+
+class _ProjectInfoSection extends StatelessWidget {
+  const _ProjectInfoSection({required this.viewModel});
+
+  final SettingsViewModel viewModel;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '專案資訊',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 10.0),
+        Card(
+          margin: EdgeInsets.zero,
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.info_outline, color: colorScheme.primary),
+                    const SizedBox(width: 10.0),
+                    Expanded(
+                      child: Text(
+                        viewModel.appName,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      'v${viewModel.appVersion}',
+                      style: TextStyle(color: colorScheme.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12.0),
+                Text(
+                  viewModel.summary,
+                  style: TextStyle(color: colorScheme.onSurfaceVariant),
+                ),
+                const SizedBox(height: 16.0),
+                for (var i = 0; i < viewModel.statusItems.length; i++) ...[
+                  _StatusRow(item: viewModel.statusItems[i]),
+                  if (i < viewModel.statusItems.length - 1)
+                    const SizedBox(height: 8.0),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
