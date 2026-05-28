@@ -7,6 +7,10 @@ class AppThemeController extends ValueNotifier<ThemeMode> {
     value = value == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
   }
 
+  void setDarkMode(bool enabled) {
+    value = enabled ? ThemeMode.dark : ThemeMode.light;
+  }
+
   bool get isDark => value == ThemeMode.dark;
 }
 

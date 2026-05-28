@@ -25,6 +25,11 @@ void main() {
 
     expect(viewModel.isDarkMode, isTrue);
 
+    viewModel.setDarkMode(false);
+
+    expect(themeController.value, ThemeMode.light);
+    expect(viewModel.isDarkMode, isFalse);
+
     viewModel.updateBackendBaseUrl('http://127.0.0.1:8000/');
 
     expect(viewModel.backendBaseUrl, 'http://127.0.0.1:8000');

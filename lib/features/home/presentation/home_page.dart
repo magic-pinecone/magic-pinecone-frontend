@@ -100,17 +100,14 @@ class HomePage extends StatelessWidget {
               crossAxisSpacing: 12.0,
               childAspectRatio: 0.85,
             ),
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final item = shortcutItems[index];
-                return PortalShortcutButton(
-                  icon: item.icon,
-                  label: item.label,
-                  color: item.color,
-                );
-              },
-              childCount: shortcutItems.length,
-            ),
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final item = shortcutItems[index];
+              return PortalShortcutButton(
+                icon: item.icon,
+                label: item.label,
+                color: item.color,
+              );
+            }, childCount: shortcutItems.length),
           ),
         ),
       ],
@@ -151,13 +148,10 @@ class HomePage extends StatelessWidget {
             vertical: 4.0,
           ),
           sliver: SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final row = quickActionRows[index];
-                return _buildQuickButtonRow(context, row);
-              },
-              childCount: quickActionRows.length,
-            ),
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final row = quickActionRows[index];
+              return _buildQuickButtonRow(context, row);
+            }, childCount: quickActionRows.length),
           ),
         ),
       ],
