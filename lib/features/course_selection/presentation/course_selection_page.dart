@@ -34,7 +34,6 @@ class _CourseSelectionPageContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 1. 讓 ListenableBuilder 回到最外層包裹整個 Scaffold，徹底解除 Sliver 閃退危機
     return ListenableBuilder(
       listenable: controller,
       builder: (context, _) {
@@ -58,7 +57,6 @@ class _CourseSelectionPageContent extends StatelessWidget {
             onRefresh: controller.search,
             child: CustomScrollView(
               slivers: [
-                // 2. 內部回歸乾淨的 Sliver 結構，不再需要一堆雜亂的局部 Builder 和 Adapter
                 SliverToBoxAdapter(child: _SearchPanel(controller: controller)),
                 SliverToBoxAdapter(
                   child: _ResultSummary(controller: controller),
@@ -119,6 +117,7 @@ class _CourseSelectionPageContent extends StatelessWidget {
     );
   }
 }
+
 class _SearchPanel extends StatelessWidget {
   const _SearchPanel({required this.controller});
 
@@ -307,12 +306,13 @@ class _ClassTimePickerSheetState extends State<_ClassTimePickerSheet> {
                   ),
                   ListenableBuilder(
                     listenable: controller,
-                    builder: (context, _) {
+                    child: const Text('清除'),
+                    builder: (context, child) {
                       return TextButton(
                         onPressed: controller.classTimes.isEmpty
                             ? null
                             : () => unawaited(controller.clearClassTimes()),
-                        child: const Text('清除'),
+                        child: child!,
                       );
                     },
                   ),
