@@ -59,6 +59,10 @@ class _CourseSelectionPageContent extends StatefulWidget {
 class _CourseSelectionPageContentState
     extends State<_CourseSelectionPageContent> {
   static const _horizontalPadding = 16.0;
+  static const _wideLayoutMinWidth = 900.0;
+  static const _maxSearchContentWidth = 1180.0;
+  static const _maxSheetWidth = 640.0;
+  static const _courseGridMaxExtent = 560.0;
 
   final CourseScheduleRepository _scheduleRepository =
       const StaticCourseScheduleRepository();
@@ -146,93 +150,15 @@ class _CourseSelectionPageContentState
             ),
           ),
           body: switch (_selectedView) {
-            _CourseSelectionView.search => RefreshIndicator(
-              onRefresh: controller.search,
-              child: CustomScrollView(
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: _SearchPanel(controller: controller),
-                  ),
-                  SliverToBoxAdapter(
-                    child: _ResultSummary(
-                      controller: controller,
-                      displayedCourseCount: displayedCourses.length,
-                      localFilterActive: _onlyShowTimetableCompatibleCourses,
-                      onFilterPressed: () => _showLocalFilterSheet(context),
-                    ),
-                  ),
-                  if (controller.isLoading && controller.courses.isEmpty)
-                    const SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: Center(child: CircularProgressIndicator()),
-                    )
-                  else if (controller.error != null &&
-                      controller.courses.isEmpty)
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: _ErrorState(
-                        onRetry: () => unawaited(controller.search()),
-                      ),
-                    )
-                  else if (displayedCourses.isEmpty)
-                    const SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: _EmptyState(),
-                    )
-                  else
-                    SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(
-                        _horizontalPadding,
-                        4.0,
-                        _horizontalPadding,
-                        20.0,
-                      ),
-                      sliver: SliverList.separated(
-                        itemCount: displayedCourses.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 8.0),
-                        itemBuilder: (context, index) {
-                          final course = displayedCourses[index];
-                          return _CourseListTile(
-                            course: course,
-                            isSelected: _isCourseSelected(course),
-                            canSyncToTimetable: _canSyncToTimetable(course),
-                            onTap: () => _showCourseDetails(context, course),
-                            onSyncToggle: () => _toggleCourseSelection(course),
-                          );
-                        },
-                      ),
-                    ),
-                  if (controller.courses.isNotEmpty &&
-                      controller.hasMoreCourses)
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                          _horizontalPadding,
-                          4.0,
-                          _horizontalPadding,
-                          24.0,
-                        ),
-                        child: OutlinedButton.icon(
-                          onPressed:
-                              controller.isLoading || controller.isLoadingMore
-                              ? null
-                              : () => unawaited(controller.loadMore()),
-                          icon: controller.isLoadingMore
-                              ? const SizedBox.square(
-                                  dimension: 18.0,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.0,
-                                  ),
-                                )
-                              : const Icon(Icons.expand_more),
-                          label: Text(
-                            controller.isLoadingMore ? '載入中' : '載入更多',
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
+            _CourseSelectionView.search => _CourseSearchView(
+              controller: controller,
+              displayedCourses: displayedCourses,
+              isCourseSelected: _isCourseSelected,
+              canSyncToTimetable: _canSyncToTimetable,
+              onCourseTap: (course) => _showCourseDetails(context, course),
+              onCourseSyncToggle: _toggleCourseSelection,
+              onLocalFilterPressed: () => _showLocalFilterSheet(context),
+              localFilterActive: _onlyShowTimetableCompatibleCourses,
             ),
             _CourseSelectionView.timetable => _CourseTimetableView(
               snapshot: _syncedScheduleSnapshot(),
@@ -431,6 +357,218 @@ class _CourseTimeSlot {
 
   final int dayIndex;
   final int periodIndex;
+}
+
+class _CourseSearchView extends StatelessWidget {
+  const _CourseSearchView({
+    required this.controller,
+    required this.displayedCourses,
+    required this.isCourseSelected,
+    required this.canSyncToTimetable,
+    required this.onCourseTap,
+    required this.onCourseSyncToggle,
+    required this.onLocalFilterPressed,
+    required this.localFilterActive,
+  });
+
+  final CourseSelectionController controller;
+  final List<CourseItem> displayedCourses;
+  final bool Function(CourseItem course) isCourseSelected;
+  final bool Function(CourseItem course) canSyncToTimetable;
+  final ValueChanged<CourseItem> onCourseTap;
+  final ValueChanged<CourseItem> onCourseSyncToggle;
+  final VoidCallback onLocalFilterPressed;
+  final bool localFilterActive;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useGrid =
+            constraints.maxWidth >=
+            _CourseSelectionPageContentState._wideLayoutMinWidth;
+
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: _CourseSelectionPageContentState._maxSearchContentWidth,
+            ),
+            child: RefreshIndicator(
+              onRefresh: controller.search,
+              child: CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: _SearchPanel(controller: controller),
+                  ),
+                  SliverToBoxAdapter(
+                    child: _ResultSummary(
+                      controller: controller,
+                      displayedCourseCount: displayedCourses.length,
+                      localFilterActive: localFilterActive,
+                      onFilterPressed: onLocalFilterPressed,
+                    ),
+                  ),
+                  if (controller.isLoading && controller.courses.isEmpty)
+                    const SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if (controller.error != null &&
+                      controller.courses.isEmpty)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: _ErrorState(
+                        onRetry: () => unawaited(controller.search()),
+                      ),
+                    )
+                  else if (displayedCourses.isEmpty)
+                    const SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: _EmptyState(),
+                    )
+                  else if (useGrid)
+                    _CourseResultGrid(
+                      courses: displayedCourses,
+                      isCourseSelected: isCourseSelected,
+                      canSyncToTimetable: canSyncToTimetable,
+                      onCourseTap: onCourseTap,
+                      onCourseSyncToggle: onCourseSyncToggle,
+                    )
+                  else
+                    _CourseResultList(
+                      courses: displayedCourses,
+                      isCourseSelected: isCourseSelected,
+                      canSyncToTimetable: canSyncToTimetable,
+                      onCourseTap: onCourseTap,
+                      onCourseSyncToggle: onCourseSyncToggle,
+                    ),
+                  if (controller.courses.isNotEmpty &&
+                      controller.hasMoreCourses)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          _CourseSelectionPageContentState._horizontalPadding,
+                          4.0,
+                          _CourseSelectionPageContentState._horizontalPadding,
+                          24.0,
+                        ),
+                        child: OutlinedButton.icon(
+                          onPressed:
+                              controller.isLoading || controller.isLoadingMore
+                              ? null
+                              : () => unawaited(controller.loadMore()),
+                          icon: controller.isLoadingMore
+                              ? const SizedBox.square(
+                                  dimension: 18.0,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.0,
+                                  ),
+                                )
+                              : const Icon(Icons.expand_more),
+                          label: Text(
+                            controller.isLoadingMore ? '載入中' : '載入更多',
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _CourseResultList extends StatelessWidget {
+  const _CourseResultList({
+    required this.courses,
+    required this.isCourseSelected,
+    required this.canSyncToTimetable,
+    required this.onCourseTap,
+    required this.onCourseSyncToggle,
+  });
+
+  final List<CourseItem> courses;
+  final bool Function(CourseItem course) isCourseSelected;
+  final bool Function(CourseItem course) canSyncToTimetable;
+  final ValueChanged<CourseItem> onCourseTap;
+  final ValueChanged<CourseItem> onCourseSyncToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(
+        _CourseSelectionPageContentState._horizontalPadding,
+        4.0,
+        _CourseSelectionPageContentState._horizontalPadding,
+        20.0,
+      ),
+      sliver: SliverList.separated(
+        itemCount: courses.length,
+        separatorBuilder: (_, _) => const SizedBox(height: 8.0),
+        itemBuilder: (context, index) {
+          final course = courses[index];
+          return _CourseListTile(
+            course: course,
+            isSelected: isCourseSelected(course),
+            canSyncToTimetable: canSyncToTimetable(course),
+            onTap: () => onCourseTap(course),
+            onSyncToggle: () => onCourseSyncToggle(course),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _CourseResultGrid extends StatelessWidget {
+  const _CourseResultGrid({
+    required this.courses,
+    required this.isCourseSelected,
+    required this.canSyncToTimetable,
+    required this.onCourseTap,
+    required this.onCourseSyncToggle,
+  });
+
+  final List<CourseItem> courses;
+  final bool Function(CourseItem course) isCourseSelected;
+  final bool Function(CourseItem course) canSyncToTimetable;
+  final ValueChanged<CourseItem> onCourseTap;
+  final ValueChanged<CourseItem> onCourseSyncToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(
+        _CourseSelectionPageContentState._horizontalPadding,
+        4.0,
+        _CourseSelectionPageContentState._horizontalPadding,
+        20.0,
+      ),
+      sliver: SliverGrid.builder(
+        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent:
+              _CourseSelectionPageContentState._courseGridMaxExtent,
+          mainAxisExtent: 178.0,
+          mainAxisSpacing: 8.0,
+          crossAxisSpacing: 8.0,
+        ),
+        itemCount: courses.length,
+        itemBuilder: (context, index) {
+          final course = courses[index];
+          return _CourseListTile(
+            course: course,
+            isSelected: isCourseSelected(course),
+            canSyncToTimetable: canSyncToTimetable(course),
+            onTap: () => onCourseTap(course),
+            onSyncToggle: () => onCourseSyncToggle(course),
+          );
+        },
+      ),
+    );
+  }
 }
 
 class _CourseHelperChatView extends StatelessWidget {
@@ -716,40 +854,50 @@ class _ScheduledCourseDetailsSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20.0, 8.0, 20.0, 24.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              course.name,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: _CourseSelectionPageContentState._maxSheetWidth,
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20.0, 8.0, 20.0, 24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  course.name,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16.0),
+                _CourseDetailRow(
+                  icon: Icons.category_outlined,
+                  label: '類型',
+                  value: course.category,
+                ),
+                _CourseDetailRow(
+                  icon: Icons.place_outlined,
+                  label: '地點',
+                  value: course.location,
+                ),
+                _CourseDetailRow(
+                  icon: Icons.schedule,
+                  label: '節數',
+                  value: '${course.length} 節',
+                ),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('關閉'),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16.0),
-            _CourseDetailRow(
-              icon: Icons.category_outlined,
-              label: '類型',
-              value: course.category,
-            ),
-            _CourseDetailRow(
-              icon: Icons.place_outlined,
-              label: '地點',
-              value: course.location,
-            ),
-            _CourseDetailRow(
-              icon: Icons.schedule,
-              label: '節數',
-              value: '${course.length} 節',
-            ),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('關閉'),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -793,19 +941,23 @@ class _SearchPanelState extends State<_SearchPanel> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SearchBar(
-            controller: _keywordController,
-            hintText: '搜尋課程名稱',
-            leading: const Icon(Icons.search),
-            trailing: [
-              IconButton(
-                tooltip: '搜尋',
-                onPressed: controller.isLoading ? null : _applyTextFilters,
-                icon: const Icon(Icons.arrow_forward),
-              ),
-            ],
-            enabled: !controller.isLoading,
-            onSubmitted: (_) => _applyTextFilters(),
+          SizedBox(
+            width: double.infinity,
+            child: SearchBar(
+              controller: _keywordController,
+              constraints: const BoxConstraints(minHeight: 56.0),
+              hintText: '搜尋課程名稱',
+              leading: const Icon(Icons.search),
+              trailing: [
+                IconButton(
+                  tooltip: '搜尋',
+                  onPressed: controller.isLoading ? null : _applyTextFilters,
+                  icon: const Icon(Icons.arrow_forward),
+                ),
+              ],
+              enabled: !controller.isLoading,
+              onSubmitted: (_) => _applyTextFilters(),
+            ),
           ),
           if (controller.hasActiveFilter) ...[
             const SizedBox(height: 10.0),
@@ -934,88 +1086,97 @@ class _AdvancedFilterSheetState extends State<_AdvancedFilterSheet> {
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
 
     return SafeArea(
-      child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 16.0 + bottomInset),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: _CourseSelectionPageContentState._maxSheetWidth,
+          ),
+          child: SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 16.0 + bottomInset),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Text(
-                    '進階查詢',
-                    style: Theme.of(context).textTheme.titleLarge,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '進階查詢',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: '關閉',
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12.0),
+                _AdvancedSearchFields(
+                  enabled: !controller.isLoading,
+                  classNoController: _classNoController,
+                  serialNoController: _serialNoController,
+                  departmentNameController: _departmentNameController,
+                  collegeNameController: _collegeNameController,
+                  onSubmitted: _applyFilters,
+                ),
+                const SizedBox(height: 12.0),
+                Text('課程類型', style: Theme.of(context).textTheme.labelLarge),
+                const SizedBox(height: 8.0),
+                _DraftCourseTypeSegmentedControl(
+                  value: _courseType,
+                  enabled: !controller.isLoading,
+                  onChanged: (value) => setState(() => _courseType = value),
+                ),
+                const SizedBox(height: 12.0),
+                Text('學分', style: Theme.of(context).textTheme.labelLarge),
+                const SizedBox(height: 8.0),
+                _DraftCreditFilterGrid(
+                  selectedCredits: _credits,
+                  enabled: !controller.isLoading,
+                  onToggle: _toggleCredit,
+                ),
+                const SizedBox(height: 12.0),
+                Text('名額與時段', style: Theme.of(context).textTheme.labelLarge),
+                const SizedBox(height: 8.0),
+                _DraftVacancySegmentedControl(
+                  value: _hasVacancy,
+                  enabled: !controller.isLoading,
+                  onChanged: (value) => setState(() => _hasVacancy = value),
+                ),
+                const SizedBox(height: 8.0),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: controller.isLoading
+                        ? null
+                        : _showClassTimePicker,
+                    icon: const Icon(Icons.schedule_outlined),
+                    label: Text(_classTimeButtonText),
                   ),
                 ),
-                IconButton(
-                  tooltip: '關閉',
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close),
+                const SizedBox(height: 12.0),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: controller.isLoading ? null : _applyFilters,
+                        icon: const Icon(Icons.tune),
+                        label: const Text('套用查詢'),
+                      ),
+                    ),
+                    const SizedBox(width: 8.0),
+                    OutlinedButton.icon(
+                      onPressed: controller.isLoading ? null : _clearFilters,
+                      icon: const Icon(Icons.close),
+                      label: const Text('清除'),
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 12.0),
-            _AdvancedSearchFields(
-              enabled: !controller.isLoading,
-              classNoController: _classNoController,
-              serialNoController: _serialNoController,
-              departmentNameController: _departmentNameController,
-              collegeNameController: _collegeNameController,
-              onSubmitted: _applyFilters,
-            ),
-            const SizedBox(height: 12.0),
-            Text('課程類型', style: Theme.of(context).textTheme.labelLarge),
-            const SizedBox(height: 8.0),
-            _DraftCourseTypeSegmentedControl(
-              value: _courseType,
-              enabled: !controller.isLoading,
-              onChanged: (value) => setState(() => _courseType = value),
-            ),
-            const SizedBox(height: 12.0),
-            Text('學分', style: Theme.of(context).textTheme.labelLarge),
-            const SizedBox(height: 8.0),
-            _DraftCreditFilterGrid(
-              selectedCredits: _credits,
-              enabled: !controller.isLoading,
-              onToggle: _toggleCredit,
-            ),
-            const SizedBox(height: 12.0),
-            Text('名額與時段', style: Theme.of(context).textTheme.labelLarge),
-            const SizedBox(height: 8.0),
-            _DraftVacancySegmentedControl(
-              value: _hasVacancy,
-              enabled: !controller.isLoading,
-              onChanged: (value) => setState(() => _hasVacancy = value),
-            ),
-            const SizedBox(height: 8.0),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: controller.isLoading ? null : _showClassTimePicker,
-                icon: const Icon(Icons.schedule_outlined),
-                label: Text(_classTimeButtonText),
-              ),
-            ),
-            const SizedBox(height: 12.0),
-            Row(
-              children: [
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: controller.isLoading ? null : _applyFilters,
-                    icon: const Icon(Icons.tune),
-                    label: const Text('套用查詢'),
-                  ),
-                ),
-                const SizedBox(width: 8.0),
-                OutlinedButton.icon(
-                  onPressed: controller.isLoading ? null : _clearFilters,
-                  icon: const Icon(Icons.close),
-                  label: const Text('清除'),
-                ),
-              ],
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -1361,58 +1522,65 @@ class _DraftClassTimePickerSheetState
     final visibleDays = _weekDays.take(_visibleDayCount).toList();
 
     return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 16.0 + bottomInset),
-        child: SizedBox(
-          height: MediaQuery.sizeOf(context).height * 0.72,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: _CourseSelectionPageContentState._maxSheetWidth,
+          ),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 16.0 + bottomInset),
+            child: SizedBox(
+              height: MediaQuery.sizeOf(context).height * 0.72,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '上課時段',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: _selectedClassTimes.isEmpty
+                            ? null
+                            : () {
+                                setState(_selectedClassTimes.clear);
+                              },
+                        child: const Text('清除'),
+                      ),
+                      TextButton(
+                        onPressed: () => _applySelection(context),
+                        child: const Text('套用'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12.0),
+                  SegmentedButton<int>(
+                    showSelectedIcon: false,
+                    segments: const [
+                      ButtonSegment(value: 5, label: Text('平日')),
+                      ButtonSegment(value: 7, label: Text('全週')),
+                    ],
+                    selected: {_visibleDayCount},
+                    onSelectionChanged: (values) {
+                      setState(() => _visibleDayCount = values.single);
+                    },
+                  ),
+                  const SizedBox(height: 12.0),
                   Expanded(
-                    child: Text(
-                      '上課時段',
-                      style: Theme.of(context).textTheme.titleLarge,
+                    child: _ClassTimeGrid(
+                      days: visibleDays,
+                      periods: _periods,
+                      selectedValues: _selectedClassTimes,
+                      enabled: true,
+                      onToggle: _toggleClassTime,
                     ),
                   ),
-                  TextButton(
-                    onPressed: _selectedClassTimes.isEmpty
-                        ? null
-                        : () {
-                            setState(_selectedClassTimes.clear);
-                          },
-                    child: const Text('清除'),
-                  ),
-                  TextButton(
-                    onPressed: () => _applySelection(context),
-                    child: const Text('套用'),
-                  ),
                 ],
               ),
-              const SizedBox(height: 12.0),
-              SegmentedButton<int>(
-                showSelectedIcon: false,
-                segments: const [
-                  ButtonSegment(value: 5, label: Text('平日')),
-                  ButtonSegment(value: 7, label: Text('全週')),
-                ],
-                selected: {_visibleDayCount},
-                onSelectionChanged: (values) {
-                  setState(() => _visibleDayCount = values.single);
-                },
-              ),
-              const SizedBox(height: 12.0),
-              Expanded(
-                child: _ClassTimeGrid(
-                  days: visibleDays,
-                  periods: _periods,
-                  selectedValues: _selectedClassTimes,
-                  enabled: true,
-                  onToggle: _toggleClassTime,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -1712,35 +1880,42 @@ class _LocalCourseFilterSheetState extends State<_LocalCourseFilterSheet> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 20.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('篩選', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8.0),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              secondary: const Icon(Icons.event_available_outlined),
-              title: const Text('只顯示可加入目前課表的課程'),
-              value: _onlyShowTimetableCompatibleCourses,
-              onChanged: (value) {
-                setState(() => _onlyShowTimetableCompatibleCourses = value);
-                widget.onOnlyShowTimetableCompatibleCoursesChanged(value);
-              },
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: _CourseSelectionPageContentState._maxSheetWidth,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('篩選', style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 8.0),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  secondary: const Icon(Icons.event_available_outlined),
+                  title: const Text('只顯示可加入目前課表的課程'),
+                  value: _onlyShowTimetableCompatibleCourses,
+                  onChanged: (value) {
+                    setState(() => _onlyShowTimetableCompatibleCourses = value);
+                    widget.onOnlyShowTimetableCompatibleCoursesChanged(value);
+                  },
+                ),
+                const SizedBox(height: 8.0),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () => Navigator.of(
+                      context,
+                    ).pop(_onlyShowTimetableCompatibleCourses),
+                    child: const Text('完成'),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 8.0),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: () => Navigator.of(
-                  context,
-                ).pop(_onlyShowTimetableCompatibleCourses),
-                child: const Text('完成'),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

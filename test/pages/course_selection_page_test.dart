@@ -48,6 +48,50 @@ void main() {
     expect(find.text('顯示 1 / 1 門課程'), findsOneWidget);
   });
 
+  testWidgets('CourseSelectionPage uses a result grid on wide screens', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CourseSelectionPage(
+          controller: CourseSelectionController(
+            repository: FakeCourseRepository(
+              result: const CourseSearchResult(
+                totalCount: 2,
+                courses: [
+                  CourseItem(
+                    serialNo: '12345',
+                    classNo: 'CS101',
+                    title: '程式設計',
+                    credit: 3,
+                    teachers: ['王小明'],
+                    classTimes: ['1-1'],
+                  ),
+                  CourseItem(
+                    serialNo: '12346',
+                    classNo: 'CS102',
+                    title: '資料結構',
+                    credit: 3,
+                    teachers: ['王小明'],
+                    classTimes: ['1-2'],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SliverGrid), findsOneWidget);
+    expect(find.text('程式設計'), findsOneWidget);
+    expect(find.text('資料結構'), findsOneWidget);
+  });
+
   testWidgets('CourseSelectionPage shows drawer menu at tab root', (
     tester,
   ) async {
