@@ -121,6 +121,31 @@ class CourseSelectionController extends ChangeNotifier {
     }
   }
 
+  Future<void> applyFilters({
+    required String classNo,
+    required String serialNo,
+    required String departmentName,
+    required String collegeName,
+    required String? courseType,
+    required Iterable<int> credits,
+    required bool? hasVacancy,
+    required Iterable<String> classTimes,
+  }) async {
+    _classNo = classNo.trim();
+    _serialNo = serialNo.trim();
+    _departmentName = departmentName.trim();
+    _collegeName = collegeName.trim();
+    _courseType = courseType;
+    _credits
+      ..clear()
+      ..addAll(credits);
+    _hasVacancy = hasVacancy;
+    _classTimes
+      ..clear()
+      ..addAll(classTimes);
+    await search();
+  }
+
   Future<void> loadMore() async {
     if (_isLoading || _isLoadingMore || !hasMoreCourses) return;
 

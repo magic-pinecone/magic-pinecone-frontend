@@ -769,10 +769,6 @@ class _SearchPanel extends StatefulWidget {
 
 class _SearchPanelState extends State<_SearchPanel> {
   late final TextEditingController _keywordController;
-  late final TextEditingController _classNoController;
-  late final TextEditingController _serialNoController;
-  late final TextEditingController _departmentNameController;
-  late final TextEditingController _collegeNameController;
 
   CourseSelectionController get controller => widget.controller;
 
@@ -780,23 +776,11 @@ class _SearchPanelState extends State<_SearchPanel> {
   void initState() {
     super.initState();
     _keywordController = TextEditingController(text: controller.keyword);
-    _classNoController = TextEditingController(text: controller.classNo);
-    _serialNoController = TextEditingController(text: controller.serialNo);
-    _departmentNameController = TextEditingController(
-      text: controller.departmentName,
-    );
-    _collegeNameController = TextEditingController(
-      text: controller.collegeName,
-    );
   }
 
   @override
   void dispose() {
     _keywordController.dispose();
-    _classNoController.dispose();
-    _serialNoController.dispose();
-    _departmentNameController.dispose();
-    _collegeNameController.dispose();
     super.dispose();
   }
 
@@ -811,7 +795,7 @@ class _SearchPanelState extends State<_SearchPanel> {
         children: [
           SearchBar(
             controller: _keywordController,
-            hintText: '搜尋課名或關鍵字',
+            hintText: '搜尋課程名稱',
             leading: const Icon(Icons.search),
             trailing: [
               IconButton(
@@ -830,89 +814,28 @@ class _SearchPanelState extends State<_SearchPanel> {
               onClear: _clearFilters,
             ),
           ],
-          const SizedBox(height: 12.0),
-          ExpansionTile(
-            tilePadding: EdgeInsets.zero,
-            childrenPadding: EdgeInsets.zero,
-            shape: const Border(),
-            collapsedShape: const Border(),
-            title: Row(
-              children: [
-                Text('進階查詢', style: Theme.of(context).textTheme.labelLarge),
-                if (controller.activeFilterCount > 0) ...[
-                  const SizedBox(width: 8.0),
-                  Badge(
-                    label: Text(controller.activeFilterCount.toString()),
-                    backgroundColor: colorScheme.primary,
-                  ),
-                ],
-              ],
-            ),
-            children: [
-              const SizedBox(height: 8.0),
-              _AdvancedSearchFields(
-                enabled: !controller.isLoading,
-                classNoController: _classNoController,
-                serialNoController: _serialNoController,
-                departmentNameController: _departmentNameController,
-                collegeNameController: _collegeNameController,
-                onSubmitted: _applyTextFilters,
-              ),
-              const SizedBox(height: 12.0),
-              Text('課程類型', style: Theme.of(context).textTheme.labelLarge),
-              const SizedBox(height: 8.0),
-              _CourseTypeSegmentedControl(
-                controller: controller,
-                enabled: !controller.isLoading,
-              ),
-              const SizedBox(height: 12.0),
-              Text('學分', style: Theme.of(context).textTheme.labelLarge),
-              const SizedBox(height: 8.0),
-              _CreditFilterGrid(
-                controller: controller,
-                enabled: !controller.isLoading,
-              ),
-              const SizedBox(height: 12.0),
-              Text('名額與時段', style: Theme.of(context).textTheme.labelLarge),
-              const SizedBox(height: 8.0),
-              _VacancySegmentedControl(
-                controller: controller,
-                enabled: !controller.isLoading,
-              ),
-              const SizedBox(height: 8.0),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: controller.isLoading
-                      ? null
-                      : () => _showClassTimePicker(context),
-                  icon: const Icon(Icons.schedule_outlined),
-                  label: Text(_classTimeButtonText),
-                ),
-              ),
-              const SizedBox(height: 12.0),
-              Row(
+          const SizedBox(height: 10.0),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: controller.isLoading
+                  ? null
+                  : () => _showAdvancedFilterSheet(context),
+              icon: const Icon(Icons.tune),
+              label: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: controller.isLoading
-                          ? null
-                          : _applyTextFilters,
-                      icon: const Icon(Icons.tune),
-                      label: const Text('套用查詢'),
-                    ),
-                  ),
-                  if (controller.hasActiveFilter) ...[
+                  const Text('進階查詢'),
+                  if (_advancedFilterCount > 0) ...[
                     const SizedBox(width: 8.0),
-                    OutlinedButton.icon(
-                      onPressed: controller.isLoading ? null : _clearFilters,
-                      icon: const Icon(Icons.close),
-                      label: const Text('清除'),
+                    Badge(
+                      label: Text(_advancedFilterCount.toString()),
+                      backgroundColor: colorScheme.primary,
                     ),
                   ],
                 ],
               ),
-            ],
+            ),
           ),
           if (controller.error != null && controller.courses.isNotEmpty) ...[
             const SizedBox(height: 10.0),
@@ -924,42 +847,236 @@ class _SearchPanelState extends State<_SearchPanel> {
   }
 
   void _applyTextFilters() {
-    unawaited(
-      controller.search(
-        keyword: _keywordController.text,
-        classNo: _classNoController.text,
-        serialNo: _serialNoController.text,
-        departmentName: _departmentNameController.text,
-        collegeName: _collegeNameController.text,
-      ),
-    );
+    unawaited(controller.search(keyword: _keywordController.text));
   }
 
   void _clearFilters() {
     _keywordController.clear();
-    _classNoController.clear();
-    _serialNoController.clear();
-    _departmentNameController.clear();
-    _collegeNameController.clear();
     unawaited(controller.clearFilters());
   }
 
-  String get _classTimeButtonText {
-    final count = controller.classTimes.length;
-    if (count == 0) return '選擇上課時段';
-    return '已選 $count 個時段';
+  int get _advancedFilterCount {
+    return [
+      controller.classNo.isNotEmpty,
+      controller.serialNo.isNotEmpty,
+      controller.departmentName.isNotEmpty,
+      controller.collegeName.isNotEmpty,
+      controller.courseType != null,
+      controller.credits.isNotEmpty,
+      controller.hasVacancy != null,
+      controller.classTimes.isNotEmpty,
+    ].where((isActive) => isActive).length;
   }
 
-  void _showClassTimePicker(BuildContext context) {
+  void _showAdvancedFilterSheet(BuildContext context) {
     unawaited(
       showModalBottomSheet<void>(
         context: context,
         showDragHandle: true,
         isScrollControlled: true,
         builder: (context) {
-          return _ClassTimePickerSheet(controller: controller);
+          return _AdvancedFilterSheet(controller: controller);
         },
       ),
+    );
+  }
+}
+
+class _AdvancedFilterSheet extends StatefulWidget {
+  const _AdvancedFilterSheet({required this.controller});
+
+  final CourseSelectionController controller;
+
+  @override
+  State<_AdvancedFilterSheet> createState() => _AdvancedFilterSheetState();
+}
+
+class _AdvancedFilterSheetState extends State<_AdvancedFilterSheet> {
+  late final TextEditingController _classNoController;
+  late final TextEditingController _serialNoController;
+  late final TextEditingController _departmentNameController;
+  late final TextEditingController _collegeNameController;
+  late String? _courseType;
+  late final Set<int> _credits;
+  late bool? _hasVacancy;
+  late Set<String> _classTimes;
+
+  CourseSelectionController get controller => widget.controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _classNoController = TextEditingController(text: controller.classNo);
+    _serialNoController = TextEditingController(text: controller.serialNo);
+    _departmentNameController = TextEditingController(
+      text: controller.departmentName,
+    );
+    _collegeNameController = TextEditingController(
+      text: controller.collegeName,
+    );
+    _courseType = controller.courseType;
+    _credits = controller.credits.toSet();
+    _hasVacancy = controller.hasVacancy;
+    _classTimes = controller.classTimes.toSet();
+  }
+
+  @override
+  void dispose() {
+    _classNoController.dispose();
+    _serialNoController.dispose();
+    _departmentNameController.dispose();
+    _collegeNameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 16.0 + bottomInset),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '進階查詢',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                ),
+                IconButton(
+                  tooltip: '關閉',
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12.0),
+            _AdvancedSearchFields(
+              enabled: !controller.isLoading,
+              classNoController: _classNoController,
+              serialNoController: _serialNoController,
+              departmentNameController: _departmentNameController,
+              collegeNameController: _collegeNameController,
+              onSubmitted: _applyFilters,
+            ),
+            const SizedBox(height: 12.0),
+            Text('課程類型', style: Theme.of(context).textTheme.labelLarge),
+            const SizedBox(height: 8.0),
+            _DraftCourseTypeSegmentedControl(
+              value: _courseType,
+              enabled: !controller.isLoading,
+              onChanged: (value) => setState(() => _courseType = value),
+            ),
+            const SizedBox(height: 12.0),
+            Text('學分', style: Theme.of(context).textTheme.labelLarge),
+            const SizedBox(height: 8.0),
+            _DraftCreditFilterGrid(
+              selectedCredits: _credits,
+              enabled: !controller.isLoading,
+              onToggle: _toggleCredit,
+            ),
+            const SizedBox(height: 12.0),
+            Text('名額與時段', style: Theme.of(context).textTheme.labelLarge),
+            const SizedBox(height: 8.0),
+            _DraftVacancySegmentedControl(
+              value: _hasVacancy,
+              enabled: !controller.isLoading,
+              onChanged: (value) => setState(() => _hasVacancy = value),
+            ),
+            const SizedBox(height: 8.0),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: controller.isLoading ? null : _showClassTimePicker,
+                icon: const Icon(Icons.schedule_outlined),
+                label: Text(_classTimeButtonText),
+              ),
+            ),
+            const SizedBox(height: 12.0),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: controller.isLoading ? null : _applyFilters,
+                    icon: const Icon(Icons.tune),
+                    label: const Text('套用查詢'),
+                  ),
+                ),
+                const SizedBox(width: 8.0),
+                OutlinedButton.icon(
+                  onPressed: controller.isLoading ? null : _clearFilters,
+                  icon: const Icon(Icons.close),
+                  label: const Text('清除'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String get _classTimeButtonText {
+    final count = _classTimes.length;
+    if (count == 0) return '選擇上課時段';
+    return '已選 $count 個時段';
+  }
+
+  void _toggleCredit(int credit) {
+    setState(() {
+      if (!_credits.add(credit)) {
+        _credits.remove(credit);
+      }
+    });
+  }
+
+  Future<void> _showClassTimePicker() async {
+    final nextValues = await showModalBottomSheet<Set<String>>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (context) {
+        return _DraftClassTimePickerSheet(classTimes: _classTimes);
+      },
+    );
+    if (nextValues == null) return;
+    setState(() => _classTimes = nextValues);
+  }
+
+  void _clearFilters() {
+    _classNoController.clear();
+    _serialNoController.clear();
+    _departmentNameController.clear();
+    _collegeNameController.clear();
+    setState(() {
+      _courseType = null;
+      _credits.clear();
+      _hasVacancy = null;
+      _classTimes = {};
+    });
+  }
+
+  void _applyFilters() {
+    unawaited(
+      controller
+          .applyFilters(
+            classNo: _classNoController.text,
+            serialNo: _serialNoController.text,
+            departmentName: _departmentNameController.text,
+            collegeName: _collegeNameController.text,
+            courseType: _courseType,
+            credits: _credits,
+            hasVacancy: _hasVacancy,
+            classTimes: _classTimes,
+          )
+          .then((_) {
+            if (mounted) Navigator.of(context).pop();
+          }),
     );
   }
 }
@@ -1064,7 +1181,7 @@ class _AdvancedSearchFields extends StatelessWidget {
             controller: classNoController,
             enabled: enabled,
             label: '課號',
-            hintText: '例如 CS101',
+            hintText: 'LN1001-A',
             icon: Icons.tag_outlined,
             onSubmitted: onSubmitted,
           ),
@@ -1072,7 +1189,7 @@ class _AdvancedSearchFields extends StatelessWidget {
             controller: serialNoController,
             enabled: enabled,
             label: '流水號',
-            hintText: '五碼流水號',
+            hintText: '12345',
             icon: Icons.confirmation_number_outlined,
             onSubmitted: onSubmitted,
           ),
@@ -1080,7 +1197,7 @@ class _AdvancedSearchFields extends StatelessWidget {
             controller: departmentNameController,
             enabled: enabled,
             label: '系所',
-            hintText: '例如 資訊工程',
+            hintText: '資訊工程學系',
             icon: Icons.apartment_outlined,
             onSubmitted: onSubmitted,
           ),
@@ -1088,7 +1205,7 @@ class _AdvancedSearchFields extends StatelessWidget {
             controller: collegeNameController,
             enabled: enabled,
             label: '學院',
-            hintText: '例如 電機資訊',
+            hintText: '文學院',
             icon: Icons.account_balance_outlined,
             onSubmitted: onSubmitted,
           ),
@@ -1158,11 +1275,16 @@ class _SearchTextField extends StatelessWidget {
   }
 }
 
-class _CreditFilterGrid extends StatelessWidget {
-  const _CreditFilterGrid({required this.controller, required this.enabled});
+class _DraftCreditFilterGrid extends StatelessWidget {
+  const _DraftCreditFilterGrid({
+    required this.selectedCredits,
+    required this.enabled,
+    required this.onToggle,
+  });
 
-  final CourseSelectionController controller;
+  final Set<int> selectedCredits;
   final bool enabled;
+  final ValueChanged<int> onToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -1183,10 +1305,8 @@ class _CreditFilterGrid extends StatelessWidget {
                 child: FilterChip(
                   showCheckmark: false,
                   label: Center(child: Text('$credit 學分')),
-                  selected: controller.hasCredit(credit),
-                  onSelected: enabled
-                      ? (_) => unawaited(controller.toggleCredit(credit))
-                      : null,
+                  selected: selectedCredits.contains(credit),
+                  onSelected: enabled ? (_) => onToggle(credit) : null,
                 ),
               ),
           ],
@@ -1196,16 +1316,18 @@ class _CreditFilterGrid extends StatelessWidget {
   }
 }
 
-class _ClassTimePickerSheet extends StatefulWidget {
-  const _ClassTimePickerSheet({required this.controller});
+class _DraftClassTimePickerSheet extends StatefulWidget {
+  const _DraftClassTimePickerSheet({required this.classTimes});
 
-  final CourseSelectionController controller;
+  final Set<String> classTimes;
 
   @override
-  State<_ClassTimePickerSheet> createState() => _ClassTimePickerSheetState();
+  State<_DraftClassTimePickerSheet> createState() =>
+      _DraftClassTimePickerSheetState();
 }
 
-class _ClassTimePickerSheetState extends State<_ClassTimePickerSheet> {
+class _DraftClassTimePickerSheetState
+    extends State<_DraftClassTimePickerSheet> {
   static const _weekDays = ['一', '二', '三', '四', '五', '六', '日'];
   static const _periods = [
     '1',
@@ -1227,12 +1349,10 @@ class _ClassTimePickerSheetState extends State<_ClassTimePickerSheet> {
   int _visibleDayCount = 5;
   late final Set<String> _selectedClassTimes;
 
-  CourseSelectionController get controller => widget.controller;
-
   @override
   void initState() {
     super.initState();
-    _selectedClassTimes = controller.classTimes.toSet();
+    _selectedClassTimes = widget.classTimes.toSet();
   }
 
   @override
@@ -1265,9 +1385,7 @@ class _ClassTimePickerSheetState extends State<_ClassTimePickerSheet> {
                     child: const Text('清除'),
                   ),
                   TextButton(
-                    onPressed: controller.isLoading
-                        ? null
-                        : () => unawaited(_applySelection(context)),
+                    onPressed: () => _applySelection(context),
                     child: const Text('套用'),
                   ),
                 ],
@@ -1290,7 +1408,7 @@ class _ClassTimePickerSheetState extends State<_ClassTimePickerSheet> {
                   days: visibleDays,
                   periods: _periods,
                   selectedValues: _selectedClassTimes,
-                  enabled: !controller.isLoading,
+                  enabled: true,
                   onToggle: _toggleClassTime,
                 ),
               ),
@@ -1309,10 +1427,8 @@ class _ClassTimePickerSheetState extends State<_ClassTimePickerSheet> {
     });
   }
 
-  Future<void> _applySelection(BuildContext context) async {
-    final navigator = Navigator.of(context);
-    await controller.setClassTimes(_selectedClassTimes);
-    navigator.pop();
+  void _applySelection(BuildContext context) {
+    Navigator.of(context).pop(_selectedClassTimes);
   }
 }
 
@@ -1481,14 +1597,16 @@ class _ClassTimeGridCell extends StatelessWidget {
   }
 }
 
-class _CourseTypeSegmentedControl extends StatelessWidget {
-  const _CourseTypeSegmentedControl({
-    required this.controller,
+class _DraftCourseTypeSegmentedControl extends StatelessWidget {
+  const _DraftCourseTypeSegmentedControl({
+    required this.value,
     required this.enabled,
+    required this.onChanged,
   });
 
-  final CourseSelectionController controller;
+  final String? value;
   final bool enabled;
+  final ValueChanged<String?> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -1501,15 +1619,13 @@ class _CourseTypeSegmentedControl extends StatelessWidget {
       ],
       selected: {_selectedFilter},
       onSelectionChanged: enabled
-          ? (values) => unawaited(
-              controller.setCourseType(_toCourseType(values.single)),
-            )
+          ? (values) => onChanged(_toCourseType(values.single))
           : null,
     );
   }
 
   _CourseTypeFilter get _selectedFilter {
-    return switch (controller.courseType) {
+    return switch (value) {
       'REQUIRED' => _CourseTypeFilter.required,
       'ELECTIVE' => _CourseTypeFilter.elective,
       _ => _CourseTypeFilter.all,
@@ -1525,14 +1641,16 @@ class _CourseTypeSegmentedControl extends StatelessWidget {
   }
 }
 
-class _VacancySegmentedControl extends StatelessWidget {
-  const _VacancySegmentedControl({
-    required this.controller,
+class _DraftVacancySegmentedControl extends StatelessWidget {
+  const _DraftVacancySegmentedControl({
+    required this.value,
     required this.enabled,
+    required this.onChanged,
   });
 
-  final CourseSelectionController controller;
+  final bool? value;
   final bool enabled;
+  final ValueChanged<bool?> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -1545,15 +1663,13 @@ class _VacancySegmentedControl extends StatelessWidget {
       ],
       selected: {_selectedFilter},
       onSelectionChanged: enabled
-          ? (values) => unawaited(
-              controller.setHasVacancy(_toHasVacancy(values.single)),
-            )
+          ? (values) => onChanged(_toHasVacancy(values.single))
           : null,
     );
   }
 
   _VacancyFilter get _selectedFilter {
-    return switch (controller.hasVacancy) {
+    return switch (value) {
       true => _VacancyFilter.available,
       false => _VacancyFilter.full,
       null => _VacancyFilter.all,

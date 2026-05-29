@@ -140,6 +140,32 @@ void main() {
     expect(find.text('清除全部'), findsOneWidget);
   });
 
+  testWidgets('CourseSelectionPage closes advanced filters without applying', (
+    tester,
+  ) async {
+    final repository = FakeCourseRepository();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CourseSelectionPage(
+          controller: CourseSelectionController(repository: repository),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final requestCountBeforeSheet = repository.requests.length;
+
+    await tester.tap(find.text('進階查詢'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextField, '課號'), 'CS');
+    await tester.tap(find.byTooltip('關閉'));
+    await tester.pumpAndSettle();
+
+    expect(repository.requests, hasLength(requestCountBeforeSheet));
+    expect(find.text('課號：CS'), findsNothing);
+  });
+
   testWidgets('CourseSelectionPage clears visible filter summary', (
     tester,
   ) async {
@@ -394,15 +420,15 @@ void main() {
 
     await tester.tap(find.text('進階查詢'));
     await tester.pumpAndSettle();
+    final requestCountBeforeDraft = repository.requests.length;
 
     await tester.ensureVisible(find.text('已額滿'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('已額滿'));
     await tester.pumpAndSettle();
 
-    expect(repository.requests.last.hasVacancy, isFalse);
+    expect(repository.requests, hasLength(requestCountBeforeDraft));
     expect(find.text('已額滿'), findsWidgets);
-    final requestCountBeforeClassTimeDraft = repository.requests.length;
 
     final classTimeButton = find.text('選擇上課時段', skipOffstage: false);
     await tester.ensureVisible(classTimeButton);
@@ -417,17 +443,28 @@ void main() {
     await tester.tap(find.byTooltip('一 1'));
     await tester.pumpAndSettle();
 
-    expect(repository.requests, hasLength(requestCountBeforeClassTimeDraft));
+    expect(repository.requests, hasLength(requestCountBeforeDraft));
     await tester.tap(find.text('套用').last);
     await tester.pumpAndSettle();
 
+    expect(repository.requests, hasLength(requestCountBeforeDraft));
+    await tester.tap(find.text('套用查詢'));
+    await tester.pumpAndSettle();
+
+    expect(repository.requests.last.hasVacancy, isFalse);
     expect(repository.requests.last.classTimes, ['1-1']);
 
+    await tester.tap(find.text('進階查詢'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('已選 1 個時段'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('清除').last);
     await tester.pumpAndSettle();
     await tester.tap(find.text('套用').last);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('套用查詢'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('套用查詢'));
     await tester.pumpAndSettle();
 
     expect(repository.requests.last.classTimes, isEmpty);
