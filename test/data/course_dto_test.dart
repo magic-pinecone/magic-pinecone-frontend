@@ -18,8 +18,8 @@ void main() {
           'limit_cnt': 130,
           'admit_cnt': 0,
           'wait_cnt': 0,
-          'college_id': 'collegeI5',
-          'department_id': 'deptI1I5002I0',
+          'college_name': '電機資訊學院',
+          'department_name': '資訊工程學系',
           'course_type': 'REQUIRED',
         },
       ],
@@ -40,8 +40,8 @@ void main() {
     expect(course.limitCnt, 130);
     expect(course.admitCnt, 0);
     expect(course.waitCnt, 0);
-    expect(course.collegeId, 'collegeI5');
-    expect(course.departmentId, 'deptI1I5002I0');
+    expect(course.collegeName, '電機資訊學院');
+    expect(course.departmentName, '資訊工程學系');
     expect(course.courseType, 'REQUIRED');
   });
 

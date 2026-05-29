@@ -37,7 +37,7 @@ CourseResponseDto _$CourseResponseDtoFromJson(Map<String, dynamic> json) =>
       limitCnt: (json['limit_cnt'] as num?)?.toInt(),
       admitCnt: (json['admit_cnt'] as num?)?.toInt(),
       waitCnt: (json['wait_cnt'] as num?)?.toInt(),
-      collegeId: json['college_id'] as String?,
-      departmentId: json['department_id'] as String?,
+      collegeName: json['college_name'] as String?,
+      departmentName: json['department_name'] as String?,
       courseType: json['course_type'] as String?,
     );

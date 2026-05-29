@@ -35,7 +35,13 @@ void main() {
       final repository = FakeCourseRepository();
       final controller = CourseSelectionController(repository: repository);
 
-      await controller.search(keyword: '  資料結構  ');
+      await controller.search(
+        keyword: '  資料結構  ',
+        classNo: '  CS  ',
+        serialNo: '  12345  ',
+        departmentName: '  資訊工程  ',
+        collegeName: '  電機資訊  ',
+      );
       await controller.setCourseType('REQUIRED');
       await controller.toggleCredit(4);
       await controller.toggleCredit(2);
@@ -44,18 +50,107 @@ void main() {
       await controller.toggleClassTime('1-1');
 
       expect(repository.requests.last.keyword, '資料結構');
+      expect(repository.requests.last.classNo, 'CS');
+      expect(repository.requests.last.serialNo, '12345');
+      expect(repository.requests.last.departmentName, '資訊工程');
+      expect(repository.requests.last.collegeName, '電機資訊');
       expect(repository.requests.last.courseType, 'REQUIRED');
       expect(repository.requests.last.credits, [2, 4]);
       expect(repository.requests.last.hasVacancy, isTrue);
       expect(repository.requests.last.classTimes, ['1-1', '5-2']);
+      expect(repository.requests.last.offset, 0);
+      expect(
+        repository.requests.last.limit,
+        CourseSelectionController.defaultPageSize,
+      );
+      expect(controller.activeFilterCount, 9);
       expect(controller.hasActiveFilter, isTrue);
+    });
+
+    test('loadMore appends the next page with the same filters', () async {
+      final repository = FakeCourseRepository(
+        results: [
+          const CourseSearchResult(
+            totalCount: 2,
+            courses: [
+              CourseItem(
+                serialNo: '12345',
+                classNo: 'CS101',
+                title: '程式設計',
+                credit: 3,
+                teachers: [],
+                classTimes: [],
+              ),
+            ],
+          ),
+          const CourseSearchResult(
+            totalCount: 2,
+            courses: [
+              CourseItem(
+                serialNo: '12346',
+                classNo: 'CS102',
+                title: '資料結構',
+                credit: 3,
+                teachers: [],
+                classTimes: [],
+              ),
+            ],
+          ),
+        ],
+      );
+      final controller = CourseSelectionController(repository: repository);
+
+      await controller.search(keyword: '程式');
+      await controller.loadMore();
+
+      expect(controller.courses.map((course) => course.title), [
+        '程式設計',
+        '資料結構',
+      ]);
+      expect(controller.hasMoreCourses, isFalse);
+      expect(repository.requests, hasLength(2));
+      expect(repository.requests.last.keyword, '程式');
+      expect(repository.requests.last.offset, 1);
+      expect(
+        repository.requests.last.limit,
+        CourseSelectionController.defaultPageSize,
+      );
+    });
+
+    test('passes full-course vacancy filter to repository', () async {
+      final repository = FakeCourseRepository();
+      final controller = CourseSelectionController(repository: repository);
+
+      await controller.setHasVacancy(false);
+
+      expect(controller.hasVacancy, isFalse);
+      expect(controller.activeFilterCount, 1);
+      expect(repository.requests.last.hasVacancy, isFalse);
+    });
+
+    test('setClassTimes replaces class-time filters in one search', () async {
+      final repository = FakeCourseRepository();
+      final controller = CourseSelectionController(repository: repository);
+
+      await controller.setClassTimes(['5-2', '1-1']);
+
+      expect(controller.classTimes, ['1-1', '5-2']);
+      expect(controller.activeFilterCount, 1);
+      expect(repository.requests, hasLength(1));
+      expect(repository.requests.single.classTimes, ['1-1', '5-2']);
     });
 
     test('clearFilters resets every filter and reloads once', () async {
       final repository = FakeCourseRepository();
       final controller = CourseSelectionController(repository: repository);
 
-      await controller.search(keyword: '資料結構');
+      await controller.search(
+        keyword: '資料結構',
+        classNo: 'CS',
+        serialNo: '12345',
+        departmentName: '資訊工程',
+        collegeName: '電機資訊',
+      );
       await controller.setCourseType('REQUIRED');
       await controller.toggleCredit(3);
       await controller.setHasVacancy(true);
@@ -67,12 +162,21 @@ void main() {
 
       expect(repository.requests, hasLength(requestCountBeforeClear + 1));
       expect(controller.keyword, isEmpty);
+      expect(controller.classNo, isEmpty);
+      expect(controller.serialNo, isEmpty);
+      expect(controller.departmentName, isEmpty);
+      expect(controller.collegeName, isEmpty);
       expect(controller.courseType, isNull);
       expect(controller.credits, isEmpty);
       expect(controller.hasVacancy, isNull);
       expect(controller.classTimes, isEmpty);
+      expect(controller.activeFilterCount, 0);
       expect(controller.hasActiveFilter, isFalse);
       expect(repository.requests.last.keyword, isEmpty);
+      expect(repository.requests.last.classNo, isEmpty);
+      expect(repository.requests.last.serialNo, isEmpty);
+      expect(repository.requests.last.departmentName, isEmpty);
+      expect(repository.requests.last.collegeName, isEmpty);
       expect(repository.requests.last.courseType, isNull);
       expect(repository.requests.last.credits, isEmpty);
       expect(repository.requests.last.hasVacancy, isNull);
@@ -152,8 +256,8 @@ class FakeCourseRepository implements CourseRepository {
     String? keyword,
     String? classNo,
     String? serialNo,
-    String? departmentId,
-    String? collegeId,
+    String? departmentName,
+    String? collegeName,
     String? courseType,
     List<int>? credits,
     bool? hasVacancy,
@@ -166,8 +270,8 @@ class FakeCourseRepository implements CourseRepository {
         keyword: keyword,
         classNo: classNo,
         serialNo: serialNo,
-        departmentId: departmentId,
-        collegeId: collegeId,
+        departmentName: departmentName,
+        collegeName: collegeName,
         courseType: courseType,
         credits: credits,
         hasVacancy: hasVacancy,
@@ -188,8 +292,8 @@ class CourseSearchRequest {
     this.keyword,
     this.classNo,
     this.serialNo,
-    this.departmentId,
-    this.collegeId,
+    this.departmentName,
+    this.collegeName,
     this.courseType,
     this.credits,
     this.hasVacancy,
@@ -201,8 +305,8 @@ class CourseSearchRequest {
   final String? keyword;
   final String? classNo;
   final String? serialNo;
-  final String? departmentId;
-  final String? collegeId;
+  final String? departmentName;
+  final String? collegeName;
   final String? courseType;
   final List<int>? credits;
   final bool? hasVacancy;
