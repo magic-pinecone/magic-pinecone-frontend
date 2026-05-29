@@ -30,7 +30,7 @@ class AppRoutes {
 
   static Route<T> courseSelection<T>() {
     return MaterialPageRoute<T>(
-      builder: (_) => const CourseSelectionPage(),
+      builder: (_) => const CourseSelectionPage(showBackButton: true),
       settings: const RouteSettings(name: 'course-selection'),
     );
   }

@@ -48,6 +48,43 @@ void main() {
     expect(find.text('顯示 1 / 1 門課程'), findsOneWidget);
   });
 
+  testWidgets('CourseSelectionPage shows drawer menu at tab root', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CourseSelectionPage(
+          controller: CourseSelectionController(
+            repository: FakeCourseRepository(),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('切換課程工具'), findsOneWidget);
+    expect(find.byType(BackButton), findsNothing);
+  });
+
+  testWidgets('CourseSelectionPage shows back button when pushed', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CourseSelectionPage(
+          showBackButton: true,
+          controller: CourseSelectionController(
+            repository: FakeCourseRepository(),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(BackButton), findsOneWidget);
+    expect(find.byTooltip('切換課程工具'), findsNothing);
+  });
+
   testWidgets('CourseSelectionPage searches by submitted keyword', (
     tester,
   ) async {
@@ -178,6 +215,77 @@ void main() {
     expect(repository.requests.last.offset, 1);
   });
 
+  testWidgets(
+    'CourseSelectionPage locally filters timetable-compatible courses',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CourseSelectionPage(
+            controller: CourseSelectionController(
+              repository: FakeCourseRepository(
+                result: const CourseSearchResult(
+                  totalCount: 2,
+                  courses: [
+                    CourseItem(
+                      serialNo: '12344',
+                      classNo: 'CS100',
+                      title: '已加入課程',
+                      credit: 3,
+                      teachers: ['王小明'],
+                      classTimes: ['1-2'],
+                    ),
+                    CourseItem(
+                      serialNo: '12345',
+                      classNo: 'CS101',
+                      title: '衝堂課程',
+                      credit: 3,
+                      teachers: ['王小明'],
+                      classTimes: ['1-2'],
+                    ),
+                    CourseItem(
+                      serialNo: '12346',
+                      classNo: 'CS102',
+                      title: '可加入課程',
+                      credit: 3,
+                      teachers: ['王小明'],
+                      classTimes: ['4-1'],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(FilledButton, '加入').first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('衝堂課程', skipOffstage: false), findsOneWidget);
+      expect(find.text('可加入課程', skipOffstage: false), findsOneWidget);
+
+      await tester.tap(find.byTooltip('篩選'));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value,
+        isFalse,
+      );
+      await tester.tap(find.text('只顯示可加入目前課表的課程'));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value,
+        isTrue,
+      );
+      await tester.tap(find.text('完成'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('衝堂課程'), findsNothing);
+      expect(find.text('可加入課程'), findsOneWidget);
+      expect(find.text('顯示 1 / 3 門課程'), findsOneWidget);
+    },
+  );
+
   testWidgets('CourseSelectionPage switches to the old timetable from menu', (
     tester,
   ) async {
@@ -198,8 +306,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byTooltip('重新整理'), findsNothing);
-    expect(find.text('計算機概論'), findsOneWidget);
-    expect(find.text('微積分 I'), findsOneWidget);
+    expect(find.text('週一'), findsOneWidget);
+    expect(find.text('週五'), findsOneWidget);
   });
 
   testWidgets('CourseSelectionPage opens AI course helper chat from menu', (
