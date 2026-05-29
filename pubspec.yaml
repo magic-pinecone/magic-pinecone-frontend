@@ -16,6 +16,8 @@ dependencies:
   json_annotation: ^4.9.0
   flutter_inappwebview: ^6.1.5
   material_symbols_icons: ^4.2906.0
+  flutter_chat_core: ^2.0.0
+  flutter_chat_ui: ^2.0.0
 
 dev_dependencies:
   flutter_test:

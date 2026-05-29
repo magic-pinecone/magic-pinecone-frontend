@@ -5,8 +5,16 @@ List<PortalShortcutSection> get defaultPortalShortcutSections => [
   PortalShortcutSection(
     title: '常用服務',
     items: [
-      _portalSystemShortcut('新ee-class', Icons.book, '/system/ncueeclass'),
-      _portalSystemShortcut('選課系統', Icons.event, '/system/cs'),
+      _directWebShortcut(
+        '新ee-class',
+        Icons.book,
+        Uri.parse('https://ncueeclass.ncu.edu.tw/'),
+      ),
+      _directWebShortcut(
+        '選課系統',
+        Icons.event,
+        Uri.parse('https://cis.ncu.edu.tw/Course/'),
+      ),
       _portalSystemShortcut('服務櫃台', Icons.support_agent, '/system/incu'),
       _portalSystemShortcut('NCU Mail', Icons.mail, '/system/129'),
       _portalSystemShortcut('成績查詢', Icons.grading, '/system/incu-studentscore'),
@@ -22,8 +30,16 @@ List<PortalShortcutSection> get defaultPortalShortcutSections => [
   PortalShortcutSection(
     title: '課務相關',
     items: [
-      _portalSystemShortcut('新ee-class', Icons.book, '/system/ncueeclass'),
-      _portalSystemShortcut('選課系統', Icons.event, '/system/cs'),
+      _directWebShortcut(
+        '新ee-class',
+        Icons.book,
+        Uri.parse('https://ncueeclass.ncu.edu.tw/'),
+      ),
+      _directWebShortcut(
+        '選課系統',
+        Icons.event,
+        Uri.parse('https://cis.ncu.edu.tw/Course/'),
+      ),
       _portalSystemShortcut('成績查詢', Icons.grading, '/system/incu-studentscore'),
       _portalSystemShortcut(
         '期中預警查詢',
@@ -103,6 +119,18 @@ PortalShortcutItem _portalSystemShortcut(
       targetPath: path,
       authEntryUrl: Uri(scheme: 'https', host: portalHost),
       sessionProbeHosts: const {portalHost},
+    ),
+  );
+}
+
+PortalShortcutItem _directWebShortcut(String label, IconData icon, Uri url) {
+  return PortalShortcutItem(
+    label: label,
+    icon: icon,
+    destination: PortalWebShortcutDestination(
+      title: label,
+      targetUrl: url,
+      openExternally: true,
     ),
   );
 }

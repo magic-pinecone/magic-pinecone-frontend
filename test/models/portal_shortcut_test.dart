@@ -4,10 +4,7 @@ import 'package:prototype/features/portal/models/portal_shortcut.dart';
 void main() {
   group('PortalWebShortcutDestination.buildTargetUrl', () {
     test('returns null when shortcut has no target path', () {
-      const destination = PortalWebShortcutDestination(
-        title: 'Missing link',
-        targetPath: null,
-      );
+      const destination = PortalWebShortcutDestination(title: 'Missing link');
 
       expect(destination.buildTargetUrl(token: 'abc'), isNull);
     });

@@ -34,17 +34,24 @@ class PortalInternalShortcutDestination extends PortalShortcutDestination {
 class PortalWebShortcutDestination extends PortalShortcutDestination {
   const PortalWebShortcutDestination({
     required this.title,
-    required this.targetPath,
+    this.targetPath,
+    this.targetUrl,
+    this.openExternally = false,
     this.authEntryUrl,
     this.sessionProbeHosts = const {},
   });
 
   final String title;
   final String? targetPath;
+  final Uri? targetUrl;
+  final bool openExternally;
   final Uri? authEntryUrl;
   final Set<String> sessionProbeHosts;
 
   Uri? buildTargetUrl({String? token}) {
+    final targetUrl = this.targetUrl;
+    if (targetUrl != null) return targetUrl;
+
     final targetPath = this.targetPath;
     if (targetPath == null) return null;
 

@@ -93,13 +93,18 @@ class _PortalPageContent extends StatelessWidget {
         :final sessionProbeHosts,
       ):
         final targetUrl = destination.buildTargetUrl(
-          token: sessionController.state.token,
+          token: destination.openExternally
+              ? sessionController.state.token
+              : null,
         );
         if (targetUrl == null) {
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(const SnackBar(content: Text('此功能尚未設定連結')));
           return Future.value();
+        }
+        if (destination.openExternally) {
+          return InAppBrowser.openWithSystemBrowser(url: WebUri.uri(targetUrl));
         }
         return Navigator.of(context).push(
           AppRoutes.portalWebView(
