@@ -76,15 +76,15 @@ class _CourseSelectionPageContentState
       builder: (context, _) {
         return Scaffold(
           appBar: AppBar(
-            leading: Builder(
-              builder: (context) {
-                return IconButton(
-                  tooltip: '切換課程工具',
-                  onPressed: () => Scaffold.of(context).openDrawer(),
-                  icon: const Icon(Icons.menu),
-                );
-              },
-            ),
+            leading: Navigator.of(context).canPop()
+                ? const BackButton()
+                : Builder(
+                    builder: (context) => IconButton(
+                      tooltip: '切換課程工具',
+                      onPressed: () => Scaffold.of(context).openDrawer(),
+                      icon: const Icon(Icons.menu),
+                    ),
+                  ),
             title: const Text(
               '課程查詢',
               style: TextStyle(fontWeight: FontWeight.bold),
