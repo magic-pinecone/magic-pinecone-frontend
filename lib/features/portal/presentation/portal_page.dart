@@ -93,7 +93,9 @@ class _PortalPageContent extends StatelessWidget {
         :final sessionProbeHosts,
       ):
         final targetUrl = destination.buildTargetUrl(
-          token: sessionController.state.token,
+          token: destination.openExternally
+              ? sessionController.state.token
+              : null,
         );
         if (targetUrl == null) {
           ScaffoldMessenger.of(
