@@ -48,7 +48,11 @@ class CourseSelectionController extends ChangeNotifier {
   List<String> get classTimes => List.unmodifiable(_sortedClassTimes);
   int get offset => _offset;
   int get limit => _limit;
-  bool get hasMoreCourses => _courses.length < _totalCount;
+  int get currentPage => _totalCount == 0 ? 0 : (_offset ~/ _limit) + 1;
+  int get totalPages =>
+      _totalCount == 0 ? 0 : ((_totalCount - 1) ~/ _limit) + 1;
+  bool get canGoToPreviousPage => _offset > 0;
+  bool get canGoToNextPage => _offset + _courses.length < _totalCount;
   int get activeFilterCount {
     return [
       _keyword.isNotEmpty,
@@ -120,7 +124,6 @@ class CourseSelectionController extends ChangeNotifier {
       _courses = List.unmodifiable(result.courses);
       _totalCount = result.totalCount;
       _lastUpdated = result.lastUpdated;
-      _offset = _courses.length;
     } catch (error) {
       _error = error;
     } finally {
@@ -156,8 +159,18 @@ class CourseSelectionController extends ChangeNotifier {
     await search();
   }
 
-  Future<void> loadMore() async {
-    if (_isLoading || _isLoadingMore || !hasMoreCourses) return;
+  Future<void> nextPage() async {
+    if (!canGoToNextPage) return;
+    await _loadPage(_offset + _limit);
+  }
+
+  Future<void> previousPage() async {
+    if (!canGoToPreviousPage) return;
+    await _loadPage((_offset - _limit).clamp(0, _offset));
+  }
+
+  Future<void> _loadPage(int offset) async {
+    if (_isLoading || _isLoadingMore) return;
 
     _isLoadingMore = true;
     _error = null;
@@ -175,13 +188,13 @@ class CourseSelectionController extends ChangeNotifier {
         credits: _sortedCredits,
         hasVacancy: _hasVacancy,
         classTimes: _sortedClassTimes,
-        offset: _offset,
+        offset: offset,
         limit: _limit,
       );
-      _courses = List.unmodifiable([..._courses, ...result.courses]);
+      _courses = List.unmodifiable(result.courses);
       _totalCount = result.totalCount;
       _lastUpdated = result.lastUpdated;
-      _offset = _courses.length;
+      _offset = offset;
     } catch (error) {
       _error = error;
     } finally {

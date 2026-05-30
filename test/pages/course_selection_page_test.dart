@@ -275,6 +275,38 @@ void main() {
     },
   );
 
+  testWidgets(
+    'CourseSelectionPage shows local filters dialog on wide screens',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1000, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CourseSelectionPage(
+            controller: CourseSelectionController(
+              repository: FakeCourseRepository(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('檢視選項'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(Dialog), findsOneWidget);
+      expect(find.text('檢視選項'), findsWidgets);
+      expect(find.text('只顯示本頁可加入課表的課程'), findsOneWidget);
+      expect(find.text('只顯示已加入課表的課程'), findsOneWidget);
+
+      await tester.tap(find.text('完成'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(Dialog), findsNothing);
+    },
+  );
+
   testWidgets('CourseSelectionPage closes advanced filters without applying', (
     tester,
   ) async {
@@ -327,11 +359,11 @@ void main() {
     expect(find.text('關鍵字：資料結構'), findsNothing);
   });
 
-  testWidgets('CourseSelectionPage loads more courses', (tester) async {
+  testWidgets('CourseSelectionPage navigates result pages', (tester) async {
     final repository = FakeCourseRepository(
       results: [
         const CourseSearchResult(
-          totalCount: 2,
+          totalCount: 51,
           courses: [
             CourseItem(
               serialNo: '12345',
@@ -344,7 +376,7 @@ void main() {
           ],
         ),
         const CourseSearchResult(
-          totalCount: 2,
+          totalCount: 51,
           courses: [
             CourseItem(
               serialNo: '12346',
@@ -368,12 +400,16 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('載入更多'), findsOneWidget);
-    await tester.tap(find.text('載入更多'));
+    expect(find.text('下一頁'), findsOneWidget);
+    expect(find.text('1 / 2'), findsOneWidget);
+    await tester.tap(find.text('下一頁'));
     await tester.pumpAndSettle();
 
     expect(find.text('資料結構'), findsOneWidget);
-    expect(repository.requests.last.offset, 1);
+    expect(
+      repository.requests.last.offset,
+      CourseSelectionController.defaultPageSize,
+    );
   });
 
   testWidgets(
@@ -426,16 +462,16 @@ void main() {
       expect(find.text('衝堂課程', skipOffstage: false), findsOneWidget);
       expect(find.text('可加入課程', skipOffstage: false), findsOneWidget);
 
-      await tester.tap(find.byTooltip('篩選'));
+      await tester.tap(find.byTooltip('檢視選項'));
       await tester.pumpAndSettle();
       expect(
-        tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value,
+        tester.widget<SwitchListTile>(find.byType(SwitchListTile).first).value,
         isFalse,
       );
-      await tester.tap(find.text('只顯示可加入目前課表的課程'));
+      await tester.tap(find.text('只顯示本頁可加入課表的課程'));
       await tester.pumpAndSettle();
       expect(
-        tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value,
+        tester.widget<SwitchListTile>(find.byType(SwitchListTile).first).value,
         isTrue,
       );
       await tester.tap(find.text('完成'));
@@ -444,6 +480,100 @@ void main() {
       expect(find.text('衝堂課程'), findsNothing);
       expect(find.text('可加入課程'), findsOneWidget);
       expect(find.text('顯示 1 / 3 門課程'), findsOneWidget);
+    },
+  );
+
+  testWidgets('CourseSelectionPage locally filters selected courses', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CourseSelectionPage(
+          controller: CourseSelectionController(
+            repository: FakeCourseRepository(
+              result: const CourseSearchResult(
+                totalCount: 3,
+                courses: [
+                  CourseItem(
+                    serialNo: '12344',
+                    classNo: 'CS100',
+                    title: '已選課程',
+                    credit: 3,
+                    teachers: ['王小明'],
+                    classTimes: ['1-1'],
+                  ),
+                  CourseItem(
+                    serialNo: '12345',
+                    classNo: 'CS101',
+                    title: '未選課程',
+                    credit: 3,
+                    teachers: ['王小明'],
+                    classTimes: ['2-1'],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(FilledButton, '加入').first);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('檢視選項'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('只顯示已加入課表的課程'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('完成'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('已選課程'), findsOneWidget);
+    expect(find.text('未選課程'), findsNothing);
+    expect(find.text('顯示 1 / 1 門課程'), findsOneWidget);
+  });
+
+  testWidgets(
+    'CourseSelectionPage hides load more while local filter is active',
+    (tester) async {
+      final repository = FakeCourseRepository(
+        result: const CourseSearchResult(
+          totalCount: 2,
+          courses: [
+            CourseItem(
+              serialNo: '12344',
+              classNo: 'CS100',
+              title: '已選課程',
+              credit: 3,
+              teachers: ['王小明'],
+              classTimes: ['1-1'],
+            ),
+          ],
+        ),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CourseSelectionPage(
+            controller: CourseSelectionController(repository: repository),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('下一頁'), findsOneWidget);
+      await tester.tap(find.widgetWithText(FilledButton, '加入'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('檢視選項'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('只顯示已加入課表的課程'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('完成'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('下一頁'), findsNothing);
+      expect(repository.requests, hasLength(1));
     },
   );
 

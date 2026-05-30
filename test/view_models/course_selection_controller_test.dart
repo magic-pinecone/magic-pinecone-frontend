@@ -69,11 +69,11 @@ void main() {
       expect(controller.hasActiveFilter, isTrue);
     });
 
-    test('loadMore appends the next page with the same filters', () async {
+    test('page navigation loads one result page at a time', () async {
       final repository = FakeCourseRepository(
         results: [
           const CourseSearchResult(
-            totalCount: 2,
+            totalCount: 51,
             courses: [
               CourseItem(
                 serialNo: '12345',
@@ -86,7 +86,7 @@ void main() {
             ],
           ),
           const CourseSearchResult(
-            totalCount: 2,
+            totalCount: 51,
             courses: [
               CourseItem(
                 serialNo: '12346',
@@ -98,25 +98,47 @@ void main() {
               ),
             ],
           ),
+          const CourseSearchResult(
+            totalCount: 51,
+            courses: [
+              CourseItem(
+                serialNo: '12345',
+                classNo: 'CS101',
+                title: '程式設計',
+                credit: 3,
+                teachers: [],
+                classTimes: [],
+              ),
+            ],
+          ),
         ],
       );
       final controller = CourseSelectionController(repository: repository);
 
       await controller.search(keyword: '程式');
-      await controller.loadMore();
+      await controller.nextPage();
 
-      expect(controller.courses.map((course) => course.title), [
-        '程式設計',
-        '資料結構',
-      ]);
-      expect(controller.hasMoreCourses, isFalse);
+      expect(controller.courses.map((course) => course.title), ['資料結構']);
+      expect(controller.currentPage, 2);
+      expect(controller.totalPages, 2);
+      expect(controller.canGoToNextPage, isFalse);
+      expect(controller.canGoToPreviousPage, isTrue);
       expect(repository.requests, hasLength(2));
       expect(repository.requests.last.keyword, '程式');
-      expect(repository.requests.last.offset, 1);
+      expect(
+        repository.requests.last.offset,
+        CourseSelectionController.defaultPageSize,
+      );
       expect(
         repository.requests.last.limit,
         CourseSelectionController.defaultPageSize,
       );
+
+      await controller.previousPage();
+
+      expect(controller.courses.single.title, '程式設計');
+      expect(controller.currentPage, 1);
+      expect(repository.requests.last.offset, 0);
     });
 
     test('passes full-course vacancy filter to repository', () async {

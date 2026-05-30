@@ -115,6 +115,7 @@ class _CourseSelectionPageContentState
   final Map<String, CourseItem> _selectedCourses = {};
   _CourseSelectionView _selectedView = _CourseSelectionView.search;
   bool _onlyShowTimetableCompatibleCourses = false;
+  bool _onlyShowSelectedCourses = false;
   int _messageSequence = 0;
   bool _didRestoreSelectedCourses = false;
   bool _isPreviewingSharedCourses = false;
@@ -330,8 +331,11 @@ class _CourseSelectionPageContentState
         useDesktopDialog: useDesktopCourseDetails,
       ),
       onCourseSyncToggle: _toggleCourseSelection,
-      onLocalFilterPressed: () => _showLocalFilterSheet(context),
-      localFilterActive: _onlyShowTimetableCompatibleCourses,
+      onLocalFilterPressed: () =>
+          _showLocalFilterSheet(context, useDialog: useAdvancedFilterDialog),
+      localFilterActive:
+          _onlyShowTimetableCompatibleCourses || _onlyShowSelectedCourses,
+      localFilterTotalCount: _localFilterTotalCount,
       useAdvancedFilterDialog: useAdvancedFilterDialog,
     );
   }
@@ -387,26 +391,47 @@ class _CourseSelectionPageContentState
     );
   }
 
-  Future<void> _showLocalFilterSheet(BuildContext context) async {
-    final nextValue = await showModalBottomSheet<bool>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) {
-        return _LocalCourseFilterSheet(
-          onlyShowTimetableCompatibleCourses:
-              _onlyShowTimetableCompatibleCourses,
-          onOnlyShowTimetableCompatibleCoursesChanged: (value) {
-            setState(() => _onlyShowTimetableCompatibleCourses = value);
-          },
-        );
-      },
-    );
-    if (!mounted ||
-        nextValue == null ||
-        nextValue == _onlyShowTimetableCompatibleCourses) {
+  Future<void> _showLocalFilterSheet(
+    BuildContext context, {
+    required bool useDialog,
+  }) async {
+    Widget buildContent(BuildContext context, {required bool useDialogLayout}) {
+      return _LocalCourseFilterSheet(
+        onlyShowTimetableCompatibleCourses: _onlyShowTimetableCompatibleCourses,
+        onlyShowSelectedCourses: _onlyShowSelectedCourses,
+        useDialogLayout: useDialogLayout,
+      );
+    }
+
+    final nextValue = useDialog
+        ? await showDialog<_LocalCourseFilterState>(
+            context: context,
+            builder: (context) {
+              return Dialog(
+                clipBehavior: Clip.antiAlias,
+                insetPadding: const EdgeInsets.all(32.0),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: _maxSheetWidth),
+                  child: buildContent(context, useDialogLayout: true),
+                ),
+              );
+            },
+          )
+        : await showModalBottomSheet<_LocalCourseFilterState>(
+            context: context,
+            showDragHandle: true,
+            builder: (context) {
+              return buildContent(context, useDialogLayout: false);
+            },
+          );
+    if (!mounted || nextValue == null) {
       return;
     }
-    setState(() => _onlyShowTimetableCompatibleCourses = nextValue);
+    setState(() {
+      _onlyShowTimetableCompatibleCourses =
+          nextValue.onlyShowTimetableCompatibleCourses;
+      _onlyShowSelectedCourses = nextValue.onlyShowSelectedCourses;
+    });
   }
 
   List<ScheduledCourse> _getCachedScheduledCourses(
@@ -420,7 +445,11 @@ class _CourseSelectionPageContentState
   }
 
   List<CourseItem> _displayedCourses() {
-    if (!_onlyShowTimetableCompatibleCourses) return controller.courses;
+    final courses = _onlyShowSelectedCourses
+        ? _selectedCourses.values.toList(growable: false)
+        : controller.courses;
+
+    if (!_onlyShowTimetableCompatibleCourses) return courses;
 
     final currentSchedule = _syncedScheduleSnapshot();
     final occupiedSlots = currentSchedule.courses
@@ -428,12 +457,17 @@ class _CourseSelectionPageContentState
         .toSet();
     final periods = currentSchedule.periods;
 
-    return controller.courses
+    return courses
         .where(
           (course) =>
               _canFitCurrentTimetableCached(course, occupiedSlots, periods),
         )
         .toList(growable: false);
+  }
+
+  int get _localFilterTotalCount {
+    if (_onlyShowSelectedCourses) return _selectedCourses.length;
+    return controller.courses.length;
   }
 
   bool _isCourseSelected(CourseItem course) {
@@ -716,6 +750,7 @@ class _CourseSearchView extends StatelessWidget {
     required this.onCourseSyncToggle,
     required this.onLocalFilterPressed,
     required this.localFilterActive,
+    required this.localFilterTotalCount,
     required this.useAdvancedFilterDialog,
   });
 
@@ -727,6 +762,7 @@ class _CourseSearchView extends StatelessWidget {
   final ValueChanged<CourseItem> onCourseSyncToggle;
   final VoidCallback onLocalFilterPressed;
   final bool localFilterActive;
+  final int localFilterTotalCount;
   final bool useAdvancedFilterDialog;
 
   @override
@@ -752,6 +788,7 @@ class _CourseSearchView extends StatelessWidget {
                   controller: controller,
                   displayedCourseCount: displayedCourses.length,
                   localFilterActive: localFilterActive,
+                  localFilterTotalCount: localFilterTotalCount,
                   onFilterPressed: onLocalFilterPressed,
                 ),
                 Expanded(
@@ -794,8 +831,7 @@ class _CourseSearchView extends StatelessWidget {
                             onCourseTap: onCourseTap,
                             onCourseSyncToggle: onCourseSyncToggle,
                           ),
-                        if (controller.courses.isNotEmpty &&
-                            controller.hasMoreCourses)
+                        if (!localFilterActive && controller.totalCount > 0)
                           SliverToBoxAdapter(
                             child: Padding(
                               padding: const EdgeInsets.fromLTRB(
@@ -806,23 +842,8 @@ class _CourseSearchView extends StatelessWidget {
                                     ._horizontalPadding,
                                 24.0,
                               ),
-                              child: OutlinedButton.icon(
-                                onPressed:
-                                    controller.isLoading ||
-                                        controller.isLoadingMore
-                                    ? null
-                                    : () => unawaited(controller.loadMore()),
-                                icon: controller.isLoadingMore
-                                    ? const SizedBox.square(
-                                        dimension: 18.0,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2.0,
-                                        ),
-                                      )
-                                    : const Icon(Icons.expand_more),
-                                label: Text(
-                                  controller.isLoadingMore ? '載入中' : '載入更多',
-                                ),
+                              child: _CoursePaginationControls(
+                                controller: controller,
                               ),
                             ),
                           ),
@@ -929,6 +950,49 @@ class _CourseResultGrid extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+class _CoursePaginationControls extends StatelessWidget {
+  const _CoursePaginationControls({required this.controller});
+
+  final CourseSelectionController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final isBusy = controller.isLoading || controller.isLoadingMore;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        OutlinedButton.icon(
+          onPressed: isBusy || !controller.canGoToPreviousPage
+              ? null
+              : () => unawaited(controller.previousPage()),
+          icon: const Icon(Icons.chevron_left),
+          label: const Text('上一頁'),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12.0),
+          child: controller.isLoadingMore
+              ? const SizedBox.square(
+                  dimension: 18.0,
+                  child: CircularProgressIndicator(strokeWidth: 2.0),
+                )
+              : Text(
+                  '${controller.currentPage} / ${controller.totalPages}',
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
+        ),
+        OutlinedButton.icon(
+          onPressed: isBusy || !controller.canGoToNextPage
+              ? null
+              : () => unawaited(controller.nextPage()),
+          icon: const Icon(Icons.chevron_right),
+          label: const Text('下一頁'),
+        ),
+      ],
     );
   }
 }
@@ -2641,11 +2705,13 @@ class _DraftVacancySegmentedControl extends StatelessWidget {
 class _LocalCourseFilterSheet extends StatefulWidget {
   const _LocalCourseFilterSheet({
     required this.onlyShowTimetableCompatibleCourses,
-    required this.onOnlyShowTimetableCompatibleCoursesChanged,
+    required this.onlyShowSelectedCourses,
+    required this.useDialogLayout,
   });
 
   final bool onlyShowTimetableCompatibleCourses;
-  final ValueChanged<bool> onOnlyShowTimetableCompatibleCoursesChanged;
+  final bool onlyShowSelectedCourses;
+  final bool useDialogLayout;
 
   @override
   State<_LocalCourseFilterSheet> createState() =>
@@ -2654,57 +2720,89 @@ class _LocalCourseFilterSheet extends StatefulWidget {
 
 class _LocalCourseFilterSheetState extends State<_LocalCourseFilterSheet> {
   late bool _onlyShowTimetableCompatibleCourses;
+  late bool _onlyShowSelectedCourses;
 
   @override
   void initState() {
     super.initState();
     _onlyShowTimetableCompatibleCourses =
         widget.onlyShowTimetableCompatibleCourses;
+    _onlyShowSelectedCourses = widget.onlyShowSelectedCourses;
   }
 
   @override
   Widget build(BuildContext context) {
+    final content = Padding(
+      padding: widget.useDialogLayout
+          ? const EdgeInsets.all(24.0)
+          : const EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 20.0),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('檢視選項', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 8.0),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            secondary: const Icon(Icons.event_available_outlined),
+            title: const Text('只顯示本頁可加入課表的課程'),
+            value: _onlyShowTimetableCompatibleCourses,
+            onChanged: (value) {
+              setState(() => _onlyShowTimetableCompatibleCourses = value);
+            },
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            secondary: const Icon(Icons.checklist_outlined),
+            title: const Text('只顯示已加入課表的課程'),
+            value: _onlyShowSelectedCourses,
+            onChanged: (value) {
+              setState(() => _onlyShowSelectedCourses = value);
+            },
+          ),
+          const SizedBox(height: 8.0),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: () => Navigator.of(context).pop(
+                _LocalCourseFilterState(
+                  onlyShowTimetableCompatibleCourses:
+                      _onlyShowTimetableCompatibleCourses,
+                  onlyShowSelectedCourses: _onlyShowSelectedCourses,
+                ),
+              ),
+              child: const Text('完成'),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (widget.useDialogLayout) {
+      return content;
+    }
+
     return SafeArea(
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(
             maxWidth: _CourseSelectionPageContentState._maxSheetWidth,
           ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 20.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('篩選', style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 8.0),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  secondary: const Icon(Icons.event_available_outlined),
-                  title: const Text('只顯示可加入目前課表的課程'),
-                  value: _onlyShowTimetableCompatibleCourses,
-                  onChanged: (value) {
-                    setState(() => _onlyShowTimetableCompatibleCourses = value);
-                    widget.onOnlyShowTimetableCompatibleCoursesChanged(value);
-                  },
-                ),
-                const SizedBox(height: 8.0),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: () => Navigator.of(
-                      context,
-                    ).pop(_onlyShowTimetableCompatibleCourses),
-                    child: const Text('完成'),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          child: content,
         ),
       ),
     );
   }
+}
+
+class _LocalCourseFilterState {
+  const _LocalCourseFilterState({
+    required this.onlyShowTimetableCompatibleCourses,
+    required this.onlyShowSelectedCourses,
+  });
+
+  final bool onlyShowTimetableCompatibleCourses;
+  final bool onlyShowSelectedCourses;
 }
 
 class _ResultSummary extends StatelessWidget {
@@ -2712,12 +2810,14 @@ class _ResultSummary extends StatelessWidget {
     required this.controller,
     required this.displayedCourseCount,
     required this.localFilterActive,
+    required this.localFilterTotalCount,
     required this.onFilterPressed,
   });
 
   final CourseSelectionController controller;
   final int displayedCourseCount;
   final bool localFilterActive;
+  final int localFilterTotalCount;
   final VoidCallback onFilterPressed;
 
   @override
@@ -2761,7 +2861,7 @@ class _ResultSummary extends StatelessWidget {
             )
           else
             IconButton(
-              tooltip: '篩選',
+              tooltip: '檢視選項',
               isSelected: localFilterActive,
               onPressed: onFilterPressed,
               icon: const Icon(Icons.filter_list),
@@ -2774,7 +2874,7 @@ class _ResultSummary extends StatelessWidget {
 
   String _courseCountText() {
     if (localFilterActive) {
-      return '顯示 $displayedCourseCount / ${controller.courses.length} 門課程';
+      return '顯示 $displayedCourseCount / $localFilterTotalCount 門課程';
     }
     return '顯示 ${controller.courses.length} / ${controller.totalCount} 門課程';
   }
