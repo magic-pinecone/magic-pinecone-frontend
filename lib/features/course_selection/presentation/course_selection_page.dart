@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter_chat_core/flutter_chat_core.dart';
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'package:prototype/core/app/app_scope.dart';
@@ -60,6 +61,8 @@ class _CourseSelectionPageContentState
     extends State<_CourseSelectionPageContent> {
   static const _horizontalPadding = 16.0;
   static const _wideLayoutMinWidth = 900.0;
+  static const _desktopWorkspaceMinWidth = 1100.0;
+  static const _desktopCoursePaneWidth = 520.0;
   static const _maxSearchContentWidth = 1180.0;
   static const _maxSheetWidth = 640.0;
   static const _courseGridMaxExtent = 560.0;
@@ -80,6 +83,8 @@ class _CourseSelectionPageContentState
   _CourseSelectionView _selectedView = _CourseSelectionView.search;
   bool _onlyShowTimetableCompatibleCourses = false;
   int _messageSequence = 0;
+  final Map<String, List<ScheduledCourse>> _courseScheduledCoursesCache = {};
+  final Map<String, bool> _canSyncToTimetableCache = {};
 
   CourseSelectionController get controller => widget.controller;
 
@@ -94,86 +99,185 @@ class _CourseSelectionPageContentState
     return ListenableBuilder(
       listenable: controller,
       builder: (context, _) {
+        if (controller.isLoading && controller.courses.isEmpty) {
+          _courseScheduledCoursesCache.clear();
+          _canSyncToTimetableCache.clear();
+        }
         final displayedCourses = _displayedCourses();
-        return Scaffold(
-          appBar: AppBar(
-            leading: widget.showBackButton
-                ? const BackButton()
-                : Builder(
-                    builder: (context) => IconButton(
-                      tooltip: '切換課程工具',
-                      onPressed: () => Scaffold.of(context).openDrawer(),
-                      icon: const Icon(Icons.menu),
-                    ),
-                  ),
-            title: const Text(
-              '課程查詢',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            actions: [
-              if (_selectedView == _CourseSelectionView.search)
-                IconButton(
-                  tooltip: '重新整理',
-                  onPressed: controller.isLoading
-                      ? null
-                      : () => unawaited(controller.search()),
-                  icon: const Icon(Icons.refresh),
-                ),
-            ],
-          ),
-          drawer: Builder(
-            builder: (drawerContext) => NavigationDrawer(
-              selectedIndex: _selectedView.index,
-              onDestinationSelected: (index) {
-                Navigator.of(drawerContext).pop();
-                setState(() {
-                  _selectedView = _CourseSelectionView.values[index];
-                });
-              },
-              children: const [
-                SizedBox(height: 12.0),
-                NavigationDrawerDestination(
-                  icon: Icon(Icons.search),
-                  label: Text('課程查詢'),
-                ),
-                NavigationDrawerDestination(
-                  icon: Icon(Icons.calendar_month_outlined),
-                  selectedIcon: Icon(Icons.calendar_month),
-                  label: Text('課表'),
-                ),
-                NavigationDrawerDestination(
-                  icon: Icon(Icons.smart_toy_outlined),
-                  selectedIcon: Icon(Icons.smart_toy),
-                  label: Text('AI 選課小幫手'),
-                ),
-              ],
-            ),
-          ),
-          body: switch (_selectedView) {
-            _CourseSelectionView.search => _CourseSearchView(
-              controller: controller,
-              displayedCourses: displayedCourses,
-              isCourseSelected: _isCourseSelected,
-              canSyncToTimetable: _canSyncToTimetable,
-              onCourseTap: (course) => _showCourseDetails(context, course),
-              onCourseSyncToggle: _toggleCourseSelection,
-              onLocalFilterPressed: () => _showLocalFilterSheet(context),
-              localFilterActive: _onlyShowTimetableCompatibleCourses,
-            ),
-            _CourseSelectionView.timetable => _CourseTimetableView(
-              snapshot: _syncedScheduleSnapshot(),
-            ),
-            _CourseSelectionView.helper => _CourseHelperChatView(
-              chatController: _chatController,
-              onMessageSend: _sendHelperMessage,
-            ),
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final useDesktopWorkspace =
+                constraints.maxWidth >= _desktopWorkspaceMinWidth;
+            if (useDesktopWorkspace) {
+              return _buildDesktopWorkspace(context, displayedCourses);
+            }
+            return _buildMobileWorkspace(
+              context,
+              displayedCourses,
+              useDesktopCourseDetails:
+                  constraints.maxWidth >= _wideLayoutMinWidth,
+            );
           },
         );
       },
     );
   }
 
-  void _showCourseDetails(BuildContext context, CourseItem course) {
+  Widget _buildMobileWorkspace(
+    BuildContext context,
+    List<CourseItem> displayedCourses, {
+    required bool useDesktopCourseDetails,
+  }) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: widget.showBackButton
+            ? const BackButton()
+            : Builder(
+                builder: (context) => IconButton(
+                  tooltip: '切換課程工具',
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                  icon: const Icon(Icons.menu),
+                ),
+              ),
+        title: const Text(
+          '課程查詢',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        actions: [
+          if (_selectedView == _CourseSelectionView.search)
+            IconButton(
+              tooltip: '重新整理',
+              onPressed: controller.isLoading
+                  ? null
+                  : () => unawaited(controller.search()),
+              icon: const Icon(Icons.refresh),
+            ),
+        ],
+      ),
+      drawer: Builder(
+        builder: (drawerContext) => NavigationDrawer(
+          selectedIndex: _selectedView.index,
+          onDestinationSelected: (index) {
+            Navigator.of(drawerContext).pop();
+            setState(() {
+              _selectedView = _CourseSelectionView.values[index];
+            });
+          },
+          children: const [
+            SizedBox(height: 12.0),
+            NavigationDrawerDestination(
+              icon: Icon(Icons.search),
+              label: Text('課程查詢'),
+            ),
+            NavigationDrawerDestination(
+              icon: Icon(Icons.calendar_month_outlined),
+              selectedIcon: Icon(Icons.calendar_month),
+              label: Text('課表'),
+            ),
+            NavigationDrawerDestination(
+              icon: Icon(Icons.smart_toy_outlined),
+              selectedIcon: Icon(Icons.smart_toy),
+              label: Text('AI 選課小幫手'),
+            ),
+          ],
+        ),
+      ),
+      body: switch (_selectedView) {
+        _CourseSelectionView.search => _buildCourseSearchView(
+          displayedCourses,
+          useDesktopCourseDetails: useDesktopCourseDetails,
+        ),
+        _CourseSelectionView.timetable => _CourseTimetableView(
+          snapshot: _syncedScheduleSnapshot(),
+        ),
+        _CourseSelectionView.helper => _CourseHelperChatView(
+          chatController: _chatController,
+          onMessageSend: _sendHelperMessage,
+        ),
+      },
+    );
+  }
+
+  Widget _buildDesktopWorkspace(
+    BuildContext context,
+    List<CourseItem> displayedCourses,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Scaffold(
+      appBar: AppBar(
+        automaticallyImplyLeading: widget.showBackButton,
+        title: const Text(
+          '課程查詢',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        actions: [
+          IconButton(
+            tooltip: '重新整理',
+            onPressed: controller.isLoading
+                ? null
+                : () => unawaited(controller.search()),
+            icon: const Icon(Icons.refresh),
+          ),
+        ],
+      ),
+      body: Row(
+        children: [
+          SizedBox(
+            width: _desktopCoursePaneWidth,
+            child: _buildCourseSearchView(
+              displayedCourses,
+              useDesktopCourseDetails: true,
+            ),
+          ),
+          VerticalDivider(
+            width: 1.0,
+            thickness: 1.0,
+            color: colorScheme.outlineVariant,
+          ),
+          Expanded(
+            child: _CourseTimetableView(snapshot: _syncedScheduleSnapshot()),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCourseSearchView(
+    List<CourseItem> displayedCourses, {
+    required bool useDesktopCourseDetails,
+  }) {
+    return _CourseSearchView(
+      controller: controller,
+      displayedCourses: displayedCourses,
+      isCourseSelected: _isCourseSelected,
+      canSyncToTimetable: _canSyncToTimetable,
+      onCourseTap: (course) => _showCourseDetails(
+        context,
+        course,
+        useDesktopDialog: useDesktopCourseDetails,
+      ),
+      onCourseSyncToggle: _toggleCourseSelection,
+      onLocalFilterPressed: () => _showLocalFilterSheet(context),
+      localFilterActive: _onlyShowTimetableCompatibleCourses,
+    );
+  }
+
+  void _showCourseDetails(
+    BuildContext context,
+    CourseItem course, {
+    required bool useDesktopDialog,
+  }) {
+    if (useDesktopDialog) {
+      unawaited(
+        showDialog<void>(
+          context: context,
+          builder: (context) => _CourseDetailsDialog(course: course),
+        ),
+      );
+      return;
+    }
+
     unawaited(
       showModalBottomSheet<void>(
         context: context,
@@ -206,10 +310,30 @@ class _CourseSelectionPageContentState
     setState(() => _onlyShowTimetableCompatibleCourses = nextValue);
   }
 
+  List<ScheduledCourse> _getCachedScheduledCourses(
+    CourseItem course,
+    List<String> periods,
+  ) {
+    return _courseScheduledCoursesCache.putIfAbsent(
+      course.serialNo,
+      () => _courseToScheduledCourses(course, periods),
+    );
+  }
+
   List<CourseItem> _displayedCourses() {
     if (!_onlyShowTimetableCompatibleCourses) return controller.courses;
+
+    final currentSchedule = _syncedScheduleSnapshot();
+    final occupiedSlots = currentSchedule.courses
+        .expand(_occupiedSlots)
+        .toSet();
+    final periods = currentSchedule.periods;
+
     return controller.courses
-        .where(_canFitCurrentTimetable)
+        .where(
+          (course) =>
+              _canFitCurrentTimetableCached(course, occupiedSlots, periods),
+        )
         .toList(growable: false);
   }
 
@@ -218,21 +342,23 @@ class _CourseSelectionPageContentState
   }
 
   bool _canSyncToTimetable(CourseItem course) {
-    final baseSchedule = _scheduleRepository.loadSchedule();
-    return _courseToScheduledCourses(course, baseSchedule.periods).isNotEmpty;
+    return _canSyncToTimetableCache.putIfAbsent(course.serialNo, () {
+      final baseSchedule = _scheduleRepository.loadSchedule();
+      return _getCachedScheduledCourses(
+        course,
+        baseSchedule.periods,
+      ).isNotEmpty;
+    });
   }
 
-  bool _canFitCurrentTimetable(CourseItem course) {
-    final currentSchedule = _syncedScheduleSnapshot();
-    final candidateCourses = _courseToScheduledCourses(
-      course,
-      currentSchedule.periods,
-    );
+  bool _canFitCurrentTimetableCached(
+    CourseItem course,
+    Set<String> occupiedSlots,
+    List<String> periods,
+  ) {
+    final candidateCourses = _getCachedScheduledCourses(course, periods);
     if (candidateCourses.isEmpty) return false;
 
-    final occupiedSlots = currentSchedule.courses
-        .expand(_occupiedSlots)
-        .toSet();
     final candidateSlots = candidateCourses.expand(_occupiedSlots);
     return candidateSlots.every((slot) => !occupiedSlots.contains(slot));
   }
@@ -256,7 +382,7 @@ class _CourseSelectionPageContentState
   CourseScheduleSnapshot _syncedScheduleSnapshot() {
     final baseSchedule = _scheduleRepository.loadSchedule();
     final syncedCourses = _selectedCourses.values.expand(
-      (course) => _courseToScheduledCourses(course, baseSchedule.periods),
+      (course) => _getCachedScheduledCourses(course, baseSchedule.periods),
     );
 
     return CourseScheduleSnapshot(
@@ -396,6 +522,7 @@ class _CourseSearchView extends StatelessWidget {
             child: RefreshIndicator(
               onRefresh: controller.search,
               child: CustomScrollView(
+                scrollCacheExtent: const ScrollCacheExtent.pixels(900.0),
                 slivers: [
                   SliverToBoxAdapter(
                     child: _SearchPanel(controller: controller),
@@ -506,6 +633,7 @@ class _CourseResultList extends StatelessWidget {
         20.0,
       ),
       sliver: SliverList.separated(
+        addAutomaticKeepAlives: false,
         itemCount: courses.length,
         separatorBuilder: (_, _) => const SizedBox(height: 8.0),
         itemBuilder: (context, index) {
@@ -514,6 +642,7 @@ class _CourseResultList extends StatelessWidget {
             course: course,
             isSelected: isCourseSelected(course),
             canSyncToTimetable: canSyncToTimetable(course),
+            alignActionsToBottom: false,
             onTap: () => onCourseTap(course),
             onSyncToggle: () => onCourseSyncToggle(course),
           );
@@ -548,10 +677,11 @@ class _CourseResultGrid extends StatelessWidget {
         20.0,
       ),
       sliver: SliverGrid.builder(
+        addAutomaticKeepAlives: false,
         gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
           maxCrossAxisExtent:
               _CourseSelectionPageContentState._courseGridMaxExtent,
-          mainAxisExtent: 178.0,
+          mainAxisExtent: 214.0,
           mainAxisSpacing: 8.0,
           crossAxisSpacing: 8.0,
         ),
@@ -562,6 +692,7 @@ class _CourseResultGrid extends StatelessWidget {
             course: course,
             isSelected: isCourseSelected(course),
             canSyncToTimetable: canSyncToTimetable(course),
+            alignActionsToBottom: true,
             onTap: () => onCourseTap(course),
             onSyncToggle: () => onCourseSyncToggle(course),
           );
@@ -2009,6 +2140,7 @@ class _CourseListTile extends StatelessWidget {
     required this.course,
     required this.isSelected,
     required this.canSyncToTimetable,
+    required this.alignActionsToBottom,
     required this.onTap,
     required this.onSyncToggle,
   });
@@ -2016,15 +2148,43 @@ class _CourseListTile extends StatelessWidget {
   final CourseItem course;
   final bool isSelected;
   final bool canSyncToTimetable;
+  final bool alignActionsToBottom;
   final VoidCallback onTap;
   final VoidCallback onSyncToggle;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final actionRow = Row(
+      children: [
+        Icon(Icons.schedule, size: 16.0, color: colorScheme.primary),
+        const SizedBox(width: 6.0),
+        Expanded(
+          child: Text(
+            course.classTimeText,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const SizedBox(width: 8.0),
+        _CourseSyncButton(
+          isSelected: isSelected,
+          canSyncToTimetable: canSyncToTimetable,
+          onPressed: onSyncToggle,
+        ),
+      ],
+    );
 
     return Card(
       margin: EdgeInsets.zero,
+      elevation: 0,
+      color: colorScheme.brightness == Brightness.light
+          ? Colors.white
+          : colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8.0),
+        side: BorderSide(color: colorScheme.outlineVariant),
+      ),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(8.0),
@@ -2038,6 +2198,8 @@ class _CourseListTile extends StatelessWidget {
                   Expanded(
                     child: Text(
                       course.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -2051,6 +2213,8 @@ class _CourseListTile extends StatelessWidget {
               const SizedBox(height: 8.0),
               Text(
                 '${course.classNo} · ${course.creditText} 學分 · ${course.teacherText}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(color: colorScheme.onSurfaceVariant),
               ),
               const SizedBox(height: 8.0),
@@ -2073,26 +2237,9 @@ class _CourseListTile extends StatelessWidget {
                     ),
                 ],
               ),
+              if (alignActionsToBottom) const Spacer(),
               const SizedBox(height: 8.0),
-              Row(
-                children: [
-                  Icon(Icons.schedule, size: 16.0, color: colorScheme.primary),
-                  const SizedBox(width: 6.0),
-                  Expanded(
-                    child: Text(
-                      course.classTimeText,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(width: 8.0),
-                  _CourseSyncButton(
-                    isSelected: isSelected,
-                    canSyncToTimetable: canSyncToTimetable,
-                    onPressed: onSyncToggle,
-                  ),
-                ],
-              ),
+              actionRow,
             ],
           ),
         ),
@@ -2137,11 +2284,26 @@ class _CourseTypeBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Chip(
-      label: Text(label),
-      visualDensity: VisualDensity.compact,
-      side: BorderSide.none,
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.36),
+        borderRadius: BorderRadius.circular(999.0),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 5.0),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 12.0,
+            color: colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -2171,6 +2333,7 @@ class _CourseMetaChip extends StatelessWidget {
             Flexible(
               child: Text(
                 label,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: 12.0,
@@ -2193,69 +2356,144 @@ class _CourseDetailsSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: SingleChildScrollView(
+      child: _CourseDetailsContent(
+        course: course,
         padding: const EdgeInsets.fromLTRB(20.0, 8.0, 20.0, 24.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Text(
-                    course.title,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+      ),
+    );
+  }
+}
+
+class _CourseDetailsDialog extends StatelessWidget {
+  const _CourseDetailsDialog({required this.course});
+
+  final CourseItem course;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      clipBehavior: Clip.antiAlias,
+      insetPadding: const EdgeInsets.all(32.0),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          maxWidth: _CourseSelectionPageContentState._maxSheetWidth,
+        ),
+        child: _CourseDetailsContent(
+          course: course,
+          padding: const EdgeInsets.fromLTRB(24.0, 20.0, 24.0, 24.0),
+          showCloseButton: true,
+          useHorizontalActions: true,
+        ),
+      ),
+    );
+  }
+}
+
+class _CourseDetailsContent extends StatelessWidget {
+  const _CourseDetailsContent({
+    required this.course,
+    required this.padding,
+    this.showCloseButton = false,
+    this.useHorizontalActions = false,
+  });
+
+  final CourseItem course;
+  final EdgeInsetsGeometry padding;
+  final bool showCloseButton;
+  final bool useHorizontalActions;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: padding,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  course.title,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(width: 8.0),
-                _CourseTypeBadge(label: course.courseTypeText),
-              ],
-            ),
-            const SizedBox(height: 16.0),
-            _CourseDetailRow(
-              icon: Icons.confirmation_number_outlined,
-              label: '課號',
-              value: '${course.classNo} / ${course.serialNo}',
-            ),
-            _CourseDetailRow(
-              icon: Icons.person_outline,
-              label: '授課教師',
-              value: course.teacherText,
-            ),
-            _CourseDetailRow(
-              icon: Icons.schedule,
-              label: '上課時間',
-              value: course.classTimeText,
-            ),
-            _CourseDetailRow(
-              icon: Icons.school_outlined,
-              label: '學分',
-              value: '${course.creditText} 學分',
-            ),
-            _CourseDetailRow(
-              icon: Icons.groups_outlined,
-              label: '選課人數',
-              value: course.enrollmentText,
-            ),
-            _CourseDetailRow(
-              icon: Icons.vpn_key_outlined,
-              label: '密碼卡',
-              value: course.passwordCardText,
-            ),
-            if (course.departmentName != null || course.collegeName != null)
-              _CourseDetailRow(
-                icon: Icons.account_balance_outlined,
-                label: '開課單位',
-                value: [
-                  if (course.collegeName != null) course.collegeName,
-                  if (course.departmentName != null) course.departmentName,
-                ].join(' / '),
               ),
-            const SizedBox(height: 12.0),
+              const SizedBox(width: 8.0),
+              Padding(
+                padding: EdgeInsets.only(top: showCloseButton ? 6.0 : 0.0),
+                child: _CourseTypeBadge(label: course.courseTypeText),
+              ),
+              if (showCloseButton) ...[
+                const SizedBox(width: 4.0),
+                IconButton(
+                  tooltip: '關閉',
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 16.0),
+          _CourseDetailRow(
+            icon: Icons.confirmation_number_outlined,
+            label: '課號',
+            value: '${course.classNo} / ${course.serialNo}',
+          ),
+          _CourseDetailRow(
+            icon: Icons.person_outline,
+            label: '授課教師',
+            value: course.teacherText,
+          ),
+          _CourseDetailRow(
+            icon: Icons.schedule,
+            label: '上課時間',
+            value: course.classTimeText,
+          ),
+          _CourseDetailRow(
+            icon: Icons.school_outlined,
+            label: '學分',
+            value: '${course.creditText} 學分',
+          ),
+          _CourseDetailRow(
+            icon: Icons.groups_outlined,
+            label: '選課人數',
+            value: course.enrollmentText,
+          ),
+          _CourseDetailRow(
+            icon: Icons.vpn_key_outlined,
+            label: '密碼卡',
+            value: course.passwordCardText,
+          ),
+          if (course.departmentName != null || course.collegeName != null)
+            _CourseDetailRow(
+              icon: Icons.account_balance_outlined,
+              label: '開課單位',
+              value: [
+                if (course.collegeName != null) course.collegeName,
+                if (course.departmentName != null) course.departmentName,
+              ].join(' / '),
+            ),
+          const SizedBox(height: 12.0),
+          if (useHorizontalActions)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                OutlinedButton(
+                  onPressed: () => _openCourseDetailUrl(context),
+                  child: const Text('課程詳細資訊'),
+                ),
+                const SizedBox(width: 12.0),
+                FilledButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('關閉'),
+                ),
+              ],
+            )
+          else ...[
             SizedBox(
               width: double.infinity,
               child: OutlinedButton(
@@ -2263,6 +2501,7 @@ class _CourseDetailsSheet extends StatelessWidget {
                 child: const Text('課程詳細資訊'),
               ),
             ),
+            const SizedBox(height: 8.0),
             SizedBox(
               width: double.infinity,
               child: FilledButton(
@@ -2271,7 +2510,7 @@ class _CourseDetailsSheet extends StatelessWidget {
               ),
             ),
           ],
-        ),
+        ],
       ),
     );
   }

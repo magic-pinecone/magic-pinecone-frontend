@@ -48,7 +48,7 @@ void main() {
     expect(find.text('顯示 1 / 1 門課程'), findsOneWidget);
   });
 
-  testWidgets('CourseSelectionPage uses a result grid on wide screens', (
+  testWidgets('CourseSelectionPage uses a split workspace on wide screens', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(1200, 800));
@@ -87,7 +87,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byType(SliverGrid), findsOneWidget);
+    expect(find.byTooltip('切換課程工具'), findsNothing);
+    expect(find.byType(VerticalDivider), findsOneWidget);
+    expect(find.text('週一'), findsOneWidget);
+    expect(find.text('週五'), findsOneWidget);
     expect(find.text('程式設計'), findsOneWidget);
     expect(find.text('資料結構'), findsOneWidget);
   });
@@ -558,6 +561,52 @@ void main() {
     expect(find.text('全部'), findsWidgets);
     expect(find.text('課程詳細資訊'), findsOneWidget);
   });
+
+  testWidgets(
+    'CourseSelectionPage shows course details dialog on wide screens',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1000, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CourseSelectionPage(
+            controller: CourseSelectionController(
+              repository: FakeCourseRepository(
+                result: const CourseSearchResult(
+                  totalCount: 1,
+                  courses: [
+                    CourseItem(
+                      serialNo: '12345',
+                      classNo: 'CS101',
+                      title: '程式設計',
+                      credit: 3,
+                      passwordCard: 'ALL',
+                      teachers: ['王小明'],
+                      classTimes: ['1-1', '1-2'],
+                      admitCount: 42,
+                      limitCount: 60,
+                      waitCount: 3,
+                      courseType: 'REQUIRED',
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(Card).first);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(Dialog), findsOneWidget);
+      expect(find.text('課號'), findsOneWidget);
+      expect(find.text('CS101 / 12345'), findsOneWidget);
+      expect(find.byTooltip('關閉'), findsOneWidget);
+    },
+  );
 }
 
 class FakeCourseRepository implements CourseRepository {

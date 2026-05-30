@@ -31,6 +31,31 @@
 
   <title>prototype</title>
   <link rel="manifest" href="manifest.json">
+  <style>
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+
+    html,
+    body {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+    }
+
+    flutter-view,
+    flt-glass-pane {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      overflow: hidden !important;
+    }
+  </style>
 </head>
 <body>
   <!--
