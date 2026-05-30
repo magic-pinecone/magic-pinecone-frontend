@@ -117,6 +117,8 @@ class _CourseSelectionPageContentState
   bool _onlyShowTimetableCompatibleCourses = false;
   int _messageSequence = 0;
   bool _didRestoreSelectedCourses = false;
+  bool _isPreviewingSharedCourses = false;
+  bool _hasUnsavedCourseSelection = false;
   final Map<String, List<ScheduledCourse>> _courseScheduledCoursesCache = {};
   final Map<String, bool> _canSyncToTimetableCache = {};
 
@@ -235,6 +237,15 @@ class _CourseSelectionPageContentState
           onMessageSend: _sendHelperMessage,
         ),
       },
+      floatingActionButton:
+          _selectedView == _CourseSelectionView.search &&
+              _canSaveCourseSelection
+          ? FloatingActionButton(
+              tooltip: '儲存課表',
+              onPressed: _saveCourseSelection,
+              child: const Icon(Icons.save_outlined),
+            )
+          : null,
     );
   }
 
@@ -291,6 +302,8 @@ class _CourseSelectionPageContentState
       snapshot: snapshot,
       totalCredits: _selectedTotalCredits,
       conflictSlotCount: _conflictSlotCount(snapshot),
+      showSaveAction: _canSaveCourseSelection,
+      onSavePressed: _saveCourseSelection,
       onSharePressed: _shareSelectedCourses,
       onCourseTap: (course) => _showTimetableCourseDetails(
         context,
@@ -501,8 +514,12 @@ class _CourseSelectionPageContentState
       } else {
         _selectedCourses[course.serialNo] = course;
       }
+      _hasUnsavedCourseSelection = true;
     });
-    unawaited(_persistSelectedCourses());
+  }
+
+  bool get _canSaveCourseSelection {
+    return _isPreviewingSharedCourses || _hasUnsavedCourseSelection;
   }
 
   Future<void> _persistSelectedCourses() async {
@@ -511,37 +528,59 @@ class _CourseSelectionPageContentState
   }
 
   Future<void> _restoreSelectedCourses() async {
-    final code = await _initialShareCode();
-    if (code == null) return;
+    final restoreState = await _initialShareCode();
+    if (restoreState == null) return;
 
-    final serialNos = _decodeShareCode(code);
+    final serialNos = _decodeShareCode(restoreState.code);
     if (serialNos == null) return;
 
     final courses = await controller.findCoursesBySerialNos(serialNos);
     if (!mounted || courses.isEmpty) return;
 
     setState(() {
+      _isPreviewingSharedCourses = restoreState.isPreview;
+      _hasUnsavedCourseSelection = false;
       _selectedCourses
         ..clear()
         ..addEntries(
           courses.map((course) => MapEntry(course.serialNo, course)),
         );
     });
-    await widget.courseSelectionStorage.writeShareCode(code);
+    if (!restoreState.isPreview) {
+      await widget.courseSelectionStorage.writeShareCode(restoreState.code);
+    }
   }
 
-  Future<String?> _initialShareCode() async {
+  Future<void> _saveCourseSelection() async {
+    await _persistSelectedCourses();
+    if (!mounted) return;
+
+    setState(() {
+      _isPreviewingSharedCourses = false;
+      _hasUnsavedCourseSelection = false;
+    });
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('已儲存課表')));
+  }
+
+  Future<_CourseShareRestoreState?> _initialShareCode() async {
     final sharedCode =
         widget.initialShareCode?.trim() ??
         Uri.base.queryParameters['c']?.trim();
-    if (sharedCode != null && sharedCode.isNotEmpty) return sharedCode;
+    if (sharedCode != null && sharedCode.isNotEmpty) {
+      return _CourseShareRestoreState(code: sharedCode, isPreview: true);
+    }
 
     final storedCode = await widget.courseSelectionStorage.readShareCode();
     final normalizedStoredCode = storedCode?.trim();
     if (normalizedStoredCode == null || normalizedStoredCode.isEmpty) {
       return null;
     }
-    return normalizedStoredCode;
+    return _CourseShareRestoreState(
+      code: normalizedStoredCode,
+      isPreview: false,
+    );
   }
 
   List<String>? _decodeShareCode(String code) {
@@ -650,6 +689,13 @@ class _CourseSelectionPageContentState
       ),
     );
   }
+}
+
+class _CourseShareRestoreState {
+  const _CourseShareRestoreState({required this.code, required this.isPreview});
+
+  final String code;
+  final bool isPreview;
 }
 
 class _CourseTimeSlot {
@@ -919,6 +965,8 @@ class _CourseTimetableView extends StatelessWidget {
     required this.snapshot,
     required this.totalCredits,
     required this.conflictSlotCount,
+    required this.showSaveAction,
+    required this.onSavePressed,
     required this.onSharePressed,
     required this.onCourseTap,
   });
@@ -932,6 +980,8 @@ class _CourseTimetableView extends StatelessWidget {
   final CourseScheduleSnapshot snapshot;
   final int totalCredits;
   final int conflictSlotCount;
+  final bool showSaveAction;
+  final VoidCallback onSavePressed;
   final VoidCallback onSharePressed;
   final ValueChanged<ScheduledCourse> onCourseTap;
 
@@ -1028,6 +1078,8 @@ class _CourseTimetableView extends StatelessWidget {
               child: _TimetableToolbar(
                 totalCredits: totalCredits,
                 conflictSlotCount: conflictSlotCount,
+                showSaveAction: showSaveAction,
+                onSavePressed: onSavePressed,
                 onSharePressed: onSharePressed,
               ),
             ),
@@ -1042,11 +1094,15 @@ class _TimetableToolbar extends StatelessWidget {
   const _TimetableToolbar({
     required this.totalCredits,
     required this.conflictSlotCount,
+    required this.showSaveAction,
+    required this.onSavePressed,
     required this.onSharePressed,
   });
 
   final int totalCredits;
   final int conflictSlotCount;
+  final bool showSaveAction;
+  final VoidCallback onSavePressed;
   final VoidCallback onSharePressed;
 
   @override
@@ -1086,6 +1142,12 @@ class _TimetableToolbar extends StatelessWidget {
                 color: colorScheme.outlineVariant,
               ),
             ),
+            if (showSaveAction)
+              _TimetableToolbarTextAction(
+                label: '儲存',
+                onPressed: onSavePressed,
+                foregroundColor: colorScheme.primary,
+              ),
             _TimetableToolbarTextAction(
               label: '分享課表',
               onPressed: onSharePressed,

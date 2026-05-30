@@ -693,9 +693,16 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, '加入'));
     await tester.pumpAndSettle();
 
+    expect(await storage.readShareCode(), isNull);
+    expect(find.byTooltip('儲存課表'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('儲存課表'));
+    await tester.pumpAndSettle();
+
     final code = await storage.readShareCode();
     expect(code, isNotNull);
     expect(const CourseShareCodec().decodeSerialNos(code!), ['12345']);
+    expect(find.text('已儲存課表'), findsOneWidget);
   });
 
   testWidgets('CourseSelectionPage restores timetable courses from storage', (
@@ -742,12 +749,13 @@ void main() {
   });
 
   testWidgets(
-    'CourseSelectionPage restores timetable courses from share code',
+    'CourseSelectionPage previews share code without overwriting storage',
     (tester) async {
       final storage = MemoryCourseSelectionStorage();
-      await storage.writeShareCode(
-        const CourseShareCodec().encodeSerialNos(const ['99999']),
-      );
+      final storedCode = const CourseShareCodec().encodeSerialNos(const [
+        '99999',
+      ]);
+      await storage.writeShareCode(storedCode);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -784,12 +792,20 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('總學分 3'), findsOneWidget);
+      expect(find.text('儲存'), findsOneWidget);
+      expect(await storage.readShareCode(), storedCode);
+
+      await tester.tap(find.text('儲存'));
+      await tester.pumpAndSettle();
+
       expect(
         const CourseShareCodec().decodeSerialNos(
           (await storage.readShareCode())!,
         ),
         ['12345'],
       );
+      expect(find.text('儲存'), findsNothing);
+      expect(find.text('已儲存課表'), findsOneWidget);
     },
   );
 
