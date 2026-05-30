@@ -16,7 +16,7 @@ class CourseSupplementalDetailCatalog {
 }
 
 const staticRemoteCourseDetailsBaseUrl =
-    'https://raw.githubusercontent.com/magic-pinecone/magic-pinecone-backend-light/115-1/detail';
+    'https://raw.githubusercontent.com/magic-pinecone/magic-pinecone-lite/115-1/detail';
 
 class StaticRemoteCourseSupplementalDetailRepository
     implements CourseSupplementalDetailRepository {

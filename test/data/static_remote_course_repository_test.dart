@@ -7,7 +7,9 @@ import 'package:prototype/features/course_selection/data/course_supplemental_det
 
 void main() {
   test('static course URLs use current semester branch', () {
+    expect(staticRemoteCoursesUrl, contains('/magic-pinecone-lite/'));
     expect(staticRemoteCoursesUrl, contains('/115-1/courses.json'));
+    expect(staticRemoteCourseDetailsBaseUrl, contains('/magic-pinecone-lite/'));
     expect(staticRemoteCourseDetailsBaseUrl, contains('/115-1/detail'));
   });
 
