@@ -75,6 +75,10 @@ void main() {
             'books': '指定用書',
             'teaching_method': '講授',
             'grading_policy': '期中考30%',
+            'distribution_conditions': [
+              {'priority': 1, 'rule': '學制:限學士班。'},
+              {'priority': 1, 'rule': '學制:限學士班。'},
+            ],
           },
         });
       final repository = StaticRemoteCourseSupplementalDetailRepository(
@@ -87,6 +91,8 @@ void main() {
       expect(detail!.serialNo, '00001');
       expect(detail.objectives, '課程目標');
       expect(detail.gradingPolicy, '期中考30%');
+      expect(detail.distributionConditions, hasLength(2));
+      expect(detail.distributionConditionText, '1：學制:限學士班。');
     },
   );
 

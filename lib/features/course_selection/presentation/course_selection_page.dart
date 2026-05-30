@@ -3228,7 +3228,15 @@ class _CourseDetailsContent extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(child: _CoursePrimaryDetails(course: course)),
+                Expanded(
+                  child: SingleChildScrollView(
+                    key: const ValueKey('course-primary-details-scroll'),
+                    child: _CoursePrimaryDetails(
+                      course: course,
+                      supplementalDetail: supplementalDetail,
+                    ),
+                  ),
+                ),
                 const VerticalDivider(width: 32.0),
                 Expanded(
                   child: isLoadingSupplementalDetail
@@ -3246,7 +3254,12 @@ class _CourseDetailsContent extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(child: _CoursePrimaryDetails(course: course)),
+              Expanded(
+                child: _CoursePrimaryDetails(
+                  course: course,
+                  supplementalDetail: supplementalDetail,
+                ),
+              ),
               const VerticalDivider(width: 32.0),
               Expanded(
                 child: _CourseSupplementalDetails(detail: supplementalDetail!),
@@ -3309,12 +3322,16 @@ class _CourseDetailsContent extends StatelessWidget {
 }
 
 class _CoursePrimaryDetails extends StatelessWidget {
-  const _CoursePrimaryDetails({required this.course});
+  const _CoursePrimaryDetails({required this.course, this.supplementalDetail});
 
   final CourseItem course;
+  final CourseSupplementalDetail? supplementalDetail;
 
   @override
   Widget build(BuildContext context) {
+    final distributionConditionText =
+        supplementalDetail?.distributionConditionText ?? '';
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -3356,6 +3373,12 @@ class _CoursePrimaryDetails extends StatelessWidget {
               if (course.collegeName != null) course.collegeName,
               if (course.departmentName != null) course.departmentName,
             ].join(' / '),
+          ),
+        if (distributionConditionText.isNotEmpty)
+          _CourseDetailRow(
+            icon: Icons.rule_outlined,
+            label: '分發條件',
+            value: distributionConditionText,
           ),
       ],
     );

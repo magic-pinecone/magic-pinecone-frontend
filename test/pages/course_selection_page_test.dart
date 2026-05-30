@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:prototype/features/course_selection/data/course_repository.dart';
 import 'package:prototype/features/course_selection/data/course_selection_storage.dart';
 import 'package:prototype/features/course_selection/data/course_share_codec.dart';
+import 'package:prototype/features/course_selection/data/course_supplemental_detail_catalog.dart';
+import 'package:prototype/features/course_selection/models/course_detail_models.dart';
 import 'package:prototype/features/course_selection/models/course_schedule_models.dart';
 import 'package:prototype/features/course_selection/presentation/course_selection_page.dart';
 import 'package:prototype/features/course_selection/presentation/view_models/course_selection_controller.dart';
@@ -1064,6 +1066,13 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1000, 800));
       addTearDown(() => tester.binding.setSurfaceSize(null));
+      final distributionConditions = List<CourseDistributionCondition>.generate(
+        36,
+        (index) => CourseDistributionCondition(
+          priority: index + 1,
+          rule: '學制:限學士班，並符合第 ${index + 1} 項分發條件。',
+        ),
+      );
 
       await tester.pumpWidget(
         MaterialApp(
@@ -1074,7 +1083,7 @@ void main() {
                   totalCount: 1,
                   courses: [
                     CourseItem(
-                      serialNo: '00001',
+                      serialNo: '00098',
                       classNo: 'CS101',
                       title: '程式設計',
                       credit: 3,
@@ -1088,6 +1097,17 @@ void main() {
                     ),
                   ],
                 ),
+              ),
+            ),
+            courseSupplementalDetailRepository: _FakeSupplementalRepository(
+              CourseSupplementalDetail(
+                serialNo: '00098',
+                objectives: '修習本課程同學可以培養深層閱讀理解能力',
+                content: '課程內容',
+                books: '短篇故事/線上資源',
+                teachingMethod: '講授',
+                gradingPolicy: '期中考30%',
+                distributionConditions: distributionConditions,
               ),
             ),
           ),
@@ -1106,15 +1126,37 @@ void main() {
         680.0,
       );
       expect(find.text('課號'), findsOneWidget);
-      expect(find.text('CS101 / 00001'), findsOneWidget);
+      expect(find.text('CS101 / 00098'), findsOneWidget);
+      expect(find.text('分發條件'), findsOneWidget);
+      expect(find.textContaining('1：學制:限學士班'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('course-primary-details-scroll')),
+        findsOneWidget,
+      );
       expect(find.text('課程目標'), findsOneWidget);
-      expect(find.textContaining('五十音聽說讀寫能力'), findsOneWidget);
+      expect(find.textContaining('深層閱讀理解能力'), findsOneWidget);
       expect(find.text('指定用書'), findsOneWidget);
-      expect(find.textContaining('大家的日本語初級１'), findsOneWidget);
+      expect(find.textContaining('短篇故事'), findsOneWidget);
       expect(find.text('課程詳細資訊'), findsNothing);
       expect(find.byTooltip('關閉'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('分發條件')).dx,
+        lessThan(tester.getTopLeft(find.text('課程目標')).dx),
+      );
     },
   );
+}
+
+class _FakeSupplementalRepository
+    implements CourseSupplementalDetailRepository {
+  const _FakeSupplementalRepository(this.detail);
+
+  final CourseSupplementalDetail detail;
+
+  @override
+  Future<CourseSupplementalDetail?> findBySerialNo(String serialNo) async {
+    return serialNo == detail.serialNo ? detail : null;
+  }
 }
 
 class FakeCourseRepository implements CourseRepository {
