@@ -527,7 +527,7 @@ void main() {
                 totalCount: 1,
                 courses: [
                   CourseItem(
-                    serialNo: '12345',
+                    serialNo: '00001',
                     classNo: 'CS101',
                     title: '程式設計',
                     credit: 3,
@@ -554,12 +554,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('課號'), findsOneWidget);
-    expect(find.text('CS101 / 12345'), findsOneWidget);
+    expect(find.text('CS101 / 00001'), findsOneWidget);
     expect(find.text('選課人數'), findsOneWidget);
     expect(find.text('42 / 60 · 候補 3'), findsWidgets);
     expect(find.text('密碼卡'), findsOneWidget);
     expect(find.text('全部'), findsWidgets);
     expect(find.text('課程詳細資訊'), findsOneWidget);
+    expect(find.text('課程目標'), findsNothing);
   });
 
   testWidgets(
@@ -577,7 +578,7 @@ void main() {
                   totalCount: 1,
                   courses: [
                     CourseItem(
-                      serialNo: '12345',
+                      serialNo: '00001',
                       classNo: 'CS101',
                       title: '程式設計',
                       credit: 3,
@@ -603,7 +604,11 @@ void main() {
 
       expect(find.byType(Dialog), findsOneWidget);
       expect(find.text('課號'), findsOneWidget);
-      expect(find.text('CS101 / 12345'), findsOneWidget);
+      expect(find.text('CS101 / 00001'), findsOneWidget);
+      expect(find.text('課程目標'), findsOneWidget);
+      expect(find.textContaining('五十音聽說讀寫能力'), findsOneWidget);
+      expect(find.text('指定用書'), findsOneWidget);
+      expect(find.textContaining('大家的日本語初級１'), findsOneWidget);
       expect(find.byTooltip('關閉'), findsOneWidget);
     },
   );
