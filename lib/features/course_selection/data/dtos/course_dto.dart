@@ -31,8 +31,8 @@ class CourseResponseDto {
     this.limitCnt,
     this.admitCnt,
     this.waitCnt,
-    this.collegeId,
-    this.departmentId,
+    this.collegeName,
+    this.departmentName,
     this.courseType,
   });
   final String serialNo;
@@ -47,8 +47,8 @@ class CourseResponseDto {
   final int? limitCnt;
   final int? admitCnt;
   final int? waitCnt;
-  final String? collegeId;
-  final String? departmentId;
+  final String? collegeName;
+  final String? departmentName;
   final String? courseType;
 
   factory CourseResponseDto.fromJson(Map<String, dynamic> json) =>

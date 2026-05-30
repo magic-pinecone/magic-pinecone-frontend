@@ -3,6 +3,7 @@ import 'package:prototype/core/app/app_backend_config.dart';
 import 'package:prototype/core/app/app_theme.dart';
 import 'package:prototype/features/course_selection/data/course_api_service.dart';
 import 'package:prototype/features/course_selection/data/course_repository.dart';
+import 'package:prototype/features/course_selection/data/course_supplemental_detail_catalog.dart';
 import 'package:prototype/features/course_selection/presentation/view_models/course_selection_controller.dart';
 import 'package:prototype/features/home/data/home_dashboard_repository.dart';
 import 'package:prototype/features/home/presentation/view_models/home_view_model.dart';
@@ -27,6 +28,7 @@ class AppDependencies {
     Dio? dio,
     CourseApiService? courseApiService,
     CourseRepository? courseRepository,
+    CourseSupplementalDetailRepository? courseSupplementalDetailRepository,
     ScholarshipApiService? scholarshipApiService,
     PortalAuthenticator? portalAuthenticator,
     ScholarshipRepository? scholarshipRepository,
@@ -45,6 +47,7 @@ class AppDependencies {
          dio: dio ?? Dio(),
          courseApiService: courseApiService,
          courseRepository: courseRepository,
+         courseSupplementalDetailRepository: courseSupplementalDetailRepository,
          scholarshipApiService: scholarshipApiService,
          portalAuthenticator: portalAuthenticator ?? PortalAuthenticator(),
          scholarshipRepository: scholarshipRepository,
@@ -60,6 +63,7 @@ class AppDependencies {
     required this.dio,
     CourseApiService? courseApiService,
     CourseRepository? courseRepository,
+    CourseSupplementalDetailRepository? courseSupplementalDetailRepository,
     ScholarshipApiService? scholarshipApiService,
     required this.portalAuthenticator,
     ScholarshipRepository? scholarshipRepository,
@@ -70,7 +74,10 @@ class AppDependencies {
     final courseService = courseApiService ?? CourseApiService(dio);
     this.courseApiService = courseService;
     this.courseRepository =
-        courseRepository ?? RemoteCourseRepository(service: courseService);
+        courseRepository ?? StaticRemoteCourseRepository(dio: dio);
+    this.courseSupplementalDetailRepository =
+        courseSupplementalDetailRepository ??
+        StaticRemoteCourseSupplementalDetailRepository(dio: dio);
 
     final apiService = scholarshipApiService ?? ScholarshipApiService(dio);
     this.scholarshipApiService = apiService;
@@ -88,6 +95,8 @@ class AppDependencies {
   final Dio dio;
   late final CourseApiService courseApiService;
   late final CourseRepository courseRepository;
+  late final CourseSupplementalDetailRepository
+  courseSupplementalDetailRepository;
   late final ScholarshipApiService scholarshipApiService;
   final PortalAuthenticator portalAuthenticator;
   late final ScholarshipRepository scholarshipRepository;

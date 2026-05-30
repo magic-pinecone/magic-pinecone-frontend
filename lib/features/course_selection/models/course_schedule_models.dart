@@ -22,8 +22,8 @@ class CourseItem {
     this.limitCount,
     this.admitCount,
     this.waitCount,
-    this.collegeId,
-    this.departmentId,
+    this.collegeName,
+    this.departmentName,
     this.courseType,
   });
 
@@ -40,8 +40,8 @@ class CourseItem {
   final int? limitCount;
   final int? admitCount;
   final int? waitCount;
-  final String? collegeId;
-  final String? departmentId;
+  final String? collegeName;
+  final String? departmentName;
   final String? courseType;
 
   String get teacherText => teachers.isEmpty ? '未定' : teachers.join('、');
@@ -51,14 +51,43 @@ class CourseItem {
 
   String get creditText => credit.toString();
 
+  String get openingUnitText {
+    final units = [
+      if (collegeName != null && collegeName!.isNotEmpty) collegeName,
+      if (departmentName != null && departmentName!.isNotEmpty) departmentName,
+    ];
+    if (units.isEmpty) return '開課單位未定';
+    return units.join(' / ');
+  }
+
   String get courseTypeText {
-    return switch (courseType) {
+    final value = courseType?.trim();
+    final normalized = value?.toUpperCase();
+
+    return switch (normalized) {
       'REQUIRED' => '必修',
       'ELECTIVE' => '選修',
-      final value? when value.isNotEmpty => value,
+      'UNKNOWN' => '未知',
+      _ when value == '必修' || value == '選修' => value!,
+      _ when value != null && value.isNotEmpty => value,
       _ => '未分類',
     };
   }
+
+  String get passwordCardText {
+    final value = passwordCard?.trim();
+    final normalized = value?.toUpperCase();
+
+    return switch (normalized) {
+      'NONE' => '無',
+      'OPTIONAL' => '部分',
+      'ALL' => '全部',
+      _ when value != null && value.isNotEmpty => value,
+      _ => '無',
+    };
+  }
+
+  bool get showsPasswordCardHint => passwordCardText != '無';
 
   String get enrollmentText {
     final admitted = admitCount;
@@ -92,6 +121,7 @@ class ScheduledCourse {
     required this.length,
     required this.location,
     this.category = '必修',
+    this.serialNo,
   });
 
   final String name;
@@ -100,6 +130,7 @@ class ScheduledCourse {
   final int length;
   final String location;
   final String category;
+  final String? serialNo;
 }
 
 class CourseScheduleSnapshot {
