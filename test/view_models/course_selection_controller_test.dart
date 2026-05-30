@@ -41,6 +41,7 @@ void main() {
         serialNo: '  12345  ',
         departmentName: '  資訊工程  ',
         collegeName: '  電機資訊  ',
+        instructor: '  王小明  ',
       );
       await controller.setCourseType('REQUIRED');
       await controller.toggleCredit(4);
@@ -54,6 +55,7 @@ void main() {
       expect(repository.requests.last.serialNo, '12345');
       expect(repository.requests.last.departmentName, '資訊工程');
       expect(repository.requests.last.collegeName, '電機資訊');
+      expect(repository.requests.last.instructor, '王小明');
       expect(repository.requests.last.courseType, 'REQUIRED');
       expect(repository.requests.last.credits, [2, 4]);
       expect(repository.requests.last.hasVacancy, isTrue);
@@ -63,7 +65,7 @@ void main() {
         repository.requests.last.limit,
         CourseSelectionController.defaultPageSize,
       );
-      expect(controller.activeFilterCount, 9);
+      expect(controller.activeFilterCount, 10);
       expect(controller.hasActiveFilter, isTrue);
     });
 
@@ -150,6 +152,7 @@ void main() {
         serialNo: '12345',
         departmentName: '資訊工程',
         collegeName: '電機資訊',
+        instructor: '王小明',
       );
       await controller.setCourseType('REQUIRED');
       await controller.toggleCredit(3);
@@ -166,6 +169,7 @@ void main() {
       expect(controller.serialNo, isEmpty);
       expect(controller.departmentName, isEmpty);
       expect(controller.collegeName, isEmpty);
+      expect(controller.instructor, isEmpty);
       expect(controller.courseType, isNull);
       expect(controller.credits, isEmpty);
       expect(controller.hasVacancy, isNull);
@@ -177,6 +181,7 @@ void main() {
       expect(repository.requests.last.serialNo, isEmpty);
       expect(repository.requests.last.departmentName, isEmpty);
       expect(repository.requests.last.collegeName, isEmpty);
+      expect(repository.requests.last.instructor, isEmpty);
       expect(repository.requests.last.courseType, isNull);
       expect(repository.requests.last.credits, isEmpty);
       expect(repository.requests.last.hasVacancy, isNull);
@@ -258,6 +263,7 @@ class FakeCourseRepository implements CourseRepository {
     String? serialNo,
     String? departmentName,
     String? collegeName,
+    String? instructor,
     String? courseType,
     List<int>? credits,
     bool? hasVacancy,
@@ -272,6 +278,7 @@ class FakeCourseRepository implements CourseRepository {
         serialNo: serialNo,
         departmentName: departmentName,
         collegeName: collegeName,
+        instructor: instructor,
         courseType: courseType,
         credits: credits,
         hasVacancy: hasVacancy,
@@ -294,6 +301,7 @@ class CourseSearchRequest {
     this.serialNo,
     this.departmentName,
     this.collegeName,
+    this.instructor,
     this.courseType,
     this.credits,
     this.hasVacancy,
@@ -307,6 +315,7 @@ class CourseSearchRequest {
   final String? serialNo;
   final String? departmentName;
   final String? collegeName;
+  final String? instructor;
   final String? courseType;
   final List<int>? credits;
   final bool? hasVacancy;

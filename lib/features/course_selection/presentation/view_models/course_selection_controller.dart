@@ -21,6 +21,7 @@ class CourseSelectionController extends ChangeNotifier {
   String _serialNo = '';
   String _departmentName = '';
   String _collegeName = '';
+  String _instructor = '';
   String? _courseType;
   final Set<int> _credits = {};
   bool? _hasVacancy;
@@ -39,6 +40,7 @@ class CourseSelectionController extends ChangeNotifier {
   String get serialNo => _serialNo;
   String get departmentName => _departmentName;
   String get collegeName => _collegeName;
+  String get instructor => _instructor;
   String? get courseType => _courseType;
   List<int> get credits => List.unmodifiable(_sortedCredits);
   bool hasCredit(int credit) => _credits.contains(credit);
@@ -54,6 +56,7 @@ class CourseSelectionController extends ChangeNotifier {
       _serialNo.isNotEmpty,
       _departmentName.isNotEmpty,
       _collegeName.isNotEmpty,
+      _instructor.isNotEmpty,
       _courseType != null,
       _credits.isNotEmpty,
       _hasVacancy != null,
@@ -73,6 +76,7 @@ class CourseSelectionController extends ChangeNotifier {
     String? serialNo,
     String? departmentName,
     String? collegeName,
+    String? instructor,
   }) async {
     if (keyword != null) {
       _keyword = keyword.trim();
@@ -89,6 +93,9 @@ class CourseSelectionController extends ChangeNotifier {
     if (collegeName != null) {
       _collegeName = collegeName.trim();
     }
+    if (instructor != null) {
+      _instructor = instructor.trim();
+    }
 
     _offset = 0;
     _isLoading = true;
@@ -102,6 +109,7 @@ class CourseSelectionController extends ChangeNotifier {
         serialNo: _serialNo,
         departmentName: _departmentName,
         collegeName: _collegeName,
+        instructor: _instructor,
         courseType: _courseType,
         credits: _sortedCredits,
         hasVacancy: _hasVacancy,
@@ -126,6 +134,7 @@ class CourseSelectionController extends ChangeNotifier {
     required String serialNo,
     required String departmentName,
     required String collegeName,
+    required String instructor,
     required String? courseType,
     required Iterable<int> credits,
     required bool? hasVacancy,
@@ -135,6 +144,7 @@ class CourseSelectionController extends ChangeNotifier {
     _serialNo = serialNo.trim();
     _departmentName = departmentName.trim();
     _collegeName = collegeName.trim();
+    _instructor = instructor.trim();
     _courseType = courseType;
     _credits
       ..clear()
@@ -160,6 +170,7 @@ class CourseSelectionController extends ChangeNotifier {
         serialNo: _serialNo,
         departmentName: _departmentName,
         collegeName: _collegeName,
+        instructor: _instructor,
         courseType: _courseType,
         credits: _sortedCredits,
         hasVacancy: _hasVacancy,
@@ -227,6 +238,7 @@ class CourseSelectionController extends ChangeNotifier {
     _serialNo = '';
     _departmentName = '';
     _collegeName = '';
+    _instructor = '';
     _courseType = null;
     _credits.clear();
     _hasVacancy = null;

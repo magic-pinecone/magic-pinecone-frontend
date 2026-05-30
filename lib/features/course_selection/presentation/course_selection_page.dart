@@ -94,7 +94,7 @@ class _CourseSelectionPageContentState
   static const _desktopCoursePaneWidth = 520.0;
   static const _maxSearchContentWidth = 1180.0;
   static const _maxSheetWidth = 640.0;
-  static const _maxAdvancedFilterDialogWidth = 980.0;
+  static const _maxAdvancedFilterDialogWidth = 1080.0;
   static const _maxCourseDetailsDialogWidth = 980.0;
   static const _courseDetailsDialogHeight = 680.0;
   static const _courseGridMaxExtent = 560.0;
@@ -303,6 +303,7 @@ class _CourseSelectionPageContentState
       totalCredits: _selectedTotalCredits,
       conflictSlotCount: _conflictSlotCount(snapshot),
       showSaveAction: _canSaveCourseSelection,
+      showPreviewHint: _isPreviewingSharedCourses,
       onSavePressed: _saveCourseSelection,
       onSharePressed: _shareSelectedCourses,
       onCourseTap: (course) => _showTimetableCourseDetails(
@@ -966,6 +967,7 @@ class _CourseTimetableView extends StatelessWidget {
     required this.totalCredits,
     required this.conflictSlotCount,
     required this.showSaveAction,
+    required this.showPreviewHint,
     required this.onSavePressed,
     required this.onSharePressed,
     required this.onCourseTap,
@@ -981,6 +983,7 @@ class _CourseTimetableView extends StatelessWidget {
   final int totalCredits;
   final int conflictSlotCount;
   final bool showSaveAction;
+  final bool showPreviewHint;
   final VoidCallback onSavePressed;
   final VoidCallback onSharePressed;
   final ValueChanged<ScheduledCourse> onCourseTap;
@@ -1079,6 +1082,7 @@ class _CourseTimetableView extends StatelessWidget {
                 totalCredits: totalCredits,
                 conflictSlotCount: conflictSlotCount,
                 showSaveAction: showSaveAction,
+                showPreviewHint: showPreviewHint,
                 onSavePressed: onSavePressed,
                 onSharePressed: onSharePressed,
               ),
@@ -1095,6 +1099,7 @@ class _TimetableToolbar extends StatelessWidget {
     required this.totalCredits,
     required this.conflictSlotCount,
     required this.showSaveAction,
+    required this.showPreviewHint,
     required this.onSavePressed,
     required this.onSharePressed,
   });
@@ -1102,6 +1107,7 @@ class _TimetableToolbar extends StatelessWidget {
   final int totalCredits;
   final int conflictSlotCount;
   final bool showSaveAction;
+  final bool showPreviewHint;
   final VoidCallback onSavePressed;
   final VoidCallback onSharePressed;
 
@@ -1122,18 +1128,27 @@ class _TimetableToolbar extends StatelessWidget {
           children: [
             _TimetableToolbarItem(
               icon: Icons.school_outlined,
-              label: '總學分 $totalCredits',
+              label: '$totalCredits 學分',
               foregroundColor: colorScheme.onSurface,
             ),
             _TimetableToolbarItem(
               icon: hasConflict
                   ? Icons.warning_amber_rounded
                   : Icons.check_circle_outline,
-              label: hasConflict ? '衝堂 $conflictSlotCount 格' : '無衝堂',
+              label: hasConflict ? '衝堂 $conflictSlotCount 節' : '無衝堂',
               foregroundColor: hasConflict
                   ? colorScheme.error
                   : colorScheme.primary,
             ),
+            if (showPreviewHint)
+              Tooltip(
+                message: '預覽中，儲存後才會覆蓋本機課表。',
+                child: _TimetableToolbarItem(
+                  icon: Icons.visibility_outlined,
+                  label: '預覽',
+                  foregroundColor: colorScheme.tertiary,
+                ),
+              ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4.0),
               child: Container(
@@ -1548,6 +1563,7 @@ class _SearchPanelState extends State<_SearchPanel> {
       controller.serialNo.isNotEmpty,
       controller.departmentName.isNotEmpty,
       controller.collegeName.isNotEmpty,
+      controller.instructor.isNotEmpty,
       controller.courseType != null,
       controller.credits.isNotEmpty,
       controller.hasVacancy != null,
@@ -1570,7 +1586,10 @@ class _SearchPanelState extends State<_SearchPanel> {
                       ._maxAdvancedFilterDialogWidth,
                 ),
                 child: SizedBox(
-                  height: 680.0,
+                  height: (MediaQuery.sizeOf(context).height - 64.0).clamp(
+                    680.0,
+                    760.0,
+                  ),
                   child: _AdvancedFilterSheet(
                     controller: controller,
                     useDialogLayout: true,
@@ -1633,6 +1652,7 @@ class _AdvancedFilterSheetState extends State<_AdvancedFilterSheet> {
   late final TextEditingController _serialNoController;
   late final TextEditingController _departmentNameController;
   late final TextEditingController _collegeNameController;
+  late final TextEditingController _instructorController;
   late String? _courseType;
   late final Set<int> _credits;
   late bool? _hasVacancy;
@@ -1652,6 +1672,7 @@ class _AdvancedFilterSheetState extends State<_AdvancedFilterSheet> {
     _collegeNameController = TextEditingController(
       text: controller.collegeName,
     );
+    _instructorController = TextEditingController(text: controller.instructor);
     _courseType = controller.courseType;
     _credits = controller.credits.toSet();
     _hasVacancy = controller.hasVacancy;
@@ -1664,6 +1685,7 @@ class _AdvancedFilterSheetState extends State<_AdvancedFilterSheet> {
     _serialNoController.dispose();
     _departmentNameController.dispose();
     _collegeNameController.dispose();
+    _instructorController.dispose();
     super.dispose();
   }
 
@@ -1767,6 +1789,7 @@ class _AdvancedFilterSheetState extends State<_AdvancedFilterSheet> {
           serialNoController: _serialNoController,
           departmentNameController: _departmentNameController,
           collegeNameController: _collegeNameController,
+          instructorController: _instructorController,
           onSubmitted: _applyFilters,
         ),
         const SizedBox(height: 12.0),
@@ -1887,6 +1910,7 @@ class _AdvancedFilterSheetState extends State<_AdvancedFilterSheet> {
     _serialNoController.clear();
     _departmentNameController.clear();
     _collegeNameController.clear();
+    _instructorController.clear();
     setState(() {
       _courseType = null;
       _credits.clear();
@@ -1903,6 +1927,7 @@ class _AdvancedFilterSheetState extends State<_AdvancedFilterSheet> {
             serialNo: _serialNoController.text,
             departmentName: _departmentNameController.text,
             collegeName: _collegeNameController.text,
+            instructor: _instructorController.text,
             courseType: _courseType,
             credits: _credits,
             hasVacancy: _hasVacancy,
@@ -1962,6 +1987,9 @@ class _ActiveFilterSummary extends StatelessWidget {
     }
     if (controller.collegeName.isNotEmpty) {
       labels.add('學院：${controller.collegeName}');
+    }
+    if (controller.instructor.isNotEmpty) {
+      labels.add('授課教師：${controller.instructor}');
     }
     if (controller.courseType != null) {
       labels.add('類型：${_courseTypeText(controller.courseType)}');
@@ -2050,6 +2078,7 @@ class _AdvancedSearchFields extends StatelessWidget {
     required this.serialNoController,
     required this.departmentNameController,
     required this.collegeNameController,
+    required this.instructorController,
     required this.onSubmitted,
   });
 
@@ -2058,6 +2087,7 @@ class _AdvancedSearchFields extends StatelessWidget {
   final TextEditingController serialNoController;
   final TextEditingController departmentNameController;
   final TextEditingController collegeNameController;
+  final TextEditingController instructorController;
   final VoidCallback onSubmitted;
 
   @override
@@ -2098,6 +2128,14 @@ class _AdvancedSearchFields extends StatelessWidget {
             icon: Icons.account_balance_outlined,
             onSubmitted: onSubmitted,
           ),
+          _SearchTextField(
+            controller: instructorController,
+            enabled: enabled,
+            label: '授課教師',
+            hintText: '王小明',
+            icon: Icons.person_search_outlined,
+            onSubmitted: onSubmitted,
+          ),
         ];
 
         if (!isWide) {
@@ -2118,7 +2156,10 @@ class _AdvancedSearchFields extends StatelessWidget {
                 children: [
                   Expanded(child: fields[index]),
                   const SizedBox(width: 8.0),
-                  Expanded(child: fields[index + 1]),
+                  if (index + 1 < fields.length)
+                    Expanded(child: fields[index + 1])
+                  else
+                    const Spacer(),
                 ],
               ),
               if (index < fields.length - 2) const SizedBox(height: 8.0),
@@ -2506,17 +2547,25 @@ class _DraftCourseTypeSegmentedControl extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SegmentedButton<_CourseTypeFilter>(
-      showSelectedIcon: false,
-      segments: const [
-        ButtonSegment(value: _CourseTypeFilter.all, label: Text('全部')),
-        ButtonSegment(value: _CourseTypeFilter.required, label: Text('必修')),
-        ButtonSegment(value: _CourseTypeFilter.elective, label: Text('選修')),
-      ],
-      selected: {_selectedFilter},
-      onSelectionChanged: enabled
-          ? (values) => onChanged(_toCourseType(values.single))
-          : null,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final segmentWidth = constraints.maxWidth / 3;
+        return SegmentedButton<_CourseTypeFilter>(
+          showSelectedIcon: false,
+          style: ButtonStyle(
+            fixedSize: WidgetStatePropertyAll(Size(segmentWidth, 44.0)),
+          ),
+          segments: const [
+            ButtonSegment(value: _CourseTypeFilter.all, label: Text('全部')),
+            ButtonSegment(value: _CourseTypeFilter.required, label: Text('必修')),
+            ButtonSegment(value: _CourseTypeFilter.elective, label: Text('選修')),
+          ],
+          selected: {_selectedFilter},
+          onSelectionChanged: enabled
+              ? (values) => onChanged(_toCourseType(values.single))
+              : null,
+        );
+      },
     );
   }
 
@@ -2550,17 +2599,25 @@ class _DraftVacancySegmentedControl extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SegmentedButton<_VacancyFilter>(
-      showSelectedIcon: false,
-      segments: const [
-        ButtonSegment(value: _VacancyFilter.all, label: Text('全部')),
-        ButtonSegment(value: _VacancyFilter.available, label: Text('尚有名額')),
-        ButtonSegment(value: _VacancyFilter.full, label: Text('已額滿')),
-      ],
-      selected: {_selectedFilter},
-      onSelectionChanged: enabled
-          ? (values) => onChanged(_toHasVacancy(values.single))
-          : null,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final segmentWidth = constraints.maxWidth / 3;
+        return SegmentedButton<_VacancyFilter>(
+          showSelectedIcon: false,
+          style: ButtonStyle(
+            fixedSize: WidgetStatePropertyAll(Size(segmentWidth, 44.0)),
+          ),
+          segments: const [
+            ButtonSegment(value: _VacancyFilter.all, label: Text('全部')),
+            ButtonSegment(value: _VacancyFilter.available, label: Text('尚有名額')),
+            ButtonSegment(value: _VacancyFilter.full, label: Text('已額滿')),
+          ],
+          selected: {_selectedFilter},
+          onSelectionChanged: enabled
+              ? (values) => onChanged(_toHasVacancy(values.single))
+              : null,
+        );
+      },
     );
   }
 

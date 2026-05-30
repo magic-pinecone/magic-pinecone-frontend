@@ -99,6 +99,7 @@ class FakeCourseRepository implements CourseRepository {
     String? serialNo,
     String? departmentName,
     String? collegeName,
+    String? instructor,
     String? courseType,
     List<int>? credits,
     bool? hasVacancy,

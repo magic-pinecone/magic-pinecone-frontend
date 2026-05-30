@@ -12,6 +12,7 @@ abstract class CourseRepository {
     String? serialNo,
     String? departmentName,
     String? collegeName,
+    String? instructor,
     String? courseType,
     List<int>? credits,
     bool? hasVacancy,
@@ -37,6 +38,7 @@ class RemoteCourseRepository implements CourseRepository {
     String? serialNo,
     String? departmentName,
     String? collegeName,
+    String? instructor,
     String? courseType,
     List<int>? credits,
     bool? hasVacancy,
@@ -89,6 +91,7 @@ class StaticRemoteCourseRepository implements CourseRepository {
     String? serialNo,
     String? departmentName,
     String? collegeName,
+    String? instructor,
     String? courseType,
     List<int>? credits,
     bool? hasVacancy,
@@ -104,6 +107,7 @@ class StaticRemoteCourseRepository implements CourseRepository {
               _contains(course.serialNo, serialNo) &&
               _contains(course.departmentName, departmentName) &&
               _contains(course.collegeName, collegeName) &&
+              _contains(course.teacherText, instructor) &&
               _matchesCourseType(course, courseType) &&
               _matchesCredits(course, credits) &&
               _matchesVacancy(course, hasVacancy) &&

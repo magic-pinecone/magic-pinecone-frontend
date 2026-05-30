@@ -50,6 +50,7 @@ void main() {
 
     final result = await repository.searchCourses(
       keyword: '日文',
+      instructor: '王中成',
       courseType: 'ELECTIVE',
       hasVacancy: true,
       limit: 1,

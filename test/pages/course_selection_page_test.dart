@@ -220,6 +220,7 @@ void main() {
     await tester.enterText(find.widgetWithText(TextField, '流水號'), '12345');
     await tester.enterText(find.widgetWithText(TextField, '系所'), '資訊工程');
     await tester.enterText(find.widgetWithText(TextField, '學院'), '電機資訊');
+    await tester.enterText(find.widgetWithText(TextField, '授課教師'), '王小明');
     await tester.testTextInput.receiveAction(TextInputAction.search);
     await tester.pumpAndSettle();
 
@@ -227,10 +228,12 @@ void main() {
     expect(repository.requests.last.serialNo, '12345');
     expect(repository.requests.last.departmentName, '資訊工程');
     expect(repository.requests.last.collegeName, '電機資訊');
+    expect(repository.requests.last.instructor, '王小明');
     expect(find.text('課號：CS'), findsOneWidget);
     expect(find.text('流水號：12345'), findsOneWidget);
     expect(find.text('系所：資訊工程'), findsOneWidget);
     expect(find.text('學院：電機資訊'), findsOneWidget);
+    expect(find.text('授課教師：王小明'), findsOneWidget);
     expect(find.text('清除全部'), findsOneWidget);
   });
 
@@ -535,7 +538,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byTooltip('重新整理'), findsNothing);
-    expect(find.text('總學分 3'), findsOneWidget);
+    expect(find.text('3 學分'), findsOneWidget);
     expect(find.text('無衝堂'), findsOneWidget);
     expect(find.text('程式設計'), findsOneWidget);
 
@@ -593,8 +596,8 @@ void main() {
     await tester.tap(find.text('課表'));
     await tester.pumpAndSettle();
 
-    expect(find.text('總學分 5'), findsOneWidget);
-    expect(find.text('衝堂 1 格'), findsOneWidget);
+    expect(find.text('5 學分'), findsOneWidget);
+    expect(find.text('衝堂 1 節'), findsOneWidget);
   });
 
   testWidgets('CourseSelectionPage copies timetable share link', (
@@ -744,7 +747,7 @@ void main() {
     await tester.tap(find.text('課表'));
     await tester.pumpAndSettle();
 
-    expect(find.text('總學分 3'), findsOneWidget);
+    expect(find.text('3 學分'), findsOneWidget);
     expect(find.text('程式設計'), findsOneWidget);
   });
 
@@ -791,7 +794,8 @@ void main() {
       await tester.tap(find.text('課表'));
       await tester.pumpAndSettle();
 
-      expect(find.text('總學分 3'), findsOneWidget);
+      expect(find.text('3 學分'), findsOneWidget);
+      expect(find.text('預覽'), findsOneWidget);
       expect(find.text('儲存'), findsOneWidget);
       expect(await storage.readShareCode(), storedCode);
 
@@ -859,9 +863,15 @@ void main() {
 
     await tester.tap(find.text('進階查詢'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('已選 1 個時段'));
+    final selectedClassTimeButton = find.text('已選 1 個時段', skipOffstage: false);
+    await tester.ensureVisible(selectedClassTimeButton);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('清除').last);
+    await tester.tap(selectedClassTimeButton);
+    await tester.pumpAndSettle();
+    final clearClassTimesButton = find.text('清除').last;
+    await tester.ensureVisible(clearClassTimesButton);
+    await tester.pumpAndSettle();
+    await tester.tap(clearClassTimesButton);
     await tester.pumpAndSettle();
     await tester.tap(find.text('套用').last);
     await tester.pumpAndSettle();
@@ -996,6 +1006,7 @@ class FakeCourseRepository implements CourseRepository {
     String? serialNo,
     String? departmentName,
     String? collegeName,
+    String? instructor,
     String? courseType,
     List<int>? credits,
     bool? hasVacancy,
@@ -1010,6 +1021,7 @@ class FakeCourseRepository implements CourseRepository {
         serialNo: serialNo,
         departmentName: departmentName,
         collegeName: collegeName,
+        instructor: instructor,
         courseType: courseType,
         credits: credits,
         hasVacancy: hasVacancy,
@@ -1031,6 +1043,7 @@ class CourseSearchRequest {
     this.serialNo,
     this.departmentName,
     this.collegeName,
+    this.instructor,
     this.courseType,
     this.credits,
     this.hasVacancy,
@@ -1044,6 +1057,7 @@ class CourseSearchRequest {
   final String? serialNo;
   final String? departmentName;
   final String? collegeName;
+  final String? instructor;
   final String? courseType;
   final List<int>? credits;
   final bool? hasVacancy;
