@@ -3,12 +3,15 @@ import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
+import 'package:flutter/services.dart';
 import 'package:flutter_chat_core/flutter_chat_core.dart';
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'package:prototype/core/app/app_scope.dart';
 import 'package:prototype/core/navigation/app_routes.dart';
 import 'package:prototype/core/widgets/owned_change_notifier_builder.dart';
 import 'package:prototype/features/course_selection/data/course_schedule_repository.dart';
+import 'package:prototype/features/course_selection/data/course_selection_storage.dart';
+import 'package:prototype/features/course_selection/data/course_share_codec.dart';
 import 'package:prototype/features/course_selection/data/course_supplemental_detail_catalog.dart';
 import 'package:prototype/features/course_selection/models/course_detail_models.dart';
 import 'package:prototype/features/course_selection/models/course_schedule_models.dart';
@@ -20,11 +23,15 @@ class CourseSelectionPage extends StatelessWidget {
     super.key,
     this.controller,
     this.courseSupplementalDetailRepository,
+    this.courseSelectionStorage,
+    this.initialShareCode,
     this.showBackButton = false,
   });
 
   final CourseSelectionController? controller;
   final CourseSupplementalDetailRepository? courseSupplementalDetailRepository;
+  final CourseSelectionStorage? courseSelectionStorage;
+  final String? initialShareCode;
   final bool showBackButton;
 
   @override
@@ -34,6 +41,8 @@ class CourseSelectionPage extends StatelessWidget {
         courseSupplementalDetailRepository ??
         dependencies?.courseSupplementalDetailRepository ??
         const StaticFallbackCourseSupplementalDetailRepository();
+    final courseSelectionStorage =
+        this.courseSelectionStorage ?? createCourseSelectionStorage();
 
     return OwnedChangeNotifierBuilder<CourseSelectionController>(
       notifier: controller,
@@ -43,6 +52,8 @@ class CourseSelectionPage extends StatelessWidget {
       builder: (context, controller) => _CourseSelectionPageContent(
         controller: controller,
         supplementalDetailRepository: supplementalDetailRepository,
+        courseSelectionStorage: courseSelectionStorage,
+        initialShareCode: initialShareCode,
         showBackButton: showBackButton,
       ),
     );
@@ -59,11 +70,15 @@ class _CourseSelectionPageContent extends StatefulWidget {
   const _CourseSelectionPageContent({
     required this.controller,
     required this.supplementalDetailRepository,
+    required this.courseSelectionStorage,
+    required this.initialShareCode,
     required this.showBackButton,
   });
 
   final CourseSelectionController controller;
   final CourseSupplementalDetailRepository supplementalDetailRepository;
+  final CourseSelectionStorage courseSelectionStorage;
+  final String? initialShareCode;
   final bool showBackButton;
 
   @override
@@ -86,6 +101,7 @@ class _CourseSelectionPageContentState
 
   final CourseScheduleRepository _scheduleRepository =
       const StaticCourseScheduleRepository();
+  final CourseShareCodec _shareCodec = const CourseShareCodec();
   final InMemoryChatController _chatController = InMemoryChatController(
     messages: [
       TextMessage(
@@ -100,6 +116,7 @@ class _CourseSelectionPageContentState
   _CourseSelectionView _selectedView = _CourseSelectionView.search;
   bool _onlyShowTimetableCompatibleCourses = false;
   int _messageSequence = 0;
+  bool _didRestoreSelectedCourses = false;
   final Map<String, List<ScheduledCourse>> _courseScheduledCoursesCache = {};
   final Map<String, bool> _canSyncToTimetableCache = {};
 
@@ -119,6 +136,10 @@ class _CourseSelectionPageContentState
         if (controller.isLoading && controller.courses.isEmpty) {
           _courseScheduledCoursesCache.clear();
           _canSyncToTimetableCache.clear();
+        }
+        if (!controller.isLoading && !_didRestoreSelectedCourses) {
+          _didRestoreSelectedCourses = true;
+          unawaited(_restoreSelectedCourses());
         }
         final displayedCourses = _displayedCourses();
         return LayoutBuilder(
@@ -270,6 +291,7 @@ class _CourseSelectionPageContentState
       snapshot: snapshot,
       totalCredits: _selectedTotalCredits,
       conflictSlotCount: _conflictSlotCount(snapshot),
+      onSharePressed: _shareSelectedCourses,
       onCourseTap: (course) => _showTimetableCourseDetails(
         context,
         course,
@@ -449,6 +471,29 @@ class _CourseSelectionPageContentState
     return slotCounts.values.where((count) => count > 1).length;
   }
 
+  Future<void> _shareSelectedCourses() async {
+    final shareUrl = _selectedCourseShareUrl();
+    await Clipboard.setData(ClipboardData(text: shareUrl.toString()));
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('已複製分享連結：$shareUrl')));
+  }
+
+  Uri _selectedCourseShareUrl() {
+    final code = _selectedCourseShareCode();
+    return Uri.base.replace(
+      path: '/share',
+      queryParameters: {'c': code},
+      fragment: '',
+    );
+  }
+
+  String _selectedCourseShareCode() {
+    return _shareCodec.encodeSerialNos(_selectedCourses.keys);
+  }
+
   void _toggleCourseSelection(CourseItem course) {
     setState(() {
       if (_selectedCourses.containsKey(course.serialNo)) {
@@ -457,6 +502,54 @@ class _CourseSelectionPageContentState
         _selectedCourses[course.serialNo] = course;
       }
     });
+    unawaited(_persistSelectedCourses());
+  }
+
+  Future<void> _persistSelectedCourses() async {
+    final code = _selectedCourseShareCode();
+    await widget.courseSelectionStorage.writeShareCode(code);
+  }
+
+  Future<void> _restoreSelectedCourses() async {
+    final code = await _initialShareCode();
+    if (code == null) return;
+
+    final serialNos = _decodeShareCode(code);
+    if (serialNos == null) return;
+
+    final courses = await controller.findCoursesBySerialNos(serialNos);
+    if (!mounted || courses.isEmpty) return;
+
+    setState(() {
+      _selectedCourses
+        ..clear()
+        ..addEntries(
+          courses.map((course) => MapEntry(course.serialNo, course)),
+        );
+    });
+    await widget.courseSelectionStorage.writeShareCode(code);
+  }
+
+  Future<String?> _initialShareCode() async {
+    final sharedCode =
+        widget.initialShareCode?.trim() ??
+        Uri.base.queryParameters['c']?.trim();
+    if (sharedCode != null && sharedCode.isNotEmpty) return sharedCode;
+
+    final storedCode = await widget.courseSelectionStorage.readShareCode();
+    final normalizedStoredCode = storedCode?.trim();
+    if (normalizedStoredCode == null || normalizedStoredCode.isEmpty) {
+      return null;
+    }
+    return normalizedStoredCode;
+  }
+
+  List<String>? _decodeShareCode(String code) {
+    try {
+      return _shareCodec.decodeSerialNos(code);
+    } on ArgumentError {
+      return null;
+    }
   }
 
   CourseScheduleSnapshot _syncedScheduleSnapshot() {
@@ -826,6 +919,7 @@ class _CourseTimetableView extends StatelessWidget {
     required this.snapshot,
     required this.totalCredits,
     required this.conflictSlotCount,
+    required this.onSharePressed,
     required this.onCourseTap,
   });
 
@@ -838,6 +932,7 @@ class _CourseTimetableView extends StatelessWidget {
   final CourseScheduleSnapshot snapshot;
   final int totalCredits;
   final int conflictSlotCount;
+  final VoidCallback onSharePressed;
   final ValueChanged<ScheduledCourse> onCourseTap;
 
   @override
@@ -933,6 +1028,7 @@ class _CourseTimetableView extends StatelessWidget {
               child: _TimetableToolbar(
                 totalCredits: totalCredits,
                 conflictSlotCount: conflictSlotCount,
+                onSharePressed: onSharePressed,
               ),
             ),
           ),
@@ -946,10 +1042,12 @@ class _TimetableToolbar extends StatelessWidget {
   const _TimetableToolbar({
     required this.totalCredits,
     required this.conflictSlotCount,
+    required this.onSharePressed,
   });
 
   final int totalCredits;
   final int conflictSlotCount;
+  final VoidCallback onSharePressed;
 
   @override
   Widget build(BuildContext context) {
@@ -971,14 +1069,6 @@ class _TimetableToolbar extends StatelessWidget {
               label: '總學分 $totalCredits',
               foregroundColor: colorScheme.onSurface,
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4.0),
-              child: Container(
-                width: 1.0,
-                height: 20.0,
-                color: colorScheme.outlineVariant,
-              ),
-            ),
             _TimetableToolbarItem(
               icon: hasConflict
                   ? Icons.warning_amber_rounded
@@ -988,7 +1078,53 @@ class _TimetableToolbar extends StatelessWidget {
                   ? colorScheme.error
                   : colorScheme.primary,
             ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+              child: Container(
+                width: 1.0,
+                height: 20.0,
+                color: colorScheme.outlineVariant,
+              ),
+            ),
+            _TimetableToolbarTextAction(
+              label: '分享課表',
+              onPressed: onSharePressed,
+              foregroundColor: colorScheme.onSurface,
+            ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TimetableToolbarTextAction extends StatelessWidget {
+  const _TimetableToolbarTextAction({
+    required this.label,
+    required this.onPressed,
+    required this.foregroundColor,
+  });
+
+  final String label;
+  final VoidCallback onPressed;
+  final Color foregroundColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16.0),
+        onTap: onPressed,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 3.0),
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: foregroundColor,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ),
       ),
     );
@@ -2688,7 +2824,7 @@ class _CourseTypeBadge extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.36),
-        borderRadius: BorderRadius.circular(999.0),
+        borderRadius: BorderRadius.circular(8.0),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 5.0),
@@ -2836,21 +2972,29 @@ class _CourseDetailsContent extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: _SelectableCourseText(
-                course.title,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Flexible(
+                    child: _SelectableCourseText(
+                      course.title,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8.0),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 3.0),
+                    child: _CourseTypeBadge(label: course.courseTypeText),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: 8.0),
-            Padding(
-              padding: EdgeInsets.only(top: showCloseButton ? 6.0 : 0.0),
-              child: _CourseTypeBadge(label: course.courseTypeText),
-            ),
             if (showCloseButton) ...[
-              const SizedBox(width: 4.0),
+              const SizedBox(width: 8.0),
               IconButton(
                 tooltip: '關閉',
                 onPressed: () => Navigator.of(context).pop(),

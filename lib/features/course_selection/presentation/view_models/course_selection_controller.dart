@@ -234,6 +234,37 @@ class CourseSelectionController extends ChangeNotifier {
     await search();
   }
 
+  Future<List<CourseItem>> findCoursesBySerialNos(
+    Iterable<String> serialNos,
+  ) async {
+    final uniqueSerialNos = {
+      for (final serialNo in serialNos)
+        if (serialNo.trim().isNotEmpty) serialNo.trim(),
+    };
+    final coursesBySerialNo = {
+      for (final course in _courses) course.serialNo: course,
+    };
+
+    for (final serialNo in uniqueSerialNos) {
+      if (coursesBySerialNo.containsKey(serialNo)) continue;
+
+      final result = await _repository.searchCourses(
+        serialNo: serialNo,
+        limit: 10,
+      );
+      for (final course in result.courses) {
+        if (course.serialNo == serialNo) {
+          coursesBySerialNo[serialNo] = course;
+          break;
+        }
+      }
+    }
+
+    return [
+      for (final serialNo in uniqueSerialNos) ?coursesBySerialNo[serialNo],
+    ];
+  }
+
   List<int> get _sortedCredits {
     return _credits.toList()..sort();
   }

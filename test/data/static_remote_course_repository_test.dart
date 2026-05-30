@@ -6,6 +6,11 @@ import 'package:prototype/features/course_selection/data/course_repository.dart'
 import 'package:prototype/features/course_selection/data/course_supplemental_detail_catalog.dart';
 
 void main() {
+  test('static course URLs use current semester branch', () {
+    expect(staticRemoteCoursesUrl, contains('/115-1/courses.json'));
+    expect(staticRemoteCourseDetailsBaseUrl, contains('/115-1/detail'));
+  });
+
   test('StaticRemoteCourseRepository filters and paginates courses', () async {
     final dio = Dio()
       ..httpClientAdapter = _FakeJsonAdapter({

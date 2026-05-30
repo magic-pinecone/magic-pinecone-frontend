@@ -11,26 +11,31 @@ enum AppTab { home, news, portal, courseSelection, settings }
 class AppRoutes {
   const AppRoutes._();
 
-  static Route<void> tabRoot(AppTab tab) {
+  static Route<void> tabRoot(AppTab tab, {String? initialShareCode}) {
     return MaterialPageRoute<void>(
-      builder: (_) => buildTabPage(tab),
+      builder: (_) => buildTabPage(tab, initialShareCode: initialShareCode),
       settings: RouteSettings(name: 'tab/${tab.name}'),
     );
   }
 
-  static Widget buildTabPage(AppTab tab) {
+  static Widget buildTabPage(AppTab tab, {String? initialShareCode}) {
     return switch (tab) {
       AppTab.home => const HomePage(),
       AppTab.news => const NewsPage(),
       AppTab.portal => const PortalPage(),
-      AppTab.courseSelection => const CourseSelectionPage(),
+      AppTab.courseSelection => CourseSelectionPage(
+        initialShareCode: initialShareCode,
+      ),
       AppTab.settings => const SettingsPage(),
     };
   }
 
-  static Route<T> courseSelection<T>() {
+  static Route<T> courseSelection<T>({String? initialShareCode}) {
     return MaterialPageRoute<T>(
-      builder: (_) => const CourseSelectionPage(showBackButton: true),
+      builder: (_) => CourseSelectionPage(
+        showBackButton: true,
+        initialShareCode: initialShareCode,
+      ),
       settings: const RouteSettings(name: 'course-selection'),
     );
   }

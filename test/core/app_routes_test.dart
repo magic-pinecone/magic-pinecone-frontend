@@ -18,6 +18,16 @@ void main() {
     expect(AppRoutes.buildTabPage(AppTab.settings), isA<SettingsPage>());
   });
 
+  test('AppRoutes forwards share code to course selection tab', () {
+    final page = AppRoutes.buildTabPage(
+      AppTab.courseSelection,
+      initialShareCode: 'abc123',
+    );
+
+    expect(page, isA<CourseSelectionPage>());
+    expect((page as CourseSelectionPage).initialShareCode, 'abc123');
+  });
+
   test('AppRoutes exposes stable route names for major flows', () {
     expect(AppRoutes.tabRoot(AppTab.portal).settings.name, 'tab/portal');
     expect(AppRoutes.courseSelection<void>().settings.name, 'course-selection');

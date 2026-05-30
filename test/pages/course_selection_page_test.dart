@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:prototype/features/course_selection/data/course_repository.dart';
+import 'package:prototype/features/course_selection/data/course_selection_storage.dart';
+import 'package:prototype/features/course_selection/data/course_share_codec.dart';
 import 'package:prototype/features/course_selection/models/course_schedule_models.dart';
 import 'package:prototype/features/course_selection/presentation/course_selection_page.dart';
 import 'package:prototype/features/course_selection/presentation/view_models/course_selection_controller.dart';
@@ -593,6 +596,202 @@ void main() {
     expect(find.text('總學分 5'), findsOneWidget);
     expect(find.text('衝堂 1 格'), findsOneWidget);
   });
+
+  testWidgets('CourseSelectionPage copies timetable share link', (
+    tester,
+  ) async {
+    String? copiedText;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          final arguments = call.arguments as Map<dynamic, dynamic>;
+          copiedText = arguments['text'] as String?;
+        }
+        return null;
+      },
+    );
+    addTearDown(() {
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      );
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CourseSelectionPage(
+          controller: CourseSelectionController(
+            repository: FakeCourseRepository(
+              result: const CourseSearchResult(
+                totalCount: 1,
+                courses: [
+                  CourseItem(
+                    serialNo: '12345',
+                    classNo: 'CS101',
+                    title: '程式設計',
+                    credit: 3,
+                    teachers: ['王小明'],
+                    classTimes: ['1-1'],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(FilledButton, '加入'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('切換課程工具'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('課表'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('分享課表'));
+    await tester.pumpAndSettle();
+
+    expect(copiedText, isNotNull);
+    final code = Uri.parse(copiedText!).queryParameters['c'];
+    expect(code, isNotNull);
+    expect(const CourseShareCodec().decodeSerialNos(code!), ['12345']);
+    expect(find.textContaining('已複製分享連結'), findsOneWidget);
+  });
+
+  testWidgets('CourseSelectionPage persists selected timetable courses', (
+    tester,
+  ) async {
+    final storage = MemoryCourseSelectionStorage();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CourseSelectionPage(
+          courseSelectionStorage: storage,
+          controller: CourseSelectionController(
+            repository: FakeCourseRepository(
+              result: const CourseSearchResult(
+                totalCount: 1,
+                courses: [
+                  CourseItem(
+                    serialNo: '12345',
+                    classNo: 'CS101',
+                    title: '程式設計',
+                    credit: 3,
+                    teachers: ['王小明'],
+                    classTimes: ['1-1'],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(FilledButton, '加入'));
+    await tester.pumpAndSettle();
+
+    final code = await storage.readShareCode();
+    expect(code, isNotNull);
+    expect(const CourseShareCodec().decodeSerialNos(code!), ['12345']);
+  });
+
+  testWidgets('CourseSelectionPage restores timetable courses from storage', (
+    tester,
+  ) async {
+    final storage = MemoryCourseSelectionStorage();
+    await storage.writeShareCode(
+      const CourseShareCodec().encodeSerialNos(const ['12345']),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CourseSelectionPage(
+          courseSelectionStorage: storage,
+          controller: CourseSelectionController(
+            repository: FakeCourseRepository(
+              result: const CourseSearchResult(
+                totalCount: 1,
+                courses: [
+                  CourseItem(
+                    serialNo: '12345',
+                    classNo: 'CS101',
+                    title: '程式設計',
+                    credit: 3,
+                    teachers: ['王小明'],
+                    classTimes: ['1-1'],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('切換課程工具'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('課表'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('總學分 3'), findsOneWidget);
+    expect(find.text('程式設計'), findsOneWidget);
+  });
+
+  testWidgets(
+    'CourseSelectionPage restores timetable courses from share code',
+    (tester) async {
+      final storage = MemoryCourseSelectionStorage();
+      await storage.writeShareCode(
+        const CourseShareCodec().encodeSerialNos(const ['99999']),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CourseSelectionPage(
+            courseSelectionStorage: storage,
+            initialShareCode: const CourseShareCodec().encodeSerialNos(const [
+              '12345',
+            ]),
+            controller: CourseSelectionController(
+              repository: FakeCourseRepository(
+                result: const CourseSearchResult(
+                  totalCount: 1,
+                  courses: [
+                    CourseItem(
+                      serialNo: '12345',
+                      classNo: 'CS101',
+                      title: '程式設計',
+                      credit: 3,
+                      teachers: ['王小明'],
+                      classTimes: ['1-1'],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('切換課程工具'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('課表'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('總學分 3'), findsOneWidget);
+      expect(
+        const CourseShareCodec().decodeSerialNos(
+          (await storage.readShareCode())!,
+        ),
+        ['12345'],
+      );
+    },
+  );
 
   testWidgets('CourseSelectionPage applies filter chips', (tester) async {
     final repository = FakeCourseRepository();

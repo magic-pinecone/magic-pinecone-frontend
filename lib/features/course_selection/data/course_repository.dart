@@ -22,7 +22,7 @@ abstract class CourseRepository {
 }
 
 const staticRemoteCoursesUrl =
-    'https://raw.githubusercontent.com/magic-pinecone/magic-pinecone-backend-light/data/courses.json';
+    'https://raw.githubusercontent.com/magic-pinecone/magic-pinecone-backend-light/115-1/courses.json';
 
 class RemoteCourseRepository implements CourseRepository {
   RemoteCourseRepository({required CourseApiService service})

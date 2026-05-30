@@ -9,15 +9,30 @@ void main() {
   runApp(const MagicPineconeApp());
 }
 
+AppTab initialAppTabForUri(Uri uri) {
+  return courseShareCodeFromUri(uri) == null
+      ? AppTab.home
+      : AppTab.courseSelection;
+}
+
+String? courseShareCodeFromUri(Uri uri) {
+  final shareCode = uri.queryParameters['c']?.trim();
+  if (shareCode == null || shareCode.isEmpty) return null;
+  return shareCode;
+}
+
 class MagicPineconeApp extends StatefulWidget {
-  const MagicPineconeApp({super.key});
+  const MagicPineconeApp({super.key, this.initialUri});
+
+  final Uri? initialUri;
 
   @override
   State<MagicPineconeApp> createState() => _MagicPineconeAppState();
 }
 
 class _MagicPineconeAppState extends State<MagicPineconeApp> {
-  int _currentIndex = 0;
+  late final String? _initialShareCode;
+  late int _currentIndex;
   late final AppDependencies _dependencies;
 
   // Each tab gets its own GlobalKey so its Navigator state is preserved.
@@ -35,6 +50,9 @@ class _MagicPineconeAppState extends State<MagicPineconeApp> {
   void initState() {
     super.initState();
     _dependencies = AppDependencies();
+    final initialUri = widget.initialUri ?? Uri.base;
+    _initialShareCode = courseShareCodeFromUri(initialUri);
+    _currentIndex = initialAppTabForUri(initialUri).index;
   }
 
   @override
@@ -99,7 +117,12 @@ class _MagicPineconeAppState extends State<MagicPineconeApp> {
 
     return Navigator(
       key: _tabKeys[index],
-      onGenerateRoute: (_) => AppRoutes.tabRoot(tabs[index]),
+      onGenerateRoute: (_) => AppRoutes.tabRoot(
+        tabs[index],
+        initialShareCode: index == AppTab.courseSelection.index
+            ? _initialShareCode
+            : null,
+      ),
     );
   }
 }
