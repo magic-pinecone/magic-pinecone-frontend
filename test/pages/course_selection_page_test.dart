@@ -48,6 +48,50 @@ void main() {
     expect(find.text('顯示 1 / 1 門課程'), findsOneWidget);
   });
 
+  testWidgets(
+    'CourseSelectionPage keeps search controls fixed while scrolling',
+    (tester) async {
+      final courses = List<CourseItem>.generate(
+        24,
+        (index) => CourseItem(
+          serialNo: '${10000 + index}',
+          classNo: 'CS$index',
+          title: '課程 $index',
+          credit: 3,
+          teachers: const ['王小明'],
+          classTimes: const ['1-1'],
+        ),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CourseSelectionPage(
+            controller: CourseSelectionController(
+              repository: FakeCourseRepository(
+                result: CourseSearchResult(
+                  totalCount: courses.length,
+                  courses: courses,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final advancedFilterButton = find.widgetWithText(OutlinedButton, '進階查詢');
+      final resultSummary = find.text('顯示 24 / 24 門課程');
+      final buttonTopBefore = tester.getTopLeft(advancedFilterButton).dy;
+      final summaryTopBefore = tester.getTopLeft(resultSummary).dy;
+
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -360));
+      await tester.pumpAndSettle();
+
+      expect(tester.getTopLeft(advancedFilterButton).dy, buttonTopBefore);
+      expect(tester.getTopLeft(resultSummary).dy, summaryTopBefore);
+    },
+  );
+
   testWidgets('CourseSelectionPage uses a split workspace on wide screens', (
     tester,
   ) async {
@@ -488,6 +532,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byTooltip('重新整理'), findsNothing);
+    expect(find.text('總學分 3'), findsOneWidget);
+    expect(find.text('無衝堂'), findsOneWidget);
     expect(find.text('程式設計'), findsOneWidget);
 
     await tester.tap(find.text('程式設計'));
@@ -496,6 +542,56 @@ void main() {
     expect(find.text('課號'), findsOneWidget);
     expect(find.text('CS101 / 12345'), findsOneWidget);
     expect(find.text('授課教師'), findsOneWidget);
+  });
+
+  testWidgets('CourseSelectionPage shows timetable conflict hint', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CourseSelectionPage(
+          controller: CourseSelectionController(
+            repository: FakeCourseRepository(
+              result: const CourseSearchResult(
+                totalCount: 2,
+                courses: [
+                  CourseItem(
+                    serialNo: '12345',
+                    classNo: 'CS101',
+                    title: '程式設計',
+                    credit: 3,
+                    teachers: ['王小明'],
+                    classTimes: ['1-1', '1-2'],
+                  ),
+                  CourseItem(
+                    serialNo: '12346',
+                    classNo: 'CS102',
+                    title: '資料結構',
+                    credit: 2,
+                    teachers: ['王小明'],
+                    classTimes: ['1-2'],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(FilledButton, '加入').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, '加入').last);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('切換課程工具'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('課表'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('總學分 5'), findsOneWidget);
+    expect(find.text('衝堂 1 格'), findsOneWidget);
   });
 
   testWidgets('CourseSelectionPage applies filter chips', (tester) async {
@@ -660,6 +756,7 @@ void main() {
       expect(find.textContaining('五十音聽說讀寫能力'), findsOneWidget);
       expect(find.text('指定用書'), findsOneWidget);
       expect(find.textContaining('大家的日本語初級１'), findsOneWidget);
+      expect(find.text('課程詳細資訊'), findsNothing);
       expect(find.byTooltip('關閉'), findsOneWidget);
     },
   );

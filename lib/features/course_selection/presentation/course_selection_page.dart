@@ -205,13 +205,9 @@ class _CourseSelectionPageContentState
           useDesktopCourseDetails: useDesktopCourseDetails,
           useAdvancedFilterDialog: useDesktopCourseDetails,
         ),
-        _CourseSelectionView.timetable => _CourseTimetableView(
-          snapshot: _syncedScheduleSnapshot(),
-          onCourseTap: (course) => _showTimetableCourseDetails(
-            context,
-            course,
-            useDesktopDialog: useDesktopCourseDetails,
-          ),
+        _CourseSelectionView.timetable => _buildTimetableView(
+          context,
+          useDesktopDialog: useDesktopCourseDetails,
         ),
         _CourseSelectionView.helper => _CourseHelperChatView(
           chatController: _chatController,
@@ -259,17 +255,25 @@ class _CourseSelectionPageContentState
             thickness: 1.0,
             color: colorScheme.outlineVariant,
           ),
-          Expanded(
-            child: _CourseTimetableView(
-              snapshot: _syncedScheduleSnapshot(),
-              onCourseTap: (course) => _showTimetableCourseDetails(
-                context,
-                course,
-                useDesktopDialog: true,
-              ),
-            ),
-          ),
+          Expanded(child: _buildTimetableView(context, useDesktopDialog: true)),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTimetableView(
+    BuildContext context, {
+    required bool useDesktopDialog,
+  }) {
+    final snapshot = _syncedScheduleSnapshot();
+    return _CourseTimetableView(
+      snapshot: snapshot,
+      totalCredits: _selectedTotalCredits,
+      conflictSlotCount: _conflictSlotCount(snapshot),
+      onCourseTap: (course) => _showTimetableCourseDetails(
+        context,
+        course,
+        useDesktopDialog: useDesktopDialog,
       ),
     );
   }
@@ -400,6 +404,13 @@ class _CourseSelectionPageContentState
     return _selectedCourses.containsKey(course.serialNo);
   }
 
+  int get _selectedTotalCredits {
+    return _selectedCourses.values.fold(
+      0,
+      (total, course) => total + course.credit,
+    );
+  }
+
   bool _canSyncToTimetable(CourseItem course) {
     return _canSyncToTimetableCache.putIfAbsent(course.serialNo, () {
       final baseSchedule = _scheduleRepository.loadSchedule();
@@ -426,6 +437,16 @@ class _CourseSelectionPageContentState
     for (var index = 0; index < course.length; index++) {
       yield '${course.dayIndex}:${course.startPeriodIndex + index}';
     }
+  }
+
+  int _conflictSlotCount(CourseScheduleSnapshot snapshot) {
+    final slotCounts = <String, int>{};
+    for (final course in snapshot.courses) {
+      for (final slot in _occupiedSlots(course)) {
+        slotCounts.update(slot, (count) => count + 1, ifAbsent: () => 1);
+      }
+    }
+    return slotCounts.values.where((count) => count > 1).length;
   }
 
   void _toggleCourseSelection(CourseItem course) {
@@ -581,90 +602,95 @@ class _CourseSearchView extends StatelessWidget {
             constraints: const BoxConstraints(
               maxWidth: _CourseSelectionPageContentState._maxSearchContentWidth,
             ),
-            child: RefreshIndicator(
-              onRefresh: controller.search,
-              child: CustomScrollView(
-                scrollCacheExtent: const ScrollCacheExtent.pixels(900.0),
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: _SearchPanel(
-                      controller: controller,
-                      useAdvancedFilterDialog: useAdvancedFilterDialog,
-                    ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: _ResultSummary(
-                      controller: controller,
-                      displayedCourseCount: displayedCourses.length,
-                      localFilterActive: localFilterActive,
-                      onFilterPressed: onLocalFilterPressed,
-                    ),
-                  ),
-                  if (controller.isLoading && controller.courses.isEmpty)
-                    const SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: Center(child: CircularProgressIndicator()),
-                    )
-                  else if (controller.error != null &&
-                      controller.courses.isEmpty)
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: _ErrorState(
-                        onRetry: () => unawaited(controller.search()),
-                      ),
-                    )
-                  else if (displayedCourses.isEmpty)
-                    const SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: _EmptyState(),
-                    )
-                  else if (useGrid)
-                    _CourseResultGrid(
-                      courses: displayedCourses,
-                      isCourseSelected: isCourseSelected,
-                      canSyncToTimetable: canSyncToTimetable,
-                      onCourseTap: onCourseTap,
-                      onCourseSyncToggle: onCourseSyncToggle,
-                    )
-                  else
-                    _CourseResultList(
-                      courses: displayedCourses,
-                      isCourseSelected: isCourseSelected,
-                      canSyncToTimetable: canSyncToTimetable,
-                      onCourseTap: onCourseTap,
-                      onCourseSyncToggle: onCourseSyncToggle,
-                    ),
-                  if (controller.courses.isNotEmpty &&
-                      controller.hasMoreCourses)
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                          _CourseSelectionPageContentState._horizontalPadding,
-                          4.0,
-                          _CourseSelectionPageContentState._horizontalPadding,
-                          24.0,
-                        ),
-                        child: OutlinedButton.icon(
-                          onPressed:
-                              controller.isLoading || controller.isLoadingMore
-                              ? null
-                              : () => unawaited(controller.loadMore()),
-                          icon: controller.isLoadingMore
-                              ? const SizedBox.square(
-                                  dimension: 18.0,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.0,
-                                  ),
-                                )
-                              : const Icon(Icons.expand_more),
-                          label: Text(
-                            controller.isLoadingMore ? '載入中' : '載入更多',
+            child: Column(
+              children: [
+                _SearchPanel(
+                  controller: controller,
+                  useAdvancedFilterDialog: useAdvancedFilterDialog,
+                ),
+                _ResultSummary(
+                  controller: controller,
+                  displayedCourseCount: displayedCourses.length,
+                  localFilterActive: localFilterActive,
+                  onFilterPressed: onLocalFilterPressed,
+                ),
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: controller.search,
+                    child: CustomScrollView(
+                      scrollCacheExtent: const ScrollCacheExtent.pixels(900.0),
+                      slivers: [
+                        if (controller.isLoading && controller.courses.isEmpty)
+                          const SliverFillRemaining(
+                            hasScrollBody: false,
+                            child: Center(child: CircularProgressIndicator()),
+                          )
+                        else if (controller.error != null &&
+                            controller.courses.isEmpty)
+                          SliverFillRemaining(
+                            hasScrollBody: false,
+                            child: _ErrorState(
+                              onRetry: () => unawaited(controller.search()),
+                            ),
+                          )
+                        else if (displayedCourses.isEmpty)
+                          const SliverFillRemaining(
+                            hasScrollBody: false,
+                            child: _EmptyState(),
+                          )
+                        else if (useGrid)
+                          _CourseResultGrid(
+                            courses: displayedCourses,
+                            isCourseSelected: isCourseSelected,
+                            canSyncToTimetable: canSyncToTimetable,
+                            onCourseTap: onCourseTap,
+                            onCourseSyncToggle: onCourseSyncToggle,
+                          )
+                        else
+                          _CourseResultList(
+                            courses: displayedCourses,
+                            isCourseSelected: isCourseSelected,
+                            canSyncToTimetable: canSyncToTimetable,
+                            onCourseTap: onCourseTap,
+                            onCourseSyncToggle: onCourseSyncToggle,
                           ),
-                        ),
-                      ),
+                        if (controller.courses.isNotEmpty &&
+                            controller.hasMoreCourses)
+                          SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(
+                                _CourseSelectionPageContentState
+                                    ._horizontalPadding,
+                                4.0,
+                                _CourseSelectionPageContentState
+                                    ._horizontalPadding,
+                                24.0,
+                              ),
+                              child: OutlinedButton.icon(
+                                onPressed:
+                                    controller.isLoading ||
+                                        controller.isLoadingMore
+                                    ? null
+                                    : () => unawaited(controller.loadMore()),
+                                icon: controller.isLoadingMore
+                                    ? const SizedBox.square(
+                                        dimension: 18.0,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2.0,
+                                        ),
+                                      )
+                                    : const Icon(Icons.expand_more),
+                                label: Text(
+                                  controller.isLoadingMore ? '載入中' : '載入更多',
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
-                ],
-              ),
+                  ),
+                ),
+              ],
             ),
           ),
         );
@@ -798,6 +824,8 @@ class _CourseHelperChatView extends StatelessWidget {
 class _CourseTimetableView extends StatelessWidget {
   const _CourseTimetableView({
     required this.snapshot,
+    required this.totalCredits,
+    required this.conflictSlotCount,
     required this.onCourseTap,
   });
 
@@ -808,81 +836,193 @@ class _CourseTimetableView extends StatelessWidget {
   static const _headerHeight = 32.0;
 
   final CourseScheduleSnapshot snapshot;
+  final int totalCredits;
+  final int conflictSlotCount;
   final ValueChanged<ScheduledCourse> onCourseTap;
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final totalGapWidth = _gridGap * (snapshot.weekDays.length - 1);
-          final availableWidth =
-              constraints.maxWidth - _periodColumnWidth - totalGapWidth - 24.0;
-          final dayColumnWidth = (availableWidth / snapshot.weekDays.length)
-              .clamp(0.0, _maxDayColumnWidth);
-          final totalWidth =
-              _periodColumnWidth +
-              snapshot.weekDays.length * dayColumnWidth +
-              totalGapWidth;
-          final gridHeight =
-              snapshot.periods.length * _rowHeight +
-              (snapshot.periods.length - 1) * _gridGap;
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final totalGapWidth = _gridGap * (snapshot.weekDays.length - 1);
+                final availableWidth =
+                    constraints.maxWidth -
+                    _periodColumnWidth -
+                    totalGapWidth -
+                    24.0;
+                final dayColumnWidth =
+                    (availableWidth / snapshot.weekDays.length).clamp(
+                      0.0,
+                      _maxDayColumnWidth,
+                    );
+                final totalWidth =
+                    _periodColumnWidth +
+                    snapshot.weekDays.length * dayColumnWidth +
+                    totalGapWidth;
+                final gridHeight =
+                    snapshot.periods.length * _rowHeight +
+                    (snapshot.periods.length - 1) * _gridGap;
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(12.0, 12.0, 12.0, 20.0),
-            child: Center(
-              child: SizedBox(
-                width: totalWidth,
-                child: Column(
-                  children: [
-                    _TimetableHeader(
-                      weekDays: snapshot.weekDays,
-                      periodColumnWidth: _periodColumnWidth,
-                      dayColumnWidth: dayColumnWidth,
-                      gap: _gridGap,
-                      height: _headerHeight,
-                    ),
-                    const SizedBox(height: _gridGap),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _TimetablePeriods(
-                          periods: snapshot.periods,
-                          width: _periodColumnWidth,
-                          rowHeight: _rowHeight,
-                          gap: _gridGap,
-                        ),
-                        SizedBox(
-                          width: totalWidth - _periodColumnWidth,
-                          height: gridHeight,
-                          child: Stack(
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(12.0, 58.0, 12.0, 20.0),
+                  child: Center(
+                    child: SizedBox(
+                      width: totalWidth,
+                      child: Column(
+                        children: [
+                          _TimetableHeader(
+                            weekDays: snapshot.weekDays,
+                            periodColumnWidth: _periodColumnWidth,
+                            dayColumnWidth: dayColumnWidth,
+                            gap: _gridGap,
+                            height: _headerHeight,
+                          ),
+                          const SizedBox(height: _gridGap),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _TimetableGridBackground(
-                                dayCount: snapshot.weekDays.length,
-                                periodCount: snapshot.periods.length,
-                                dayColumnWidth: dayColumnWidth,
+                              _TimetablePeriods(
+                                periods: snapshot.periods,
+                                width: _periodColumnWidth,
                                 rowHeight: _rowHeight,
                                 gap: _gridGap,
                               ),
-                              for (final course in snapshot.courses)
-                                _PositionedScheduledCourse(
-                                  course: course,
-                                  dayColumnWidth: dayColumnWidth,
-                                  rowHeight: _rowHeight,
-                                  gap: _gridGap,
-                                  onTap: onCourseTap,
+                              SizedBox(
+                                width: totalWidth - _periodColumnWidth,
+                                height: gridHeight,
+                                child: Stack(
+                                  children: [
+                                    _TimetableGridBackground(
+                                      dayCount: snapshot.weekDays.length,
+                                      periodCount: snapshot.periods.length,
+                                      dayColumnWidth: dayColumnWidth,
+                                      rowHeight: _rowHeight,
+                                      gap: _gridGap,
+                                    ),
+                                    for (final course in snapshot.courses)
+                                      _PositionedScheduledCourse(
+                                        course: course,
+                                        dayColumnWidth: dayColumnWidth,
+                                        rowHeight: _rowHeight,
+                                        gap: _gridGap,
+                                        onTap: onCourseTap,
+                                      ),
+                                  ],
                                 ),
+                              ),
                             ],
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ],
-                ),
+                  ),
+                );
+              },
+            ),
+          ),
+          Positioned(
+            top: 10.0,
+            left: 12.0,
+            right: 12.0,
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: _TimetableToolbar(
+                totalCredits: totalCredits,
+                conflictSlotCount: conflictSlotCount,
               ),
             ),
-          );
-        },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TimetableToolbar extends StatelessWidget {
+  const _TimetableToolbar({
+    required this.totalCredits,
+    required this.conflictSlotCount,
+  });
+
+  final int totalCredits;
+  final int conflictSlotCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final hasConflict = conflictSlotCount > 0;
+
+    return Material(
+      elevation: 4.0,
+      shadowColor: colorScheme.shadow.withValues(alpha: 0.16),
+      color: colorScheme.surface,
+      shape: StadiumBorder(side: BorderSide(color: colorScheme.outlineVariant)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 6.0),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _TimetableToolbarItem(
+              icon: Icons.school_outlined,
+              label: '總學分 $totalCredits',
+              foregroundColor: colorScheme.onSurface,
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+              child: Container(
+                width: 1.0,
+                height: 20.0,
+                color: colorScheme.outlineVariant,
+              ),
+            ),
+            _TimetableToolbarItem(
+              icon: hasConflict
+                  ? Icons.warning_amber_rounded
+                  : Icons.check_circle_outline,
+              label: hasConflict ? '衝堂 $conflictSlotCount 格' : '無衝堂',
+              foregroundColor: hasConflict
+                  ? colorScheme.error
+                  : colorScheme.primary,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TimetableToolbarItem extends StatelessWidget {
+  const _TimetableToolbarItem({
+    required this.icon,
+    required this.label,
+    required this.foregroundColor,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color foregroundColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 3.0),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 18.0, color: foregroundColor),
+          const SizedBox(width: 6.0),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: foregroundColor,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -2759,11 +2899,6 @@ class _CourseDetailsContent extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              OutlinedButton(
-                onPressed: () => _openCourseDetailUrl(context),
-                child: const Text('課程詳細資訊'),
-              ),
-              const SizedBox(width: 12.0),
               FilledButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: const Text('關閉'),
