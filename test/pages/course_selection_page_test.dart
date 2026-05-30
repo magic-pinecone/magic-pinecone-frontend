@@ -187,6 +187,44 @@ void main() {
     expect(find.text('清除全部'), findsOneWidget);
   });
 
+  testWidgets(
+    'CourseSelectionPage shows advanced filters dialog on wide screens',
+    (tester) async {
+      final repository = FakeCourseRepository();
+
+      await tester.binding.setSurfaceSize(const Size(1000, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CourseSelectionPage(
+            controller: CourseSelectionController(repository: repository),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(OutlinedButton, '進階查詢'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(Dialog), findsOneWidget);
+      expect(find.text('進階查詢'), findsWidgets);
+      expect(find.text('上課時段'), findsOneWidget);
+      expect(find.text('平日'), findsOneWidget);
+      expect(find.text('全週'), findsOneWidget);
+      expect(find.text('選擇上課時段'), findsNothing);
+
+      await tester.tap(find.byTooltip('一 1'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('套用查詢'), findsOneWidget);
+      await tester.tap(find.text('套用查詢'));
+      await tester.pumpAndSettle();
+
+      expect(repository.requests.last.classTimes, ['1-1']);
+    },
+  );
+
   testWidgets('CourseSelectionPage closes advanced filters without applying', (
     tester,
   ) async {
@@ -451,6 +489,13 @@ void main() {
 
     expect(find.byTooltip('重新整理'), findsNothing);
     expect(find.text('程式設計'), findsOneWidget);
+
+    await tester.tap(find.text('程式設計'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('課號'), findsOneWidget);
+    expect(find.text('CS101 / 12345'), findsOneWidget);
+    expect(find.text('授課教師'), findsOneWidget);
   });
 
   testWidgets('CourseSelectionPage applies filter chips', (tester) async {
@@ -603,6 +648,12 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(Dialog), findsOneWidget);
+      expect(
+        tester
+            .getSize(find.byKey(const ValueKey('course-details-dialog-body')))
+            .height,
+        680.0,
+      );
       expect(find.text('課號'), findsOneWidget);
       expect(find.text('CS101 / 00001'), findsOneWidget);
       expect(find.text('課程目標'), findsOneWidget);

@@ -1,10 +1,90 @@
+import 'dart:convert';
+
+import 'package:dio/dio.dart';
 import 'package:prototype/features/course_selection/models/course_detail_models.dart';
+
+abstract class CourseSupplementalDetailRepository {
+  Future<CourseSupplementalDetail?> findBySerialNo(String serialNo);
+}
 
 class CourseSupplementalDetailCatalog {
   const CourseSupplementalDetailCatalog();
 
   CourseSupplementalDetail? findBySerialNo(String serialNo) {
     return _detailsBySerialNo[serialNo];
+  }
+}
+
+const staticRemoteCourseDetailsBaseUrl =
+    'https://raw.githubusercontent.com/magic-pinecone/magic-pinecone-backend-light/data/detail';
+
+class StaticRemoteCourseSupplementalDetailRepository
+    implements CourseSupplementalDetailRepository {
+  StaticRemoteCourseSupplementalDetailRepository({
+    required Dio dio,
+    this.detailsBaseUrl = staticRemoteCourseDetailsBaseUrl,
+  }) : _dio = dio;
+
+  final Dio _dio;
+  final String detailsBaseUrl;
+  final Map<String, CourseSupplementalDetail?> _cache = {};
+
+  @override
+  Future<CourseSupplementalDetail?> findBySerialNo(String serialNo) async {
+    final normalizedSerialNo = _normalizeSerialNo(serialNo);
+    if (normalizedSerialNo.isEmpty) return null;
+    if (_cache.containsKey(normalizedSerialNo)) {
+      return _cache[normalizedSerialNo];
+    }
+
+    try {
+      final response = await _dio.getUri<Object>(
+        Uri.parse('$detailsBaseUrl/$normalizedSerialNo.json'),
+      );
+      final detail = CourseSupplementalDetail.fromJson(
+        _decodeJsonObject(response.data),
+      );
+      _cache[normalizedSerialNo] = detail;
+      return detail;
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 404) {
+        _cache[normalizedSerialNo] = null;
+        return null;
+      }
+      rethrow;
+    }
+  }
+
+  Map<String, Object?> _decodeJsonObject(Object? data) {
+    return switch (data) {
+      final Map<String, Object?> value => value,
+      final Map<Object?, Object?> value => Map<String, Object?>.from(value),
+      final String value => jsonDecode(value) as Map<String, Object?>,
+      _ => throw FormatException('Unexpected course detail payload: $data'),
+    };
+  }
+
+  String _normalizeSerialNo(String serialNo) {
+    final normalized = serialNo.trim();
+    if (normalized.isEmpty) return '';
+    if (RegExp(r'^\d+$').hasMatch(normalized) && normalized.length < 5) {
+      return normalized.padLeft(5, '0');
+    }
+    return normalized;
+  }
+}
+
+class StaticFallbackCourseSupplementalDetailRepository
+    implements CourseSupplementalDetailRepository {
+  const StaticFallbackCourseSupplementalDetailRepository({
+    this.catalog = const CourseSupplementalDetailCatalog(),
+  });
+
+  final CourseSupplementalDetailCatalog catalog;
+
+  @override
+  Future<CourseSupplementalDetail?> findBySerialNo(String serialNo) async {
+    return catalog.findBySerialNo(serialNo);
   }
 }
 

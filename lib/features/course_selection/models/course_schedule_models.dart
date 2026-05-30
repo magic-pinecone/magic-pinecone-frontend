@@ -121,6 +121,7 @@ class ScheduledCourse {
     required this.length,
     required this.location,
     this.category = '必修',
+    this.serialNo,
   });
 
   final String name;
@@ -129,6 +130,7 @@ class ScheduledCourse {
   final int length;
   final String location;
   final String category;
+  final String? serialNo;
 }
 
 class CourseScheduleSnapshot {

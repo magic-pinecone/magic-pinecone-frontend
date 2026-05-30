@@ -19,21 +19,30 @@ class CourseSelectionPage extends StatelessWidget {
   const CourseSelectionPage({
     super.key,
     this.controller,
+    this.courseSupplementalDetailRepository,
     this.showBackButton = false,
   });
 
   final CourseSelectionController? controller;
+  final CourseSupplementalDetailRepository? courseSupplementalDetailRepository;
   final bool showBackButton;
 
   @override
   Widget build(BuildContext context) {
+    final dependencies = controller == null ? AppScope.of(context) : null;
+    final supplementalDetailRepository =
+        courseSupplementalDetailRepository ??
+        dependencies?.courseSupplementalDetailRepository ??
+        const StaticFallbackCourseSupplementalDetailRepository();
+
     return OwnedChangeNotifierBuilder<CourseSelectionController>(
       notifier: controller,
-      create: (context) =>
-          AppScope.of(context).createCourseSelectionController(),
+      create: (context) => (dependencies ?? AppScope.of(context))
+          .createCourseSelectionController(),
       onReady: (controller) => unawaited(controller.load()),
       builder: (context, controller) => _CourseSelectionPageContent(
         controller: controller,
+        supplementalDetailRepository: supplementalDetailRepository,
         showBackButton: showBackButton,
       ),
     );
@@ -49,10 +58,12 @@ enum _VacancyFilter { all, available, full }
 class _CourseSelectionPageContent extends StatefulWidget {
   const _CourseSelectionPageContent({
     required this.controller,
+    required this.supplementalDetailRepository,
     required this.showBackButton,
   });
 
   final CourseSelectionController controller;
+  final CourseSupplementalDetailRepository supplementalDetailRepository;
   final bool showBackButton;
 
   @override
@@ -68,13 +79,13 @@ class _CourseSelectionPageContentState
   static const _desktopCoursePaneWidth = 520.0;
   static const _maxSearchContentWidth = 1180.0;
   static const _maxSheetWidth = 640.0;
+  static const _maxAdvancedFilterDialogWidth = 980.0;
   static const _maxCourseDetailsDialogWidth = 980.0;
+  static const _courseDetailsDialogHeight = 680.0;
   static const _courseGridMaxExtent = 560.0;
 
   final CourseScheduleRepository _scheduleRepository =
       const StaticCourseScheduleRepository();
-  final CourseSupplementalDetailCatalog _supplementalDetailCatalog =
-      const CourseSupplementalDetailCatalog();
   final InMemoryChatController _chatController = InMemoryChatController(
     messages: [
       TextMessage(
@@ -192,9 +203,15 @@ class _CourseSelectionPageContentState
         _CourseSelectionView.search => _buildCourseSearchView(
           displayedCourses,
           useDesktopCourseDetails: useDesktopCourseDetails,
+          useAdvancedFilterDialog: useDesktopCourseDetails,
         ),
         _CourseSelectionView.timetable => _CourseTimetableView(
           snapshot: _syncedScheduleSnapshot(),
+          onCourseTap: (course) => _showTimetableCourseDetails(
+            context,
+            course,
+            useDesktopDialog: useDesktopCourseDetails,
+          ),
         ),
         _CourseSelectionView.helper => _CourseHelperChatView(
           chatController: _chatController,
@@ -234,6 +251,7 @@ class _CourseSelectionPageContentState
             child: _buildCourseSearchView(
               displayedCourses,
               useDesktopCourseDetails: true,
+              useAdvancedFilterDialog: true,
             ),
           ),
           VerticalDivider(
@@ -242,7 +260,14 @@ class _CourseSelectionPageContentState
             color: colorScheme.outlineVariant,
           ),
           Expanded(
-            child: _CourseTimetableView(snapshot: _syncedScheduleSnapshot()),
+            child: _CourseTimetableView(
+              snapshot: _syncedScheduleSnapshot(),
+              onCourseTap: (course) => _showTimetableCourseDetails(
+                context,
+                course,
+                useDesktopDialog: true,
+              ),
+            ),
           ),
         ],
       ),
@@ -252,6 +277,7 @@ class _CourseSelectionPageContentState
   Widget _buildCourseSearchView(
     List<CourseItem> displayedCourses, {
     required bool useDesktopCourseDetails,
+    required bool useAdvancedFilterDialog,
   }) {
     return _CourseSearchView(
       controller: controller,
@@ -266,6 +292,7 @@ class _CourseSelectionPageContentState
       onCourseSyncToggle: _toggleCourseSelection,
       onLocalFilterPressed: () => _showLocalFilterSheet(context),
       localFilterActive: _onlyShowTimetableCompatibleCourses,
+      useAdvancedFilterDialog: useAdvancedFilterDialog,
     );
   }
 
@@ -280,9 +307,8 @@ class _CourseSelectionPageContentState
           context: context,
           builder: (context) => _CourseDetailsDialog(
             course: course,
-            supplementalDetail: _supplementalDetailCatalog.findBySerialNo(
-              course.serialNo,
-            ),
+            supplementalDetail: widget.supplementalDetailRepository
+                .findBySerialNo(course.serialNo),
           ),
         ),
       );
@@ -295,6 +321,28 @@ class _CourseSelectionPageContentState
         showDragHandle: true,
         isScrollControlled: true,
         builder: (context) => _CourseDetailsSheet(course: course),
+      ),
+    );
+  }
+
+  void _showTimetableCourseDetails(
+    BuildContext context,
+    ScheduledCourse scheduledCourse, {
+    required bool useDesktopDialog,
+  }) {
+    final serialNo = scheduledCourse.serialNo;
+    final course = serialNo == null ? null : _selectedCourses[serialNo];
+    if (course != null) {
+      _showCourseDetails(context, course, useDesktopDialog: useDesktopDialog);
+      return;
+    }
+
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        showDragHandle: true,
+        builder: (context) =>
+            _ScheduledCourseDetailsSheet(course: scheduledCourse),
       ),
     );
   }
@@ -445,6 +493,7 @@ class _CourseSelectionPageContentState
       courses.add(
         ScheduledCourse(
           name: course.title,
+          serialNo: course.serialNo,
           dayIndex: start.dayIndex,
           startPeriodIndex: start.periodIndex,
           length: length,
@@ -506,6 +555,7 @@ class _CourseSearchView extends StatelessWidget {
     required this.onCourseSyncToggle,
     required this.onLocalFilterPressed,
     required this.localFilterActive,
+    required this.useAdvancedFilterDialog,
   });
 
   final CourseSelectionController controller;
@@ -516,6 +566,7 @@ class _CourseSearchView extends StatelessWidget {
   final ValueChanged<CourseItem> onCourseSyncToggle;
   final VoidCallback onLocalFilterPressed;
   final bool localFilterActive;
+  final bool useAdvancedFilterDialog;
 
   @override
   Widget build(BuildContext context) {
@@ -536,7 +587,10 @@ class _CourseSearchView extends StatelessWidget {
                 scrollCacheExtent: const ScrollCacheExtent.pixels(900.0),
                 slivers: [
                   SliverToBoxAdapter(
-                    child: _SearchPanel(controller: controller),
+                    child: _SearchPanel(
+                      controller: controller,
+                      useAdvancedFilterDialog: useAdvancedFilterDialog,
+                    ),
                   ),
                   SliverToBoxAdapter(
                     child: _ResultSummary(
@@ -742,7 +796,10 @@ class _CourseHelperChatView extends StatelessWidget {
 }
 
 class _CourseTimetableView extends StatelessWidget {
-  const _CourseTimetableView({required this.snapshot});
+  const _CourseTimetableView({
+    required this.snapshot,
+    required this.onCourseTap,
+  });
 
   static const _periodColumnWidth = 34.0;
   static const _maxDayColumnWidth = 118.0;
@@ -751,6 +808,7 @@ class _CourseTimetableView extends StatelessWidget {
   static const _headerHeight = 32.0;
 
   final CourseScheduleSnapshot snapshot;
+  final ValueChanged<ScheduledCourse> onCourseTap;
 
   @override
   Widget build(BuildContext context) {
@@ -812,6 +870,7 @@ class _CourseTimetableView extends StatelessWidget {
                                   dayColumnWidth: dayColumnWidth,
                                   rowHeight: _rowHeight,
                                   gap: _gridGap,
+                                  onTap: onCourseTap,
                                 ),
                             ],
                           ),
@@ -951,12 +1010,14 @@ class _PositionedScheduledCourse extends StatelessWidget {
     required this.dayColumnWidth,
     required this.rowHeight,
     required this.gap,
+    required this.onTap,
   });
 
   final ScheduledCourse course;
   final double dayColumnWidth;
   final double rowHeight;
   final double gap;
+  final ValueChanged<ScheduledCourse> onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -972,17 +1033,7 @@ class _PositionedScheduledCourse extends StatelessWidget {
       child: CalendarItem(
         courseName: course.name,
         length: course.length,
-        onTap: () => _showScheduledCourse(context, course),
-      ),
-    );
-  }
-
-  void _showScheduledCourse(BuildContext context, ScheduledCourse course) {
-    unawaited(
-      showModalBottomSheet<void>(
-        context: context,
-        showDragHandle: true,
-        builder: (context) => _ScheduledCourseDetailsSheet(course: course),
+        onTap: () => onTap(course),
       ),
     );
   }
@@ -1047,11 +1098,15 @@ class _ScheduledCourseDetailsSheet extends StatelessWidget {
 }
 
 class _SearchPanel extends StatefulWidget {
-  const _SearchPanel({required this.controller});
+  const _SearchPanel({
+    required this.controller,
+    required this.useAdvancedFilterDialog,
+  });
 
   static const _creditOptions = <int>[0, 1, 2, 3, 4, 6];
 
   final CourseSelectionController controller;
+  final bool useAdvancedFilterDialog;
 
   @override
   State<_SearchPanel> createState() => _SearchPanelState();
@@ -1163,6 +1218,34 @@ class _SearchPanelState extends State<_SearchPanel> {
   }
 
   void _showAdvancedFilterSheet(BuildContext context) {
+    if (widget.useAdvancedFilterDialog) {
+      unawaited(
+        showDialog<void>(
+          context: context,
+          builder: (context) {
+            return Dialog(
+              clipBehavior: Clip.antiAlias,
+              insetPadding: const EdgeInsets.all(32.0),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: _CourseSelectionPageContentState
+                      ._maxAdvancedFilterDialogWidth,
+                ),
+                child: SizedBox(
+                  height: 680.0,
+                  child: _AdvancedFilterSheet(
+                    controller: controller,
+                    useDialogLayout: true,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      );
+      return;
+    }
+
     unawaited(
       showModalBottomSheet<void>(
         context: context,
@@ -1177,15 +1260,37 @@ class _SearchPanelState extends State<_SearchPanel> {
 }
 
 class _AdvancedFilterSheet extends StatefulWidget {
-  const _AdvancedFilterSheet({required this.controller});
+  const _AdvancedFilterSheet({
+    required this.controller,
+    this.useDialogLayout = false,
+  });
 
   final CourseSelectionController controller;
+  final bool useDialogLayout;
 
   @override
   State<_AdvancedFilterSheet> createState() => _AdvancedFilterSheetState();
 }
 
 class _AdvancedFilterSheetState extends State<_AdvancedFilterSheet> {
+  static const _classTimeWeekDays = ['一', '二', '三', '四', '五', '六', '日'];
+  static const _classTimePeriods = [
+    '1',
+    '2',
+    '3',
+    '4',
+    'Z',
+    '5',
+    '6',
+    '7',
+    '8',
+    '9',
+    'A',
+    'B',
+    'C',
+    'D',
+  ];
+
   late final TextEditingController _classNoController;
   late final TextEditingController _serialNoController;
   late final TextEditingController _departmentNameController;
@@ -1194,6 +1299,7 @@ class _AdvancedFilterSheetState extends State<_AdvancedFilterSheet> {
   late final Set<int> _credits;
   late bool? _hasVacancy;
   late Set<String> _classTimes;
+  int _visibleClassTimeDayCount = 5;
 
   CourseSelectionController get controller => widget.controller;
 
@@ -1226,6 +1332,16 @@ class _AdvancedFilterSheetState extends State<_AdvancedFilterSheet> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final contentPadding = widget.useDialogLayout
+        ? const EdgeInsets.fromLTRB(28.0, 24.0, 28.0, 28.0)
+        : EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 16.0 + bottomInset);
+    final content = widget.useDialogLayout
+        ? _buildDialogContent(context, contentPadding)
+        : _buildSheetContent(context, contentPadding);
+
+    if (widget.useDialogLayout) {
+      return SafeArea(child: content);
+    }
 
     return SafeArea(
       child: Center(
@@ -1233,94 +1349,163 @@ class _AdvancedFilterSheetState extends State<_AdvancedFilterSheet> {
           constraints: const BoxConstraints(
             maxWidth: _CourseSelectionPageContentState._maxSheetWidth,
           ),
-          child: SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 16.0 + bottomInset),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+          child: content,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDialogContent(
+    BuildContext context,
+    EdgeInsetsGeometry contentPadding,
+  ) {
+    return Padding(
+      padding: contentPadding,
+      child: Column(
+        children: [
+          _AdvancedFilterHeader(onClose: () => Navigator.of(context).pop()),
+          const SizedBox(height: 16.0),
+          Expanded(
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '進階查詢',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: '關閉',
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.close),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12.0),
-                _AdvancedSearchFields(
-                  enabled: !controller.isLoading,
-                  classNoController: _classNoController,
-                  serialNoController: _serialNoController,
-                  departmentNameController: _departmentNameController,
-                  collegeNameController: _collegeNameController,
-                  onSubmitted: _applyFilters,
-                ),
-                const SizedBox(height: 12.0),
-                Text('課程類型', style: Theme.of(context).textTheme.labelLarge),
-                const SizedBox(height: 8.0),
-                _DraftCourseTypeSegmentedControl(
-                  value: _courseType,
-                  enabled: !controller.isLoading,
-                  onChanged: (value) => setState(() => _courseType = value),
-                ),
-                const SizedBox(height: 12.0),
-                Text('學分', style: Theme.of(context).textTheme.labelLarge),
-                const SizedBox(height: 8.0),
-                _DraftCreditFilterGrid(
-                  selectedCredits: _credits,
-                  enabled: !controller.isLoading,
-                  onToggle: _toggleCredit,
-                ),
-                const SizedBox(height: 12.0),
-                Text('名額與時段', style: Theme.of(context).textTheme.labelLarge),
-                const SizedBox(height: 8.0),
-                _DraftVacancySegmentedControl(
-                  value: _hasVacancy,
-                  enabled: !controller.isLoading,
-                  onChanged: (value) => setState(() => _hasVacancy = value),
-                ),
-                const SizedBox(height: 8.0),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: controller.isLoading
-                        ? null
-                        : _showClassTimePicker,
-                    icon: const Icon(Icons.schedule_outlined),
-                    label: Text(_classTimeButtonText),
-                  ),
-                ),
-                const SizedBox(height: 12.0),
-                Row(
-                  children: [
-                    Expanded(
-                      child: FilledButton.icon(
-                        onPressed: controller.isLoading ? null : _applyFilters,
-                        icon: const Icon(Icons.tune),
-                        label: const Text('套用查詢'),
-                      ),
-                    ),
-                    const SizedBox(width: 8.0),
-                    OutlinedButton.icon(
-                      onPressed: controller.isLoading ? null : _clearFilters,
-                      icon: const Icon(Icons.close),
-                      label: const Text('清除'),
-                    ),
-                  ],
-                ),
+                Expanded(child: SingleChildScrollView(child: _buildFilters())),
+                const VerticalDivider(width: 32.0),
+                Expanded(child: _buildInlineClassTimePicker(context)),
               ],
             ),
           ),
-        ),
+          const SizedBox(height: 16.0),
+          _AdvancedFilterActions(
+            isLoading: controller.isLoading,
+            onApply: _applyFilters,
+            onClear: _clearFilters,
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildSheetContent(
+    BuildContext context,
+    EdgeInsetsGeometry contentPadding,
+  ) {
+    return SingleChildScrollView(
+      padding: contentPadding,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _AdvancedFilterHeader(onClose: () => Navigator.of(context).pop()),
+          const SizedBox(height: 12.0),
+          _buildFilters(),
+          const SizedBox(height: 8.0),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: controller.isLoading ? null : _showClassTimePicker,
+              icon: const Icon(Icons.schedule_outlined),
+              label: Text(_classTimeButtonText),
+            ),
+          ),
+          const SizedBox(height: 12.0),
+          _AdvancedFilterActions(
+            isLoading: controller.isLoading,
+            onApply: _applyFilters,
+            onClear: _clearFilters,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilters() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _AdvancedSearchFields(
+          enabled: !controller.isLoading,
+          classNoController: _classNoController,
+          serialNoController: _serialNoController,
+          departmentNameController: _departmentNameController,
+          collegeNameController: _collegeNameController,
+          onSubmitted: _applyFilters,
+        ),
+        const SizedBox(height: 12.0),
+        Text('課程類型', style: Theme.of(context).textTheme.labelLarge),
+        const SizedBox(height: 8.0),
+        _DraftCourseTypeSegmentedControl(
+          value: _courseType,
+          enabled: !controller.isLoading,
+          onChanged: (value) => setState(() => _courseType = value),
+        ),
+        const SizedBox(height: 12.0),
+        Text('學分', style: Theme.of(context).textTheme.labelLarge),
+        const SizedBox(height: 8.0),
+        _DraftCreditFilterGrid(
+          selectedCredits: _credits,
+          enabled: !controller.isLoading,
+          onToggle: _toggleCredit,
+        ),
+        const SizedBox(height: 12.0),
+        Text('名額', style: Theme.of(context).textTheme.labelLarge),
+        const SizedBox(height: 8.0),
+        _DraftVacancySegmentedControl(
+          value: _hasVacancy,
+          enabled: !controller.isLoading,
+          onChanged: (value) => setState(() => _hasVacancy = value),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInlineClassTimePicker(BuildContext context) {
+    final visibleDays = _classTimeWeekDays
+        .take(_visibleClassTimeDayCount)
+        .toList(growable: false);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                '上課時段',
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+            ),
+            TextButton(
+              onPressed: _classTimes.isEmpty
+                  ? null
+                  : () => setState(() => _classTimes.clear()),
+              child: const Text('清除'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8.0),
+        SegmentedButton<int>(
+          showSelectedIcon: false,
+          segments: const [
+            ButtonSegment(value: 5, label: Text('平日')),
+            ButtonSegment(value: 7, label: Text('全週')),
+          ],
+          selected: {_visibleClassTimeDayCount},
+          onSelectionChanged: (values) {
+            setState(() => _visibleClassTimeDayCount = values.single);
+          },
+        ),
+        const SizedBox(height: 12.0),
+        Expanded(
+          child: _ClassTimeGrid(
+            days: visibleDays,
+            periods: _classTimePeriods,
+            selectedValues: _classTimes,
+            enabled: !controller.isLoading,
+            onToggle: _toggleClassTime,
+          ),
+        ),
+      ],
     );
   }
 
@@ -1334,6 +1519,14 @@ class _AdvancedFilterSheetState extends State<_AdvancedFilterSheet> {
     setState(() {
       if (!_credits.add(credit)) {
         _credits.remove(credit);
+      }
+    });
+  }
+
+  void _toggleClassTime(String value) {
+    setState(() {
+      if (!_classTimes.add(value)) {
+        _classTimes.remove(value);
       }
     });
   }
@@ -1454,6 +1647,61 @@ class _ActiveFilterSummary extends StatelessWidget {
       final value? => value,
       _ => '全部',
     };
+  }
+}
+
+class _AdvancedFilterHeader extends StatelessWidget {
+  const _AdvancedFilterHeader({required this.onClose});
+
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text('進階查詢', style: Theme.of(context).textTheme.titleLarge),
+        ),
+        IconButton(
+          tooltip: '關閉',
+          onPressed: onClose,
+          icon: const Icon(Icons.close),
+        ),
+      ],
+    );
+  }
+}
+
+class _AdvancedFilterActions extends StatelessWidget {
+  const _AdvancedFilterActions({
+    required this.isLoading,
+    required this.onApply,
+    required this.onClear,
+  });
+
+  final bool isLoading;
+  final VoidCallback onApply;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: FilledButton.icon(
+            onPressed: isLoading ? null : onApply,
+            icon: const Icon(Icons.tune),
+            label: const Text('套用查詢'),
+          ),
+        ),
+        const SizedBox(width: 8.0),
+        OutlinedButton.icon(
+          onPressed: isLoading ? null : onClear,
+          icon: const Icon(Icons.close),
+          label: const Text('清除'),
+        ),
+      ],
+    );
   }
 }
 
@@ -2171,7 +2419,7 @@ class _CourseListTile extends StatelessWidget {
         Icon(Icons.schedule, size: 16.0, color: colorScheme.primary),
         const SizedBox(width: 6.0),
         Expanded(
-          child: _SelectableCourseText(
+          child: Text(
             course.classTimeText,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -2207,7 +2455,7 @@ class _CourseListTile extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: _SelectableCourseText(
+                    child: Text(
                       course.title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -2222,7 +2470,7 @@ class _CourseListTile extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 8.0),
-              _SelectableCourseText(
+              Text(
                 '${course.classNo} · ${course.creditText} 學分 · ${course.teacherText}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -2304,7 +2552,7 @@ class _CourseTypeBadge extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 5.0),
-        child: _SelectableCourseText(
+        child: Text(
           label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -2342,7 +2590,7 @@ class _CourseMetaChip extends StatelessWidget {
             Icon(icon, size: 15.0, color: colorScheme.onSurfaceVariant),
             const SizedBox(width: 4.0),
             Flexible(
-              child: _SelectableCourseText(
+              child: Text(
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -2382,7 +2630,7 @@ class _CourseDetailsDialog extends StatelessWidget {
   });
 
   final CourseItem course;
-  final CourseSupplementalDetail? supplementalDetail;
+  final Future<CourseSupplementalDetail?> supplementalDetail;
 
   @override
   Widget build(BuildContext context) {
@@ -2393,14 +2641,24 @@ class _CourseDetailsDialog extends StatelessWidget {
         constraints: const BoxConstraints(
           maxWidth:
               _CourseSelectionPageContentState._maxCourseDetailsDialogWidth,
-          maxHeight: 760.0,
         ),
-        child: _CourseDetailsContent(
-          course: course,
-          supplementalDetail: supplementalDetail,
-          padding: const EdgeInsets.fromLTRB(24.0, 20.0, 24.0, 24.0),
-          showCloseButton: true,
-          useHorizontalActions: true,
+        child: SizedBox(
+          key: const ValueKey('course-details-dialog-body'),
+          height: _CourseSelectionPageContentState._courseDetailsDialogHeight,
+          child: FutureBuilder<CourseSupplementalDetail?>(
+            future: supplementalDetail,
+            builder: (context, snapshot) {
+              return _CourseDetailsContent(
+                course: course,
+                supplementalDetail: snapshot.data,
+                isLoadingSupplementalDetail:
+                    snapshot.connectionState != ConnectionState.done,
+                padding: const EdgeInsets.fromLTRB(24.0, 20.0, 24.0, 24.0),
+                showCloseButton: true,
+                useHorizontalActions: true,
+              );
+            },
+          ),
         ),
       ),
     );
@@ -2412,6 +2670,7 @@ class _CourseDetailsContent extends StatelessWidget {
     required this.course,
     required this.padding,
     this.supplementalDetail,
+    this.isLoadingSupplementalDetail = false,
     this.showCloseButton = false,
     this.useHorizontalActions = false,
   });
@@ -2419,101 +2678,123 @@ class _CourseDetailsContent extends StatelessWidget {
   final CourseItem course;
   final EdgeInsetsGeometry padding;
   final CourseSupplementalDetail? supplementalDetail;
+  final bool isLoadingSupplementalDetail;
   final bool showCloseButton;
   final bool useHorizontalActions;
 
   @override
   Widget build(BuildContext context) {
     final showSupplementalDetail =
-        useHorizontalActions && supplementalDetail?.hasContent == true;
+        useHorizontalActions &&
+        (isLoadingSupplementalDetail || supplementalDetail?.hasContent == true);
 
-    return SingleChildScrollView(
-      padding: padding,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    final content = Column(
+      mainAxisSize: useHorizontalActions ? MainAxisSize.max : MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: _SelectableCourseText(
+                course.title,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8.0),
+            Padding(
+              padding: EdgeInsets.only(top: showCloseButton ? 6.0 : 0.0),
+              child: _CourseTypeBadge(label: course.courseTypeText),
+            ),
+            if (showCloseButton) ...[
+              const SizedBox(width: 4.0),
+              IconButton(
+                tooltip: '關閉',
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.close),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 16.0),
+        if (showSupplementalDetail && useHorizontalActions)
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: _CoursePrimaryDetails(course: course)),
+                const VerticalDivider(width: 32.0),
+                Expanded(
+                  child: isLoadingSupplementalDetail
+                      ? const Center(child: CircularProgressIndicator())
+                      : SingleChildScrollView(
+                          child: _CourseSupplementalDetails(
+                            detail: supplementalDetail!,
+                          ),
+                        ),
+                ),
+              ],
+            ),
+          )
+        else if (showSupplementalDetail)
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Expanded(child: _CoursePrimaryDetails(course: course)),
+              const VerticalDivider(width: 32.0),
               Expanded(
-                child: _SelectableCourseText(
-                  course.title,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                child: _CourseSupplementalDetails(detail: supplementalDetail!),
               ),
-              const SizedBox(width: 8.0),
-              Padding(
-                padding: EdgeInsets.only(top: showCloseButton ? 6.0 : 0.0),
-                child: _CourseTypeBadge(label: course.courseTypeText),
-              ),
-              if (showCloseButton) ...[
-                const SizedBox(width: 4.0),
-                IconButton(
-                  tooltip: '關閉',
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close),
-                ),
-              ],
             ],
-          ),
-          const SizedBox(height: 16.0),
-          if (showSupplementalDetail)
-            IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(child: _CoursePrimaryDetails(course: course)),
-                  const VerticalDivider(width: 32.0),
-                  Expanded(
-                    child: _CourseSupplementalDetails(
-                      detail: supplementalDetail!,
-                    ),
-                  ),
-                ],
-              ),
-            )
-          else
-            _CoursePrimaryDetails(course: course),
-          const SizedBox(height: 12.0),
-          if (useHorizontalActions)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                OutlinedButton(
-                  onPressed: () => _openCourseDetailUrl(context),
-                  child: const Text('課程詳細資訊'),
-                ),
-                const SizedBox(width: 12.0),
-                FilledButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('關閉'),
-                ),
-              ],
-            )
-          else ...[
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
+          )
+        else if (useHorizontalActions)
+          Expanded(child: _CoursePrimaryDetails(course: course))
+        else
+          _CoursePrimaryDetails(course: course),
+        const SizedBox(height: 12.0),
+        if (useHorizontalActions)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              OutlinedButton(
                 onPressed: () => _openCourseDetailUrl(context),
                 child: const Text('課程詳細資訊'),
               ),
-            ),
-            const SizedBox(height: 8.0),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
+              const SizedBox(width: 12.0),
+              FilledButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: const Text('關閉'),
               ),
+            ],
+          )
+        else ...[
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: () => _openCourseDetailUrl(context),
+              child: const Text('課程詳細資訊'),
             ),
-          ],
+          ),
+          const SizedBox(height: 8.0),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('關閉'),
+            ),
+          ),
         ],
-      ),
+      ],
     );
+
+    if (useHorizontalActions) {
+      return Padding(padding: padding, child: content);
+    }
+
+    return SingleChildScrollView(padding: padding, child: content);
   }
 
   void _openCourseDetailUrl(BuildContext context) {
@@ -2640,24 +2921,17 @@ class _CourseSupplementalSection extends StatelessWidget {
 }
 
 class _SelectableCourseText extends StatelessWidget {
-  const _SelectableCourseText(
-    this.data, {
-    this.style,
-    this.maxLines,
-    this.overflow,
-  });
+  const _SelectableCourseText(this.data, {this.style});
 
   final String data;
   final TextStyle? style;
-  final int? maxLines;
-  final TextOverflow? overflow;
 
   @override
   Widget build(BuildContext context) {
     if (kIsWeb) {
-      return SelectableText(data, maxLines: maxLines, style: style);
+      return SelectableText(data, style: style);
     }
-    return Text(data, maxLines: maxLines, overflow: overflow, style: style);
+    return Text(data, style: style);
   }
 }
 
