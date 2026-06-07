@@ -18,6 +18,8 @@ dependencies:
   material_symbols_icons: ^4.2906.0
   flutter_chat_core: ^2.0.0
   flutter_chat_ui: ^2.0.0
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.3
 
 dev_dependencies:
   flutter_test:
@@ -27,6 +29,7 @@ dev_dependencies:
   retrofit_generator: ^10.2.6
   build_runner: ^2.6.0
   json_serializable: ^6.14.0
+  riverpod_generator: ^2.4.0
 
 flutter:
   uses-material-design: true
