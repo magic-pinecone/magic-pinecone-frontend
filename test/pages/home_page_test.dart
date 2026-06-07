@@ -237,4 +237,3 @@ class _NeverCompletingPortalAuthenticator extends PortalAuthenticator {
   @override
   Future<String?> fetchPortalToken() => Completer<String?>().future;
 }
-

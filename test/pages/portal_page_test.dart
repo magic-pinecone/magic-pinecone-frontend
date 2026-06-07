@@ -20,9 +20,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          portalSessionControllerProvider.overrideWith(
-            (ref) => controller,
-          ),
+          portalSessionControllerProvider.overrideWith((ref) => controller),
         ],
         child: MaterialApp(
           home: PortalPage(
