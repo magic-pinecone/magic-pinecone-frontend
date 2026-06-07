@@ -2,8 +2,8 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prototype/features/course_selection/data/course_repository.dart';
-import 'package:prototype/features/course_selection/data/course_supplemental_detail_catalog.dart';
+import 'package:magic_pinecone/features/course_selection/data/course_repository.dart';
+import 'package:magic_pinecone/features/course_selection/data/course_supplemental_detail_catalog.dart';
 
 void main() {
   test('static course URLs use current semester branch', () {

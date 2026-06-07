@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prototype/features/home/data/home_dashboard_repository.dart';
-import 'package:prototype/features/home/models/home_dashboard_models.dart';
-import 'package:prototype/features/home/presentation/view_models/home_view_model.dart';
+import 'package:magic_pinecone/features/home/data/home_dashboard_repository.dart';
+import 'package:magic_pinecone/features/home/models/home_dashboard_models.dart';
+import 'package:magic_pinecone/features/home/presentation/view_models/home_view_model.dart';
 
 void main() {
   test('HomeViewModel exposes dashboard snapshot from repository', () {

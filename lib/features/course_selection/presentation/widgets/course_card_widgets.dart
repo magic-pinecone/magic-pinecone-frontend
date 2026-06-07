@@ -1,11 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:prototype/features/course_selection/domain/models/course_detail_models.dart';
-import 'package:prototype/features/course_selection/domain/models/course_schedule_models.dart';
-import 'package:prototype/features/course_selection/presentation/course_selection_layout.dart';
-import 'package:prototype/features/course_selection/presentation/view_models/course_selection_controller.dart';
-import 'package:prototype/features/course_selection/presentation/widgets/course_detail_row.dart';
+import 'package:magic_pinecone/features/course_selection/domain/models/course_detail_models.dart';
+import 'package:magic_pinecone/features/course_selection/domain/models/course_schedule_models.dart';
+import 'package:magic_pinecone/features/course_selection/presentation/course_selection_layout.dart';
+import 'package:magic_pinecone/features/course_selection/presentation/view_models/course_selection_controller.dart';
+import 'package:magic_pinecone/features/course_selection/presentation/widgets/course_detail_row.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class CourseResultSummary extends StatelessWidget {

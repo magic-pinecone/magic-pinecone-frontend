@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prototype/features/portal/models/portal_shortcut.dart';
+import 'package:magic_pinecone/features/portal/models/portal_shortcut.dart';
 
 void main() {
   group('PortalWebShortcutDestination.buildTargetUrl', () {

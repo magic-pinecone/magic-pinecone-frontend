@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prototype/features/course_selection/data/course_repository.dart';
-import 'package:prototype/features/course_selection/data/course_selection_storage.dart';
-import 'package:prototype/features/course_selection/data/course_share_codec.dart';
-import 'package:prototype/features/course_selection/data/course_supplemental_detail_catalog.dart';
-import 'package:prototype/features/course_selection/domain/models/course_detail_models.dart';
-import 'package:prototype/features/course_selection/domain/models/course_schedule_models.dart';
-import 'package:prototype/features/course_selection/presentation/course_selection_page.dart';
-import 'package:prototype/features/course_selection/presentation/view_models/course_selection_controller.dart';
+import 'package:magic_pinecone/features/course_selection/data/course_repository.dart';
+import 'package:magic_pinecone/features/course_selection/data/course_selection_storage.dart';
+import 'package:magic_pinecone/features/course_selection/data/course_share_codec.dart';
+import 'package:magic_pinecone/features/course_selection/data/course_supplemental_detail_catalog.dart';
+import 'package:magic_pinecone/features/course_selection/domain/models/course_detail_models.dart';
+import 'package:magic_pinecone/features/course_selection/domain/models/course_schedule_models.dart';
+import 'package:magic_pinecone/features/course_selection/presentation/course_selection_page.dart';
+import 'package:magic_pinecone/features/course_selection/presentation/view_models/course_selection_controller.dart';
 
 const _noOpRepo = _NoOpSupplementalRepository();
 

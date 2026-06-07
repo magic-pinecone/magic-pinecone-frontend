@@ -1,6 +1,6 @@
 import 'dart:js_interop';
 
-import 'package:prototype/features/course_selection/data/course_selection_storage.dart';
+import 'package:magic_pinecone/features/course_selection/data/course_selection_storage.dart';
 
 @JS('window.localStorage.getItem')
 external JSString? _getLocalStorageItem(JSString key);

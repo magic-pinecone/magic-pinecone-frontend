@@ -7,16 +7,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter_chat_core/flutter_chat_core.dart';
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:prototype/core/app/app_providers.dart';
-import 'package:prototype/core/navigation/app_routes.dart';
-import 'package:prototype/features/course_selection/data/course_schedule_repository.dart';
-import 'package:prototype/features/course_selection/data/course_selection_storage.dart';
-import 'package:prototype/features/course_selection/data/course_share_codec.dart';
-import 'package:prototype/features/course_selection/data/course_supplemental_detail_catalog.dart';
-import 'package:prototype/features/course_selection/domain/models/course_detail_models.dart';
-import 'package:prototype/features/course_selection/domain/models/course_schedule_models.dart';
-import 'package:prototype/features/course_selection/presentation/view_models/course_selection_controller.dart';
-import 'package:prototype/features/course_selection/presentation/widgets/calendar_item.dart';
+import 'package:magic_pinecone/core/app/app_providers.dart';
+import 'package:magic_pinecone/core/navigation/app_routes.dart';
+import 'package:magic_pinecone/features/course_selection/data/course_schedule_repository.dart';
+import 'package:magic_pinecone/features/course_selection/data/course_selection_storage.dart';
+import 'package:magic_pinecone/features/course_selection/data/course_share_codec.dart';
+import 'package:magic_pinecone/features/course_selection/data/course_supplemental_detail_catalog.dart';
+import 'package:magic_pinecone/features/course_selection/domain/models/course_detail_models.dart';
+import 'package:magic_pinecone/features/course_selection/domain/models/course_schedule_models.dart';
+import 'package:magic_pinecone/features/course_selection/presentation/view_models/course_selection_controller.dart';
+import 'package:magic_pinecone/features/course_selection/presentation/widgets/calendar_item.dart';
 
 class CourseSelectionPage extends ConsumerStatefulWidget {
   const CourseSelectionPage({

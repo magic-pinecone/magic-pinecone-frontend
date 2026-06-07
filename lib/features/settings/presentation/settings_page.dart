@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:prototype/core/app/app_providers.dart';
-import 'package:prototype/features/settings/domain/models/settings_models.dart';
-import 'package:prototype/features/settings/presentation/view_models/settings_view_model.dart';
+import 'package:magic_pinecone/core/app/app_providers.dart';
+import 'package:magic_pinecone/features/settings/domain/models/settings_models.dart';
+import 'package:magic_pinecone/features/settings/presentation/view_models/settings_view_model.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key, this.viewModel});

@@ -1,4 +1,4 @@
-import 'package:prototype/features/course_selection/data/course_selection_storage_platform.dart';
+import 'package:magic_pinecone/features/course_selection/data/course_selection_storage_platform.dart';
 
 abstract class CourseSelectionStorage {
   Future<String?> readShareCode();

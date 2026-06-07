@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:prototype/features/course_selection/data/dtos/course_dto.dart';
+import 'package:magic_pinecone/features/course_selection/data/dtos/course_dto.dart';
 import 'package:retrofit/retrofit.dart';
 
 part 'course_api_service.g.dart';

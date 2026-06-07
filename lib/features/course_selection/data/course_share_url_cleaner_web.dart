@@ -1,6 +1,6 @@
 import 'dart:js_interop';
 
-import 'package:prototype/features/course_selection/data/course_share_url.dart';
+import 'package:magic_pinecone/features/course_selection/data/course_share_url.dart';
 
 @JS('window.history.replaceState')
 external void _replaceBrowserHistoryState(

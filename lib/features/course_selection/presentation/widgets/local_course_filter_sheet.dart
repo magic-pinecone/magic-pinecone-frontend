@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:prototype/features/course_selection/presentation/course_selection_layout.dart';
+import 'package:magic_pinecone/features/course_selection/presentation/course_selection_layout.dart';
 
 class LocalCourseFilterSheet extends StatefulWidget {
   const LocalCourseFilterSheet({

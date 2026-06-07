@@ -47,7 +47,7 @@ final class DioProvider extends $FunctionalProvider<Dio, Dio, Dio>
   }
 }
 
-String _$dioHash() => r'3d1d6049ac74d0e218e8a412a5343f94c89ecf48';
+String _$dioHash() => r'4343625f8db1ff97c8bb17209ed4e1a9302f27c7';
 
 @ProviderFor(courseApiService)
 final courseApiServiceProvider = CourseApiServiceProvider._();

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prototype/features/news/data/dtos/scholarship_dto.dart';
+import 'package:magic_pinecone/features/news/data/dtos/scholarship_dto.dart';
 
 void main() {
   test('ScholarshipResultDto parses backend scholarship response', () {

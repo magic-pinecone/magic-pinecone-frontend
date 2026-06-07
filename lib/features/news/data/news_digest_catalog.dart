@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:prototype/features/news/models/news_digest_item.dart';
+import 'package:magic_pinecone/features/news/models/news_digest_item.dart';
 
 const todayDigestItems = [
   NewsDigestItem(

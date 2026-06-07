@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prototype/features/portal/models/portal_shortcut.dart';
-import 'package:prototype/features/portal/presentation/portal_shortcuts_page.dart';
+import 'package:magic_pinecone/features/portal/models/portal_shortcut.dart';
+import 'package:magic_pinecone/features/portal/presentation/portal_shortcuts_page.dart';
 
 void main() {
   testWidgets('PortalShortcutsPage filters shortcuts case-insensitively', (

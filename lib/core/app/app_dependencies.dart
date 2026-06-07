@@ -1,21 +1,21 @@
 import 'package:dio/dio.dart';
-import 'package:prototype/core/app/app_backend_config.dart';
-import 'package:prototype/core/app/app_theme.dart';
-import 'package:prototype/features/course_selection/data/course_api_service.dart';
-import 'package:prototype/features/course_selection/data/course_repository.dart';
-import 'package:prototype/features/course_selection/data/course_supplemental_detail_catalog.dart';
-import 'package:prototype/features/course_selection/presentation/view_models/course_selection_controller.dart';
-import 'package:prototype/features/home/data/home_dashboard_repository.dart';
-import 'package:prototype/features/home/presentation/view_models/home_view_model.dart';
-import 'package:prototype/features/news/data/news_digest_repository.dart';
-import 'package:prototype/features/news/data/scholarship_api_service.dart';
-import 'package:prototype/features/news/data/scholarship_repository.dart';
-import 'package:prototype/features/news/presentation/view_models/news_view_model.dart';
-import 'package:prototype/features/portal/data/portal_authenticator.dart';
-import 'package:prototype/features/portal/data/portal_shortcut_repository.dart';
-import 'package:prototype/features/portal/presentation/view_models/portal_session_controller.dart';
-import 'package:prototype/features/settings/data/settings_repository.dart';
-import 'package:prototype/features/settings/presentation/view_models/settings_view_model.dart';
+import 'package:magic_pinecone/core/app/app_backend_config.dart';
+import 'package:magic_pinecone/core/app/app_theme.dart';
+import 'package:magic_pinecone/features/course_selection/data/course_api_service.dart';
+import 'package:magic_pinecone/features/course_selection/data/course_repository.dart';
+import 'package:magic_pinecone/features/course_selection/data/course_supplemental_detail_catalog.dart';
+import 'package:magic_pinecone/features/course_selection/presentation/view_models/course_selection_controller.dart';
+import 'package:magic_pinecone/features/home/data/home_dashboard_repository.dart';
+import 'package:magic_pinecone/features/home/presentation/view_models/home_view_model.dart';
+import 'package:magic_pinecone/features/news/data/news_digest_repository.dart';
+import 'package:magic_pinecone/features/news/data/scholarship_api_service.dart';
+import 'package:magic_pinecone/features/news/data/scholarship_repository.dart';
+import 'package:magic_pinecone/features/news/presentation/view_models/news_view_model.dart';
+import 'package:magic_pinecone/features/portal/data/portal_authenticator.dart';
+import 'package:magic_pinecone/features/portal/data/portal_shortcut_repository.dart';
+import 'package:magic_pinecone/features/portal/presentation/view_models/portal_session_controller.dart';
+import 'package:magic_pinecone/features/settings/data/settings_repository.dart';
+import 'package:magic_pinecone/features/settings/presentation/view_models/settings_view_model.dart';
 
 class AppDependencies {
   AppDependencies({

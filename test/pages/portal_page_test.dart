@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prototype/core/app/app_providers.dart';
-import 'package:prototype/features/portal/data/portal_authenticator.dart';
-import 'package:prototype/features/portal/data/portal_shortcut_repository.dart';
-import 'package:prototype/features/portal/models/portal_shortcut.dart';
-import 'package:prototype/features/portal/presentation/portal_page.dart';
-import 'package:prototype/features/portal/presentation/view_models/portal_session_controller.dart';
+import 'package:magic_pinecone/core/app/app_providers.dart';
+import 'package:magic_pinecone/features/portal/data/portal_authenticator.dart';
+import 'package:magic_pinecone/features/portal/data/portal_shortcut_repository.dart';
+import 'package:magic_pinecone/features/portal/models/portal_shortcut.dart';
+import 'package:magic_pinecone/features/portal/presentation/portal_page.dart';
+import 'package:magic_pinecone/features/portal/presentation/view_models/portal_session_controller.dart';
 
 void main() {
   testWidgets('PortalPage applies the initial shortcut search filter', (

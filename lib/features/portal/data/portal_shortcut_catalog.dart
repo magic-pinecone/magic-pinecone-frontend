@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:prototype/features/portal/models/portal_shortcut.dart';
+import 'package:magic_pinecone/features/portal/models/portal_shortcut.dart';
 
 List<PortalShortcutSection> get defaultPortalShortcutSections => [
   PortalShortcutSection(

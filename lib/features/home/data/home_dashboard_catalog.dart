@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:prototype/features/home/models/home_dashboard_models.dart';
+import 'package:magic_pinecone/features/home/models/home_dashboard_models.dart';
 
 const homeCoursePreviews = [
   HomeCoursePreview(

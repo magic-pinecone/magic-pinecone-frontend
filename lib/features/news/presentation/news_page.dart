@@ -3,11 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:prototype/core/app/app_providers.dart';
-import 'package:prototype/core/navigation/app_routes.dart';
-import 'package:prototype/features/news/models/scholarship_item.dart';
-import 'package:prototype/features/news/presentation/view_models/news_view_model.dart';
-import 'package:prototype/features/news/presentation/widgets/announcement_card.dart';
+import 'package:magic_pinecone/core/app/app_providers.dart';
+import 'package:magic_pinecone/core/navigation/app_routes.dart';
+import 'package:magic_pinecone/features/news/models/scholarship_item.dart';
+import 'package:magic_pinecone/features/news/presentation/view_models/news_view_model.dart';
+import 'package:magic_pinecone/features/news/presentation/widgets/announcement_card.dart';
 
 class NewsPage extends StatelessWidget {
   const NewsPage({super.key, this.viewModel});

@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:prototype/features/news/data/dtos/scholarship_dto.dart';
+import 'package:magic_pinecone/features/news/data/dtos/scholarship_dto.dart';
 import 'package:retrofit/retrofit.dart';
 
 part 'scholarship_api_service.g.dart';

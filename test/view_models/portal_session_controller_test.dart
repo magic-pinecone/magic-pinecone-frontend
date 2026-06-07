@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prototype/features/portal/data/portal_authenticator.dart';
-import 'package:prototype/features/portal/data/portal_shortcut_repository.dart';
-import 'package:prototype/features/portal/models/portal_session_state.dart';
-import 'package:prototype/features/portal/models/portal_shortcut.dart';
-import 'package:prototype/features/portal/presentation/view_models/portal_session_controller.dart';
+import 'package:magic_pinecone/features/portal/data/portal_authenticator.dart';
+import 'package:magic_pinecone/features/portal/data/portal_shortcut_repository.dart';
+import 'package:magic_pinecone/features/portal/models/portal_session_state.dart';
+import 'package:magic_pinecone/features/portal/models/portal_shortcut.dart';
+import 'package:magic_pinecone/features/portal/presentation/view_models/portal_session_controller.dart';
 
 void main() {
   group('PortalSessionController', () {

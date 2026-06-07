@@ -1,5 +1,5 @@
-import 'package:prototype/features/news/data/news_digest_catalog.dart';
-import 'package:prototype/features/news/models/news_digest_item.dart';
+import 'package:magic_pinecone/features/news/data/news_digest_catalog.dart';
+import 'package:magic_pinecone/features/news/models/news_digest_item.dart';
 
 abstract class NewsDigestRepository {
   List<NewsDigestItem> loadDigestItems();

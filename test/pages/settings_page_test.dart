@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prototype/core/app/app_backend_config.dart';
-import 'package:prototype/core/app/app_theme.dart';
-import 'package:prototype/features/settings/data/settings_repository.dart';
-import 'package:prototype/features/settings/domain/models/settings_models.dart';
-import 'package:prototype/features/settings/presentation/settings_page.dart';
-import 'package:prototype/features/settings/presentation/view_models/settings_view_model.dart';
+import 'package:magic_pinecone/core/app/app_backend_config.dart';
+import 'package:magic_pinecone/core/app/app_theme.dart';
+import 'package:magic_pinecone/features/settings/data/settings_repository.dart';
+import 'package:magic_pinecone/features/settings/domain/models/settings_models.dart';
+import 'package:magic_pinecone/features/settings/presentation/settings_page.dart';
+import 'package:magic_pinecone/features/settings/presentation/view_models/settings_view_model.dart';
 
 void main() {
   testWidgets('SettingsPage reflects system dark mode on first render', (

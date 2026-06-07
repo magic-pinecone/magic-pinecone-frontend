@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:prototype/features/course_selection/presentation/course_selection_layout.dart';
-import 'package:prototype/features/course_selection/presentation/view_models/course_selection_controller.dart';
-import 'package:prototype/features/course_selection/presentation/widgets/course_class_time_picker.dart';
-import 'package:prototype/features/course_selection/presentation/widgets/course_filter_segmented_controls.dart';
+import 'package:magic_pinecone/features/course_selection/presentation/course_selection_layout.dart';
+import 'package:magic_pinecone/features/course_selection/presentation/view_models/course_selection_controller.dart';
+import 'package:magic_pinecone/features/course_selection/presentation/widgets/course_class_time_picker.dart';
+import 'package:magic_pinecone/features/course_selection/presentation/widgets/course_filter_segmented_controls.dart';
 
 const _creditOptions = <int>[0, 1, 2, 3, 4, 6];
 

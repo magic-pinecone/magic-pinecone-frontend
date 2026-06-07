@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prototype/core/navigation/app_routes.dart';
-import 'package:prototype/main.dart' as app;
+import 'package:magic_pinecone/core/navigation/app_routes.dart';
+import 'package:magic_pinecone/main.dart' as app;
 
 void main() {
   test('share links start on course selection tab', () {

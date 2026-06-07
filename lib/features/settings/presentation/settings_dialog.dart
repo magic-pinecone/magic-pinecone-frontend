@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:prototype/core/app/app_providers.dart';
-import 'package:prototype/features/settings/domain/models/settings_models.dart';
-import 'package:prototype/features/settings/presentation/view_models/settings_view_model.dart';
+import 'package:magic_pinecone/core/app/app_providers.dart';
+import 'package:magic_pinecone/features/settings/domain/models/settings_models.dart';
+import 'package:magic_pinecone/features/settings/presentation/view_models/settings_view_model.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 Future<void> _launchCommunityUrl(BuildContext context, String url) async {

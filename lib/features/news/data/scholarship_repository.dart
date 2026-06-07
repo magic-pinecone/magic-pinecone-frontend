@@ -1,5 +1,5 @@
-import 'package:prototype/features/news/data/scholarship_api_service.dart';
-import 'package:prototype/features/news/models/scholarship_item.dart';
+import 'package:magic_pinecone/features/news/data/scholarship_api_service.dart';
+import 'package:magic_pinecone/features/news/models/scholarship_item.dart';
 
 abstract class ScholarshipRepository {
   Future<List<ScholarshipItem>> fetchScholarships();
