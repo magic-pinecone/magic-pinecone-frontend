@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
-import 'package:prototype/features/course_selection/models/course_detail_models.dart';
+import 'package:prototype/features/course_selection/domain/models/course_detail_models.dart';
 
 abstract class CourseSupplementalDetailRepository {
   Future<CourseSupplementalDetail?> findBySerialNo(String serialNo);

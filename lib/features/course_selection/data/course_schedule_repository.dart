@@ -1,5 +1,5 @@
 import 'package:prototype/features/course_selection/data/course_schedule_catalog.dart';
-import 'package:prototype/features/course_selection/models/course_schedule_models.dart';
+import 'package:prototype/features/course_selection/domain/models/course_schedule_models.dart';
 
 abstract class CourseScheduleRepository {
   CourseScheduleSnapshot loadSchedule();

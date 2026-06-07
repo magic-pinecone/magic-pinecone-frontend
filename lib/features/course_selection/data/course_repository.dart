@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:prototype/features/course_selection/data/course_api_service.dart';
 import 'package:prototype/features/course_selection/data/dtos/course_dto.dart';
-import 'package:prototype/features/course_selection/models/course_schedule_models.dart';
+import 'package:prototype/features/course_selection/domain/models/course_schedule_models.dart';
 
 abstract class CourseRepository {
   Future<CourseSearchResult> searchCourses({
