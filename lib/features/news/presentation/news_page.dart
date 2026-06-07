@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:prototype/core/app/app_scope.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:prototype/core/app/app_providers.dart';
 import 'package:prototype/core/navigation/app_routes.dart';
-import 'package:prototype/core/widgets/owned_change_notifier_builder.dart';
 import 'package:prototype/features/news/models/scholarship_item.dart';
 import 'package:prototype/features/news/presentation/view_models/news_view_model.dart';
 import 'package:prototype/features/news/presentation/widgets/announcement_card.dart';
@@ -18,43 +18,74 @@ class NewsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return OwnedChangeNotifierBuilder<NewsViewModel>(
-      notifier: viewModel,
-      create: (context) => AppScope.of(context).createNewsViewModel(),
-      onReady: (viewModel) => unawaited(viewModel.load()),
-      builder: (context, viewModel) => DefaultTabController(
-        length: _tabs.length,
-        child: Scaffold(
-          appBar: AppBar(
-            title: const Text(
-              '訊息',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            bottom: TabBar(
-              isScrollable: true,
-              tabAlignment: TabAlignment.start,
-              tabs: _tabs.map((t) => Tab(text: t)).toList(),
-            ),
+    final hasScope =
+        context.findAncestorWidgetOfExactType<ProviderScope>() != null ||
+        context.findAncestorWidgetOfExactType<UncontrolledProviderScope>() !=
+            null;
+
+    final child = _NewsPageInner(viewModel: viewModel);
+
+    if (hasScope) {
+      return child;
+    } else {
+      return ProviderScope(child: child);
+    }
+  }
+}
+
+class _NewsPageInner extends ConsumerStatefulWidget {
+  const _NewsPageInner({super.key, this.viewModel});
+
+  final NewsViewModel? viewModel;
+
+  @override
+  ConsumerState<_NewsPageInner> createState() => _NewsPageInnerState();
+}
+
+class _NewsPageInnerState extends ConsumerState<_NewsPageInner> {
+  late final NewsViewModel _viewModel;
+
+  @override
+  void initState() {
+    super.initState();
+    _viewModel = widget.viewModel ?? ref.read(newsViewModelProvider);
+    unawaited(_viewModel.load());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: NewsPage._tabs.length,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text(
+            '訊息',
+            style: TextStyle(fontWeight: FontWeight.bold),
           ),
-          body: TabBarView(
-            children: _tabs
-                .map(
-                  (tab) => ListenableBuilder(
-                    listenable: viewModel,
-                    builder: (context, _) {
-                      // TODO: Add the planned digest section
-                      return _NewsTabContent(
-                        category: tab,
-                        items: viewModel.items,
-                        isLoading: viewModel.isLoading,
-                        error: viewModel.error,
-                        onRetry: viewModel.load,
-                      );
-                    },
-                  ),
-                )
-                .toList(),
+          bottom: TabBar(
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            tabs: NewsPage._tabs.map((t) => Tab(text: t)).toList(),
           ),
+        ),
+        body: TabBarView(
+          children: NewsPage._tabs
+              .map(
+                (tab) => ListenableBuilder(
+                  listenable: _viewModel,
+                  builder: (context, _) {
+                    // TODO: Add the planned digest section
+                    return _NewsTabContent(
+                      category: tab,
+                      items: _viewModel.items,
+                      isLoading: _viewModel.isLoading,
+                      error: _viewModel.error,
+                      onRetry: _viewModel.load,
+                    );
+                  },
+                ),
+              )
+              .toList(),
         ),
       ),
     );

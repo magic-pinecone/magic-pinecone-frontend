@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:prototype/core/app/app_scope.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:prototype/core/app/app_providers.dart';
 import 'package:prototype/core/navigation/app_routes.dart';
-import 'package:prototype/core/widgets/owned_change_notifier_builder.dart';
 import 'package:prototype/features/portal/models/portal_shortcut.dart';
 import 'package:prototype/features/portal/presentation/portal_shortcuts_page.dart';
 import 'package:prototype/features/portal/presentation/view_models/portal_session_controller.dart';
@@ -22,14 +22,54 @@ class PortalPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return OwnedChangeNotifierBuilder<PortalSessionController>(
-      notifier: sessionController,
-      create: (context) => AppScope.of(context).createPortalSessionController(),
-      onReady: (controller) => unawaited(controller.refreshSession()),
-      builder: (context, controller) => _PortalPageContent(
-        sessionController: controller,
-        initialSearchQuery: initialSearchQuery,
-      ),
+    final hasScope =
+        context.findAncestorWidgetOfExactType<ProviderScope>() != null ||
+        context.findAncestorWidgetOfExactType<UncontrolledProviderScope>() !=
+            null;
+
+    final child = _PortalPageInner(
+      sessionController: sessionController,
+      initialSearchQuery: initialSearchQuery,
+    );
+
+    if (hasScope) {
+      return child;
+    } else {
+      return ProviderScope(child: child);
+    }
+  }
+}
+
+class _PortalPageInner extends ConsumerStatefulWidget {
+  const _PortalPageInner({
+    super.key,
+    this.sessionController,
+    this.initialSearchQuery = '',
+  });
+
+  final PortalSessionController? sessionController;
+  final String initialSearchQuery;
+
+  @override
+  ConsumerState<_PortalPageInner> createState() => _PortalPageInnerState();
+}
+
+class _PortalPageInnerState extends ConsumerState<_PortalPageInner> {
+  late final PortalSessionController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller =
+        widget.sessionController ?? ref.read(portalSessionControllerProvider);
+    unawaited(_controller.refreshSession());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _PortalPageContent(
+      sessionController: _controller,
+      initialSearchQuery: widget.initialSearchQuery,
     );
   }
 }

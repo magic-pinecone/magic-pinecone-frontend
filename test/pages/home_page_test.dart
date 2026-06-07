@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:prototype/core/app/app_dependencies.dart';
 import 'package:prototype/core/app/app_scope.dart';
 import 'package:prototype/features/course_selection/data/course_repository.dart';
-import 'package:prototype/features/course_selection/models/course_schedule_models.dart';
+import 'package:prototype/features/course_selection/domain/models/course_schedule_models.dart';
 import 'package:prototype/features/home/data/home_dashboard_repository.dart';
 import 'package:prototype/features/home/models/home_dashboard_models.dart';
 import 'package:prototype/features/home/presentation/home_page.dart';
