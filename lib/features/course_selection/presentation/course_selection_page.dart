@@ -47,11 +47,18 @@ class _CourseSelectionPageState extends ConsumerState<CourseSelectionPage> {
     super.initState();
     _controller =
         widget.controller ?? ref.read(courseSelectionControllerProvider);
-    unawaited(_controller.load());
+    scheduleMicrotask(() {
+      if (mounted) {
+        unawaited(_controller.load());
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    if (widget.controller == null) {
+      ref.watch(courseSelectionControllerProvider);
+    }
     final CourseSupplementalDetailRepository supplementalDetailRepository =
         widget.courseSupplementalDetailRepository ??
         ref.watch(courseSupplementalDetailRepositoryProvider);

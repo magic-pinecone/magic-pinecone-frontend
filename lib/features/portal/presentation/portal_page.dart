@@ -61,11 +61,18 @@ class _PortalPageInnerState extends ConsumerState<_PortalPageInner> {
     super.initState();
     _controller =
         widget.sessionController ?? ref.read(portalSessionControllerProvider);
-    unawaited(_controller.refreshSession());
+    scheduleMicrotask(() {
+      if (mounted) {
+        unawaited(_controller.refreshSession());
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    if (widget.sessionController == null) {
+      ref.watch(portalSessionControllerProvider);
+    }
     return _PortalPageContent(
       sessionController: _controller,
       initialSearchQuery: widget.initialSearchQuery,

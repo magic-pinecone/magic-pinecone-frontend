@@ -49,11 +49,18 @@ class _NewsPageInnerState extends ConsumerState<_NewsPageInner> {
   void initState() {
     super.initState();
     _viewModel = widget.viewModel ?? ref.read(newsViewModelProvider);
-    unawaited(_viewModel.load());
+    scheduleMicrotask(() {
+      if (mounted) {
+        unawaited(_viewModel.load());
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    if (widget.viewModel == null) {
+      ref.watch(newsViewModelProvider);
+    }
     return DefaultTabController(
       length: NewsPage._tabs.length,
       child: Scaffold(
