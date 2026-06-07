@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:prototype/core/app/app_scope.dart';
-import 'package:prototype/core/widgets/owned_change_notifier_builder.dart';
-import 'package:prototype/features/settings/models/settings_models.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:prototype/core/app/app_providers.dart';
+import 'package:prototype/features/settings/domain/models/settings_models.dart';
 import 'package:prototype/features/settings/presentation/view_models/settings_view_model.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -11,12 +11,30 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return OwnedChangeNotifierBuilder<SettingsViewModel>(
-      notifier: viewModel,
-      create: (context) => AppScope.of(context).createSettingsViewModel(),
-      builder: (context, viewModel) =>
-          _SettingsPageContent(viewModel: viewModel),
-    );
+    final hasScope =
+        context.findAncestorWidgetOfExactType<ProviderScope>() != null ||
+        context.findAncestorWidgetOfExactType<UncontrolledProviderScope>() !=
+            null;
+
+    final child = _SettingsPageInner(viewModel: viewModel);
+
+    if (hasScope) {
+      return child;
+    } else {
+      return ProviderScope(child: child);
+    }
+  }
+}
+
+class _SettingsPageInner extends ConsumerWidget {
+  const _SettingsPageInner({this.viewModel});
+
+  final SettingsViewModel? viewModel;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final vm = viewModel ?? ref.watch(settingsViewModelProvider);
+    return _SettingsPageContent(viewModel: vm);
   }
 }
 

@@ -1,4 +1,4 @@
-import 'package:prototype/features/settings/models/settings_models.dart';
+import 'package:prototype/features/settings/domain/models/settings_models.dart';
 
 abstract class SettingsRepository {
   SettingsSnapshot loadSettings();

@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:prototype/core/app/app_backend_config.dart';
 import 'package:prototype/core/app/app_theme.dart';
 import 'package:prototype/features/settings/data/settings_repository.dart';
-import 'package:prototype/features/settings/models/settings_models.dart';
+import 'package:prototype/features/settings/domain/models/settings_models.dart';
 import 'package:prototype/features/settings/presentation/view_models/settings_view_model.dart';
 
 void main() {
