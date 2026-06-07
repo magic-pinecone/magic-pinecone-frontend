@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:prototype/features/course_selection/data/course_repository.dart';
-import 'package:prototype/features/course_selection/models/course_schedule_models.dart';
+import 'package:prototype/features/course_selection/domain/models/course_schedule_models.dart';
 
 class CourseSelectionController extends ChangeNotifier {
   CourseSelectionController({required CourseRepository repository})

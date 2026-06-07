@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:prototype/features/course_selection/data/course_repository.dart';
-import 'package:prototype/features/course_selection/models/course_schedule_models.dart';
+import 'package:prototype/features/course_selection/domain/models/course_schedule_models.dart';
 import 'package:prototype/features/course_selection/presentation/view_models/course_selection_controller.dart';
 
 void main() {

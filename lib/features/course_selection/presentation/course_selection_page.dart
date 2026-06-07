@@ -6,19 +6,19 @@ import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter/services.dart';
 import 'package:flutter_chat_core/flutter_chat_core.dart';
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
-import 'package:prototype/core/app/app_scope.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:prototype/core/app/app_providers.dart';
 import 'package:prototype/core/navigation/app_routes.dart';
-import 'package:prototype/core/widgets/owned_change_notifier_builder.dart';
 import 'package:prototype/features/course_selection/data/course_schedule_repository.dart';
 import 'package:prototype/features/course_selection/data/course_selection_storage.dart';
 import 'package:prototype/features/course_selection/data/course_share_codec.dart';
 import 'package:prototype/features/course_selection/data/course_supplemental_detail_catalog.dart';
-import 'package:prototype/features/course_selection/models/course_detail_models.dart';
-import 'package:prototype/features/course_selection/models/course_schedule_models.dart';
+import 'package:prototype/features/course_selection/domain/models/course_detail_models.dart';
+import 'package:prototype/features/course_selection/domain/models/course_schedule_models.dart';
 import 'package:prototype/features/course_selection/presentation/view_models/course_selection_controller.dart';
 import 'package:prototype/features/course_selection/presentation/widgets/calendar_item.dart';
 
-class CourseSelectionPage extends StatelessWidget {
+class CourseSelectionPage extends ConsumerStatefulWidget {
   const CourseSelectionPage({
     super.key,
     this.controller,
@@ -35,27 +35,35 @@ class CourseSelectionPage extends StatelessWidget {
   final bool showBackButton;
 
   @override
-  Widget build(BuildContext context) {
-    final dependencies = controller == null ? AppScope.of(context) : null;
-    final supplementalDetailRepository =
-        courseSupplementalDetailRepository ??
-        dependencies?.courseSupplementalDetailRepository ??
-        const StaticFallbackCourseSupplementalDetailRepository();
-    final courseSelectionStorage =
-        this.courseSelectionStorage ?? createCourseSelectionStorage();
+  ConsumerState<CourseSelectionPage> createState() =>
+      _CourseSelectionPageState();
+}
 
-    return OwnedChangeNotifierBuilder<CourseSelectionController>(
-      notifier: controller,
-      create: (context) => (dependencies ?? AppScope.of(context))
-          .createCourseSelectionController(),
-      onReady: (controller) => unawaited(controller.load()),
-      builder: (context, controller) => _CourseSelectionPageContent(
-        controller: controller,
-        supplementalDetailRepository: supplementalDetailRepository,
-        courseSelectionStorage: courseSelectionStorage,
-        initialShareCode: initialShareCode,
-        showBackButton: showBackButton,
-      ),
+class _CourseSelectionPageState extends ConsumerState<CourseSelectionPage> {
+  late final CourseSelectionController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller =
+        widget.controller ?? ref.read(courseSelectionControllerProvider);
+    unawaited(_controller.load());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final supplementalDetailRepository =
+        widget.courseSupplementalDetailRepository ??
+        ref.watch(courseSupplementalDetailRepositoryProvider);
+    final courseSelectionStorage =
+        widget.courseSelectionStorage ?? createCourseSelectionStorage();
+
+    return _CourseSelectionPageContent(
+      controller: _controller,
+      supplementalDetailRepository: supplementalDetailRepository,
+      courseSelectionStorage: courseSelectionStorage,
+      initialShareCode: widget.initialShareCode,
+      showBackButton: widget.showBackButton,
     );
   }
 }
