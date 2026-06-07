@@ -1,7 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:prototype/core/app/app_backend_config.dart';
 import 'package:prototype/core/app/app_theme.dart';
 import 'package:prototype/features/course_selection/data/course_api_service.dart';
@@ -19,6 +17,7 @@ import 'package:prototype/features/portal/data/portal_shortcut_repository.dart';
 import 'package:prototype/features/portal/presentation/view_models/portal_session_controller.dart';
 import 'package:prototype/features/settings/data/settings_repository.dart';
 import 'package:prototype/features/settings/presentation/view_models/settings_view_model.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'app_providers.g.dart';
 
@@ -34,7 +33,7 @@ final appBackendConfigControllerProvider =
     });
 
 @riverpod
-Dio dio(DioRef ref) {
+Dio dio(Ref ref) {
   final dio = Dio();
   final config = ref.read(appBackendConfigControllerProvider);
   dio.options.baseUrl = config.baseUrl;
@@ -44,68 +43,62 @@ Dio dio(DioRef ref) {
     next,
   ) {
     dio.options.baseUrl = next.baseUrl;
-  }, fireImmediately: false);
+  });
   return dio;
 }
 
 @riverpod
-CourseApiService courseApiService(CourseApiServiceRef ref) {
+CourseApiService courseApiService(Ref ref) {
   final dio = ref.watch(dioProvider);
   return CourseApiService(dio);
 }
 
 @riverpod
-CourseRepository courseRepository(CourseRepositoryRef ref) {
+CourseRepository courseRepository(Ref ref) {
   final service = ref.watch(courseApiServiceProvider);
   return RemoteCourseRepository(service: service);
 }
 
 @riverpod
-CourseSupplementalDetailRepository courseSupplementalDetailRepository(
-  CourseSupplementalDetailRepositoryRef ref,
-) {
+CourseSupplementalDetailRepository courseSupplementalDetailRepository(Ref ref) {
   final dio = ref.watch(dioProvider);
   return StaticRemoteCourseSupplementalDetailRepository(dio: dio);
 }
 
 @riverpod
-SettingsRepository settingsRepository(SettingsRepositoryRef ref) {
+SettingsRepository settingsRepository(Ref ref) {
   return const StaticSettingsRepository();
 }
 
 @riverpod
-HomeDashboardRepository homeDashboardRepository(
-  HomeDashboardRepositoryRef ref,
-) {
+HomeDashboardRepository homeDashboardRepository(Ref ref) {
   return const StaticHomeDashboardRepository();
 }
 
 @riverpod
-NewsDigestRepository newsDigestRepository(NewsDigestRepositoryRef ref) {
+NewsDigestRepository newsDigestRepository(Ref ref) {
   return const StaticNewsDigestRepository();
 }
 
 @riverpod
-PortalShortcutRepository portalShortcutRepository(
-  PortalShortcutRepositoryRef ref,
-) {
+PortalShortcutRepository portalShortcutRepository(Ref ref) {
   return const StaticPortalShortcutRepository();
 }
 
 @riverpod
-ScholarshipApiService scholarshipApiService(ScholarshipApiServiceRef ref) {
+ScholarshipApiService scholarshipApiService(Ref ref) {
   final dio = ref.watch(dioProvider);
   return ScholarshipApiService(dio);
 }
 
 @riverpod
-ScholarshipRepository scholarshipRepository(ScholarshipRepositoryRef ref) {
+ScholarshipRepository scholarshipRepository(Ref ref) {
   final service = ref.watch(scholarshipApiServiceProvider);
   return RemoteScholarshipRepository(service: service);
 }
 
 @riverpod
-PortalAuthenticator portalAuthenticator(PortalAuthenticatorRef ref) {
+PortalAuthenticator portalAuthenticator(Ref ref) {
   return PortalAuthenticator();
 }
 

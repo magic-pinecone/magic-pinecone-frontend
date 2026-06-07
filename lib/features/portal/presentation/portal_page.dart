@@ -42,7 +42,6 @@ class PortalPage extends StatelessWidget {
 
 class _PortalPageInner extends ConsumerStatefulWidget {
   const _PortalPageInner({
-    super.key,
     this.sessionController,
     this.initialSearchQuery = '',
   });

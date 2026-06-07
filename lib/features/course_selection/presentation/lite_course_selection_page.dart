@@ -1,15 +1,16 @@
 import 'dart:async';
 
-import 'package:flutter/material';
+import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:prototype/core/app/app_providers.dart';
+import 'package:prototype/features/course_selection/data/course_schedule_repository.dart';
 import 'package:prototype/features/course_selection/data/course_selection_storage.dart';
 import 'package:prototype/features/course_selection/data/course_share_codec.dart';
 import 'package:prototype/features/course_selection/data/course_share_url.dart';
 import 'package:prototype/features/course_selection/data/course_share_url_cleaner.dart';
-import 'package:prototype/features/course_selection/domain/models/course_detail_models.dart';
+import 'package:prototype/features/course_selection/data/course_supplemental_detail_catalog.dart';
 import 'package:prototype/features/course_selection/domain/models/course_schedule_models.dart';
 import 'package:prototype/features/course_selection/presentation/course_selection_layout.dart';
 import 'package:prototype/features/course_selection/presentation/view_models/course_selection_controller.dart';
@@ -21,8 +22,6 @@ import 'package:prototype/features/course_selection/presentation/widgets/course_
 import 'package:prototype/features/course_selection/presentation/widgets/local_course_filter_sheet.dart';
 import 'package:prototype/features/settings/presentation/settings_dialog.dart';
 import 'package:prototype/features/settings/presentation/view_models/settings_view_model.dart';
-import 'package:prototype/features/course_selection/data/course_supplemental_detail_catalog.dart';
-import 'package:prototype/features/course_selection/data/course_schedule_repository.dart';
 
 class LiteCourseSelectionPage extends ConsumerStatefulWidget {
   const LiteCourseSelectionPage({

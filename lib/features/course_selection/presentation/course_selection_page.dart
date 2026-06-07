@@ -52,7 +52,7 @@ class _CourseSelectionPageState extends ConsumerState<CourseSelectionPage> {
 
   @override
   Widget build(BuildContext context) {
-    final supplementalDetailRepository =
+    final CourseSupplementalDetailRepository supplementalDetailRepository =
         widget.courseSupplementalDetailRepository ??
         ref.watch(courseSupplementalDetailRepositoryProvider);
     final courseSelectionStorage =

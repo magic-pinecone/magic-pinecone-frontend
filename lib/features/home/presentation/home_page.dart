@@ -13,8 +13,6 @@ import 'package:prototype/features/portal/presentation/widgets/portal_shortcut_b
 class HomePage extends StatelessWidget {
   const HomePage({super.key, this.viewModel});
 
-  static const _horizontalPadding = 16.0;
-
   final HomeViewModel? viewModel;
 
   @override
@@ -43,7 +41,7 @@ class _HomePageInner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final vm = viewModel ?? ref.watch(homeViewModelProvider);
+    final HomeViewModel vm = viewModel ?? ref.watch(homeViewModelProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text(

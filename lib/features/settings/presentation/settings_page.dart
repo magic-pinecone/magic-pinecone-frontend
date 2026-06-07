@@ -33,7 +33,8 @@ class _SettingsPageInner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final vm = viewModel ?? ref.watch(settingsViewModelProvider);
+    final SettingsViewModel vm =
+        viewModel ?? ref.watch(settingsViewModelProvider);
     return _SettingsPageContent(viewModel: vm);
   }
 }

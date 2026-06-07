@@ -24,7 +24,7 @@ class SettingsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final viewModel = ref.watch(settingsViewModelProvider);
+    final SettingsViewModel viewModel = ref.watch(settingsViewModelProvider);
     final content = _SettingsPageContent(viewModel: viewModel);
     if (!showAppBar) return content;
 

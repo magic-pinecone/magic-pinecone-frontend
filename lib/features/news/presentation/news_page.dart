@@ -34,7 +34,7 @@ class NewsPage extends StatelessWidget {
 }
 
 class _NewsPageInner extends ConsumerStatefulWidget {
-  const _NewsPageInner({super.key, this.viewModel});
+  const _NewsPageInner({this.viewModel});
 
   final NewsViewModel? viewModel;
 

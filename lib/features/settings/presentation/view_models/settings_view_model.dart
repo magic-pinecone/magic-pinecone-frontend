@@ -47,7 +47,7 @@ class SettingsViewModel extends ChangeNotifier {
 
   void updateBackendBaseUrl(String value) {
     if (_appBackendConfigController == null) return;
-    if (_appBackendConfigController!.setBaseUrl(value)) {
+    if (_appBackendConfigController.setBaseUrl(value)) {
       _backendBaseUrlError = null;
     } else {
       _backendBaseUrlError = '請輸入 http 或 https 開頭的網址';
