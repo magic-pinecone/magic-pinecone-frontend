@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:prototype/core/app/app_providers.dart';
 import 'package:prototype/features/portal/data/portal_authenticator.dart';
 import 'package:prototype/features/portal/data/portal_shortcut_repository.dart';
 import 'package:prototype/features/portal/models/portal_shortcut.dart';
@@ -16,10 +18,17 @@ void main() {
     );
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: PortalPage(
-          sessionController: controller,
-          initialSearchQuery: '成績',
+      ProviderScope(
+        overrides: [
+          portalSessionControllerProvider.overrideWith(
+            (ref) => controller,
+          ),
+        ],
+        child: MaterialApp(
+          home: PortalPage(
+            sessionController: controller,
+            initialSearchQuery: '成績',
+          ),
         ),
       ),
     );

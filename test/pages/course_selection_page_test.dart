@@ -10,11 +10,14 @@ import 'package:prototype/features/course_selection/domain/models/course_schedul
 import 'package:prototype/features/course_selection/presentation/course_selection_page.dart';
 import 'package:prototype/features/course_selection/presentation/view_models/course_selection_controller.dart';
 
+const _noOpRepo = _NoOpSupplementalRepository();
+
 void main() {
   testWidgets('CourseSelectionPage renders loaded courses', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         home: CourseSelectionPage(
+          courseSupplementalDetailRepository: _noOpRepo,
           controller: CourseSelectionController(
             repository: FakeCourseRepository(
               result: const CourseSearchResult(
@@ -71,6 +74,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: CourseSelectionPage(
+            courseSupplementalDetailRepository: _noOpRepo,
             controller: CourseSelectionController(
               repository: FakeCourseRepository(
                 result: CourseSearchResult(
@@ -106,6 +110,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: CourseSelectionPage(
+          courseSupplementalDetailRepository: _noOpRepo,
           controller: CourseSelectionController(
             repository: FakeCourseRepository(
               result: const CourseSearchResult(
@@ -150,6 +155,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: CourseSelectionPage(
+          courseSupplementalDetailRepository: _noOpRepo,
           controller: CourseSelectionController(
             repository: FakeCourseRepository(),
           ),
@@ -168,6 +174,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: CourseSelectionPage(
+          courseSupplementalDetailRepository: _noOpRepo,
           showBackButton: true,
           controller: CourseSelectionController(
             repository: FakeCourseRepository(),
@@ -189,6 +196,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: CourseSelectionPage(
+          courseSupplementalDetailRepository: _noOpRepo,
           controller: CourseSelectionController(repository: repository),
         ),
       ),
@@ -210,6 +218,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: CourseSelectionPage(
+          courseSupplementalDetailRepository: _noOpRepo,
           controller: CourseSelectionController(repository: repository),
         ),
       ),
@@ -250,6 +259,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: CourseSelectionPage(
+            courseSupplementalDetailRepository: _noOpRepo,
             controller: CourseSelectionController(repository: repository),
           ),
         ),
@@ -286,6 +296,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: CourseSelectionPage(
+            courseSupplementalDetailRepository: _noOpRepo,
             controller: CourseSelectionController(
               repository: FakeCourseRepository(),
             ),
@@ -317,6 +328,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: CourseSelectionPage(
+          courseSupplementalDetailRepository: _noOpRepo,
           controller: CourseSelectionController(repository: repository),
         ),
       ),
@@ -343,6 +355,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: CourseSelectionPage(
+          courseSupplementalDetailRepository: _noOpRepo,
           controller: CourseSelectionController(repository: repository),
         ),
       ),
@@ -396,6 +409,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: CourseSelectionPage(
+          courseSupplementalDetailRepository: _noOpRepo,
           controller: CourseSelectionController(repository: repository),
         ),
       ),
@@ -420,6 +434,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: CourseSelectionPage(
+            courseSupplementalDetailRepository: _noOpRepo,
             controller: CourseSelectionController(
               repository: FakeCourseRepository(
                 result: const CourseSearchResult(
@@ -491,6 +506,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: CourseSelectionPage(
+          courseSupplementalDetailRepository: _noOpRepo,
           controller: CourseSelectionController(
             repository: FakeCourseRepository(
               result: const CourseSearchResult(
@@ -558,6 +574,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: CourseSelectionPage(
+            courseSupplementalDetailRepository: _noOpRepo,
             controller: CourseSelectionController(repository: repository),
           ),
         ),
@@ -585,6 +602,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: CourseSelectionPage(
+          courseSupplementalDetailRepository: _noOpRepo,
           controller: CourseSelectionController(
             repository: FakeCourseRepository(),
           ),
@@ -609,6 +627,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: CourseSelectionPage(
+          courseSupplementalDetailRepository: _noOpRepo,
           controller: CourseSelectionController(
             repository: FakeCourseRepository(),
           ),
@@ -632,6 +651,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: CourseSelectionPage(
+          courseSupplementalDetailRepository: _noOpRepo,
           controller: CourseSelectionController(
             repository: FakeCourseRepository(
               result: const CourseSearchResult(
@@ -688,6 +708,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: CourseSelectionPage(
+          courseSupplementalDetailRepository: _noOpRepo,
           controller: CourseSelectionController(
             repository: FakeCourseRepository(
               result: const CourseSearchResult(
@@ -756,6 +777,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: CourseSelectionPage(
+          courseSupplementalDetailRepository: _noOpRepo,
           controller: CourseSelectionController(
             repository: FakeCourseRepository(
               result: const CourseSearchResult(
@@ -802,6 +824,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: CourseSelectionPage(
+          courseSupplementalDetailRepository: _noOpRepo,
           courseSelectionStorage: storage,
           controller: CourseSelectionController(
             repository: FakeCourseRepository(
@@ -851,6 +874,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: CourseSelectionPage(
+          courseSupplementalDetailRepository: _noOpRepo,
           courseSelectionStorage: storage,
           controller: CourseSelectionController(
             repository: FakeCourseRepository(
@@ -895,6 +919,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: CourseSelectionPage(
+            courseSupplementalDetailRepository: _noOpRepo,
             courseSelectionStorage: storage,
             initialShareCode: const CourseShareCodec().encodeSerialNos(const [
               '12345',
@@ -951,6 +976,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: CourseSelectionPage(
+          courseSupplementalDetailRepository: _noOpRepo,
           controller: CourseSelectionController(repository: repository),
         ),
       ),
@@ -1019,6 +1045,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: CourseSelectionPage(
+          courseSupplementalDetailRepository: _noOpRepo,
           controller: CourseSelectionController(
             repository: FakeCourseRepository(
               result: const CourseSearchResult(
@@ -1145,6 +1172,16 @@ void main() {
       );
     },
   );
+}
+
+class _NoOpSupplementalRepository
+    implements CourseSupplementalDetailRepository {
+  const _NoOpSupplementalRepository();
+
+  @override
+  Future<CourseSupplementalDetail?> findBySerialNo(String serialNo) async {
+    return null;
+  }
 }
 
 class _FakeSupplementalRepository

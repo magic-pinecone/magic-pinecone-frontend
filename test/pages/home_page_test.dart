@@ -1,13 +1,22 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prototype/core/app/app_dependencies.dart';
-import 'package:prototype/core/app/app_scope.dart';
+import 'package:prototype/core/app/app_providers.dart';
 import 'package:prototype/features/course_selection/data/course_repository.dart';
+import 'package:prototype/features/course_selection/data/course_supplemental_detail_catalog.dart';
+import 'package:prototype/features/course_selection/domain/models/course_detail_models.dart';
 import 'package:prototype/features/course_selection/domain/models/course_schedule_models.dart';
+import 'package:prototype/features/course_selection/presentation/view_models/course_selection_controller.dart';
 import 'package:prototype/features/home/data/home_dashboard_repository.dart';
 import 'package:prototype/features/home/models/home_dashboard_models.dart';
 import 'package:prototype/features/home/presentation/home_page.dart';
 import 'package:prototype/features/home/presentation/view_models/home_view_model.dart';
+import 'package:prototype/features/portal/data/portal_authenticator.dart';
+import 'package:prototype/features/portal/data/portal_shortcut_repository.dart';
+import 'package:prototype/features/portal/models/portal_shortcut.dart';
+import 'package:prototype/features/portal/presentation/view_models/portal_session_controller.dart';
 
 void main() {
   testWidgets('HomePage renders dashboard sections and course previews', (
@@ -85,8 +94,22 @@ void main() {
 }
 
 Widget _buildTestApp(Widget child) {
-  return AppScope(
-    dependencies: AppDependencies(courseRepository: FakeCourseRepository()),
+  return ProviderScope(
+    overrides: [
+      courseRepositoryProvider.overrideWithValue(FakeCourseRepository()),
+      courseSelectionControllerProvider.overrideWith(
+        (ref) => CourseSelectionController(repository: FakeCourseRepository()),
+      ),
+      courseSupplementalDetailRepositoryProvider.overrideWithValue(
+        FakeCourseSupplementalDetailRepository(),
+      ),
+      portalSessionControllerProvider.overrideWith(
+        (ref) => PortalSessionController(
+          authenticator: _NeverCompletingPortalAuthenticator(),
+          shortcutRepository: const FakePortalShortcutRepository(),
+        ),
+      ),
+    ],
     child: MaterialApp(home: child),
   );
 }
@@ -159,3 +182,59 @@ class FakeHomeDashboardRepository implements HomeDashboardRepository {
     );
   }
 }
+
+class FakePortalAuthenticator extends PortalAuthenticator {
+  FakePortalAuthenticator({this.result});
+
+  final String? result;
+
+  @override
+  Future<String?> fetchPortalToken() async => result;
+}
+
+class FakePortalShortcutRepository implements PortalShortcutRepository {
+  const FakePortalShortcutRepository();
+
+  @override
+  List<PortalShortcutSection> loadShortcutSections() {
+    return const [
+      PortalShortcutSection(
+        title: '常用服務',
+        items: [
+          PortalShortcutItem(
+            label: '成績查詢',
+            icon: Icons.grading,
+            destination: PortalWebShortcutDestination(
+              title: '成績查詢',
+              targetPath: '/system/incu-studentscore',
+            ),
+          ),
+          PortalShortcutItem(
+            label: 'NCU Mail',
+            icon: Icons.mail,
+            destination: PortalWebShortcutDestination(
+              title: 'NCU Mail',
+              targetPath: '/system/129',
+            ),
+          ),
+        ],
+      ),
+    ];
+  }
+}
+
+class FakeCourseSupplementalDetailRepository
+    implements CourseSupplementalDetailRepository {
+  @override
+  Future<CourseSupplementalDetail?> findBySerialNo(String serialNo) async {
+    return null;
+  }
+}
+
+/// Returns a [Future] that never completes so [PortalSessionController.refreshSession]
+/// never reaches its finally block, preventing notifyListeners() after disposal.
+class _NeverCompletingPortalAuthenticator extends PortalAuthenticator {
+  @override
+  Future<String?> fetchPortalToken() => Completer<String?>().future;
+}
+
