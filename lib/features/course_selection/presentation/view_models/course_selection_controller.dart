@@ -3,12 +3,11 @@ import 'package:prototype/features/course_selection/data/course_repository.dart'
 import 'package:prototype/features/course_selection/domain/models/course_schedule_models.dart';
 
 class CourseSelectionController extends ChangeNotifier {
-  CourseSelectionController({required CourseRepository repository})
-    : _repository = repository;
+  CourseSelectionController({required this.repository});
 
   static const defaultPageSize = 50;
 
-  final CourseRepository _repository;
+  final CourseRepository repository;
 
   List<CourseItem> _courses = const [];
   bool _isLoading = false;
@@ -107,7 +106,7 @@ class CourseSelectionController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result = await _repository.searchCourses(
+      final result = await repository.searchCourses(
         keyword: _keyword,
         classNo: _classNo,
         serialNo: _serialNo,
@@ -177,7 +176,7 @@ class CourseSelectionController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result = await _repository.searchCourses(
+      final result = await repository.searchCourses(
         keyword: _keyword,
         classNo: _classNo,
         serialNo: _serialNo,
@@ -273,7 +272,7 @@ class CourseSelectionController extends ChangeNotifier {
     for (final serialNo in uniqueSerialNos) {
       if (coursesBySerialNo.containsKey(serialNo)) continue;
 
-      final result = await _repository.searchCourses(
+      final result = await repository.searchCourses(
         serialNo: serialNo,
         limit: 10,
       );

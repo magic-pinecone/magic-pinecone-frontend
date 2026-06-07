@@ -6,14 +6,13 @@ import 'package:prototype/features/portal/models/portal_shortcut.dart';
 
 class PortalSessionController extends ChangeNotifier {
   PortalSessionController({
-    required PortalAuthenticator authenticator,
+    required this.authenticator,
     required PortalShortcutRepository shortcutRepository,
-  }) : _authenticator = authenticator,
-       _shortcutSections = List.unmodifiable(
+  }) : _shortcutSections = List.unmodifiable(
          shortcutRepository.loadShortcutSections(),
        );
 
-  final PortalAuthenticator _authenticator;
+  final PortalAuthenticator authenticator;
   final List<PortalShortcutSection> _shortcutSections;
 
   PortalSessionState _state = const PortalSessionState.expired();
@@ -44,7 +43,7 @@ class PortalSessionController extends ChangeNotifier {
 
   Future<String?> _refreshSessionInternal() async {
     try {
-      final token = await _authenticator.fetchPortalToken();
+      final token = await authenticator.fetchPortalToken();
       final normalizedToken = token?.trim();
 
       if (normalizedToken != null && normalizedToken.isNotEmpty) {

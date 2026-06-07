@@ -6,18 +6,17 @@ import 'package:prototype/features/settings/domain/models/settings_models.dart';
 
 class SettingsViewModel extends ChangeNotifier {
   SettingsViewModel({
-    required AppThemeController appThemeController,
-    AppBackendConfigController? appBackendConfigController,
+    required this.appThemeController,
+    this.appBackendConfigController,
     required SettingsRepository repository,
-  }) : _appThemeController = appThemeController,
-       _appBackendConfigController = appBackendConfigController {
+  }) {
     _snapshot = repository.loadSettings();
-    _appThemeController.addListener(_onThemeChanged);
-    _appBackendConfigController?.addListener(_onBackendConfigChanged);
+    appThemeController.addListener(_onThemeChanged);
+    appBackendConfigController?.addListener(_onBackendConfigChanged);
   }
 
-  final AppThemeController _appThemeController;
-  final AppBackendConfigController? _appBackendConfigController;
+  final AppThemeController appThemeController;
+  final AppBackendConfigController? appBackendConfigController;
   late final SettingsSnapshot _snapshot;
   String? _backendBaseUrlError;
   bool _omitWeekendsOnTimetable = true;
@@ -27,9 +26,9 @@ class SettingsViewModel extends ChangeNotifier {
   String get appVersion => _snapshot.appVersion;
   String get summary => _snapshot.summary;
   List<SettingsStatusItem> get statusItems => _snapshot.statusItems;
-  ThemeMode get themeMode => _appThemeController.value;
+  ThemeMode get themeMode => appThemeController.value;
   bool get isDarkMode => themeMode == ThemeMode.dark;
-  String get backendBaseUrl => _appBackendConfigController?.baseUrl ?? '';
+  String get backendBaseUrl => appBackendConfigController?.baseUrl ?? '';
   String? get backendBaseUrlError => _backendBaseUrlError;
 
   void setOmitWeekendsOnTimetable(bool enabled) {
@@ -38,16 +37,17 @@ class SettingsViewModel extends ChangeNotifier {
   }
 
   void toggleTheme() {
-    _appThemeController.toggle();
+    appThemeController.toggle();
   }
 
   void setDarkMode(bool enabled) {
-    _appThemeController.setDarkMode(enabled);
+    appThemeController.setDarkMode(enabled);
   }
 
   void updateBackendBaseUrl(String value) {
-    if (_appBackendConfigController == null) return;
-    if (_appBackendConfigController.setBaseUrl(value)) {
+    final controller = appBackendConfigController;
+    if (controller == null) return;
+    if (controller.setBaseUrl(value)) {
       _backendBaseUrlError = null;
     } else {
       _backendBaseUrlError = '請輸入 http 或 https 開頭的網址';
@@ -56,7 +56,7 @@ class SettingsViewModel extends ChangeNotifier {
   }
 
   void resetBackendBaseUrl() {
-    _appBackendConfigController?.reset();
+    appBackendConfigController?.reset();
     _backendBaseUrlError = null;
     notifyListeners();
   }
@@ -71,8 +71,8 @@ class SettingsViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
-    _appThemeController.removeListener(_onThemeChanged);
-    _appBackendConfigController?.removeListener(_onBackendConfigChanged);
+    appThemeController.removeListener(_onThemeChanged);
+    appBackendConfigController?.removeListener(_onBackendConfigChanged);
     super.dispose();
   }
 }

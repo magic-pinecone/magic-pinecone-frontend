@@ -26,10 +26,9 @@ const staticRemoteCoursesUrl =
     'https://raw.githubusercontent.com/magic-pinecone/magic-pinecone-lite/115-1/courses.json';
 
 class RemoteCourseRepository implements CourseRepository {
-  RemoteCourseRepository({required CourseApiService service})
-    : _service = service;
+  RemoteCourseRepository({required this.service});
 
-  final CourseApiService _service;
+  final CourseApiService service;
 
   @override
   Future<CourseSearchResult> searchCourses({
@@ -46,7 +45,7 @@ class RemoteCourseRepository implements CourseRepository {
     int offset = 0,
     int limit = 100,
   }) async {
-    final result = await _service.getCourse(
+    final result = await service.getCourse(
       keyword: _normalize(keyword),
       classNo: _normalize(classNo),
       serialNo: _normalize(serialNo),
@@ -76,11 +75,11 @@ class RemoteCourseRepository implements CourseRepository {
 
 class StaticRemoteCourseRepository implements CourseRepository {
   StaticRemoteCourseRepository({
-    required Dio dio,
+    required this.dio,
     this.coursesUrl = staticRemoteCoursesUrl,
-  }) : _dio = dio;
+  });
 
-  final Dio _dio;
+  final Dio dio;
   final String coursesUrl;
   CourseSearchResult? _cachedCatalog;
 
@@ -129,7 +128,7 @@ class StaticRemoteCourseRepository implements CourseRepository {
     final cachedCatalog = _cachedCatalog;
     if (cachedCatalog != null) return cachedCatalog;
 
-    final response = await _dio.getUri<Object>(Uri.parse(coursesUrl));
+    final response = await dio.getUri<Object>(Uri.parse(coursesUrl));
     final json = _decodeJsonObject(response.data);
     final coursesJson = json['courses'] as List<dynamic>? ?? const [];
     final courses = coursesJson

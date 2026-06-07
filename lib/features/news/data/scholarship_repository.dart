@@ -6,14 +6,13 @@ abstract class ScholarshipRepository {
 }
 
 class RemoteScholarshipRepository implements ScholarshipRepository {
-  RemoteScholarshipRepository({required ScholarshipApiService service})
-    : _service = service;
+  RemoteScholarshipRepository({required this.service});
 
-  final ScholarshipApiService _service;
+  final ScholarshipApiService service;
 
   @override
   Future<List<ScholarshipItem>> fetchScholarships() async {
-    final result = await _service.fetchScholarships();
+    final result = await service.fetchScholarships();
     return result.scholarships
         .map(
           (scholarship) => ScholarshipItem(

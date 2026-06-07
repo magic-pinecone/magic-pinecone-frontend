@@ -6,12 +6,11 @@ import 'package:prototype/features/news/models/scholarship_item.dart';
 
 class NewsViewModel extends ChangeNotifier {
   NewsViewModel({
-    required ScholarshipRepository repository,
+    required this.repository,
     required NewsDigestRepository digestRepository,
-  }) : _repository = repository,
-       _digestItems = List.unmodifiable(digestRepository.loadDigestItems());
+  }) : _digestItems = List.unmodifiable(digestRepository.loadDigestItems());
 
-  final ScholarshipRepository _repository;
+  final ScholarshipRepository repository;
   final List<NewsDigestItem> _digestItems;
 
   bool _isLoading = false;
@@ -29,7 +28,7 @@ class NewsViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _items = await _repository.fetchScholarships();
+      _items = await repository.fetchScholarships();
     } catch (error) {
       _error = error;
     } finally {

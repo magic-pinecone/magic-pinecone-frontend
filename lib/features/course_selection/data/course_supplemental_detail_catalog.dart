@@ -21,11 +21,11 @@ const staticRemoteCourseDetailsBaseUrl =
 class StaticRemoteCourseSupplementalDetailRepository
     implements CourseSupplementalDetailRepository {
   StaticRemoteCourseSupplementalDetailRepository({
-    required Dio dio,
+    required this.dio,
     this.detailsBaseUrl = staticRemoteCourseDetailsBaseUrl,
-  }) : _dio = dio;
+  });
 
-  final Dio _dio;
+  final Dio dio;
   final String detailsBaseUrl;
   final Map<String, CourseSupplementalDetail?> _cache = {};
 
@@ -38,7 +38,7 @@ class StaticRemoteCourseSupplementalDetailRepository
     }
 
     try {
-      final response = await _dio.getUri<Object>(
+      final response = await dio.getUri<Object>(
         Uri.parse('$detailsBaseUrl/$normalizedSerialNo.json'),
       );
       final detail = CourseSupplementalDetail.fromJson(
