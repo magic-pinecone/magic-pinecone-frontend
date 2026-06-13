@@ -21,12 +21,14 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'app_providers.g.dart';
 
+// TODO: Migrate legacy ChangeNotifierProvider to modern Riverpod Notifier/AsyncNotifier
 final appThemeControllerProvider = ChangeNotifierProvider<AppThemeController>((
   ref,
 ) {
   return AppThemeController();
 });
 
+// TODO: Migrate legacy ChangeNotifierProvider to modern Riverpod Notifier/AsyncNotifier
 final appBackendConfigControllerProvider =
     ChangeNotifierProvider<AppBackendConfigController>((ref) {
       return AppBackendConfigController();
@@ -103,12 +105,14 @@ PortalAuthenticator portalAuthenticator(Ref ref) {
 }
 
 // view models: ChangeNotifiers
+// TODO: Migrate legacy ChangeNotifierProvider to modern Riverpod Notifier/AsyncNotifier
 final courseSelectionControllerProvider =
     ChangeNotifierProvider.autoDispose<CourseSelectionController>((ref) {
       final repository = ref.watch(courseRepositoryProvider);
       return CourseSelectionController(repository: repository);
     });
 
+// TODO: Migrate legacy ChangeNotifierProvider to modern Riverpod Notifier/AsyncNotifier
 final settingsViewModelProvider =
     ChangeNotifierProvider.autoDispose<SettingsViewModel>((ref) {
       final appThemeController = ref.watch(appThemeControllerProvider);
@@ -123,6 +127,7 @@ final settingsViewModelProvider =
       );
     });
 
+// TODO: Migrate legacy ChangeNotifierProvider to modern Riverpod Notifier/AsyncNotifier
 final homeViewModelProvider = ChangeNotifierProvider.autoDispose<HomeViewModel>(
   (ref) {
     final repository = ref.watch(homeDashboardRepositoryProvider);
@@ -130,6 +135,7 @@ final homeViewModelProvider = ChangeNotifierProvider.autoDispose<HomeViewModel>(
   },
 );
 
+// TODO: Migrate legacy ChangeNotifierProvider to modern Riverpod Notifier/AsyncNotifier
 final newsViewModelProvider = ChangeNotifierProvider.autoDispose<NewsViewModel>(
   (ref) {
     final repository = ref.watch(scholarshipRepositoryProvider);
@@ -141,6 +147,7 @@ final newsViewModelProvider = ChangeNotifierProvider.autoDispose<NewsViewModel>(
   },
 );
 
+// TODO: Migrate legacy ChangeNotifierProvider to modern Riverpod Notifier/AsyncNotifier
 final portalSessionControllerProvider =
     ChangeNotifierProvider.autoDispose<PortalSessionController>((ref) {
       final authenticator = ref.watch(portalAuthenticatorProvider);
