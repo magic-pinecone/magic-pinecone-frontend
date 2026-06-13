@@ -30,6 +30,7 @@ void main() {
           ),
         ],
       );
+      addTearDown(container.dispose);
 
       expect(
         container.read(newsViewModelProvider),

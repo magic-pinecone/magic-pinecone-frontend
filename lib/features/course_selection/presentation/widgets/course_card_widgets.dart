@@ -425,7 +425,7 @@ class _CourseDetailsContentState extends State<_CourseDetailsContent> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Flexible(
-                    child: CourseSelectableText(
+                    child: SelectionAreaText(
                       widget.course.title,
                       style: const TextStyle(
                         fontSize: 20,
@@ -710,7 +710,7 @@ class _CourseSupplementalSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CourseSelectableText(
+          SelectionAreaText(
             title,
             style: TextStyle(
               fontSize: 12.0,
@@ -719,7 +719,7 @@ class _CourseSupplementalSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4.0),
-          CourseSelectableText(
+          SelectionAreaText(
             value,
             style: TextStyle(height: 1.45, color: colorScheme.onSurface),
           ),
@@ -729,8 +729,8 @@ class _CourseSupplementalSection extends StatelessWidget {
   }
 }
 
-class CourseSelectableText extends StatelessWidget {
-  const CourseSelectableText(this.data, {super.key, this.style});
+class SelectionAreaText extends StatelessWidget {
+  const SelectionAreaText(this.data, {super.key, this.style});
 
   final String data;
   final TextStyle? style;

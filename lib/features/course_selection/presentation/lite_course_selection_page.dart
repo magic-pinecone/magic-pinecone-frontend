@@ -21,8 +21,7 @@ import 'package:magic_pinecone/features/course_selection/presentation/widgets/co
 import 'package:magic_pinecone/features/course_selection/presentation/widgets/course_state_widgets.dart';
 import 'package:magic_pinecone/features/course_selection/presentation/widgets/course_timetable_view.dart';
 import 'package:magic_pinecone/features/course_selection/presentation/widgets/local_course_filter_sheet.dart';
-import 'package:magic_pinecone/features/settings/presentation/settings_dialog.dart'
-    hide SettingsPage;
+import 'package:magic_pinecone/features/settings/presentation/settings_dialog.dart';
 import 'package:magic_pinecone/features/settings/presentation/settings_page.dart';
 import 'package:magic_pinecone/features/settings/presentation/view_models/settings_view_model.dart';
 

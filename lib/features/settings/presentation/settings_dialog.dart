@@ -17,8 +17,8 @@ Future<void> _launchCommunityUrl(BuildContext context, String url) async {
   )?.showSnackBar(SnackBar(content: Text('無法開啟連結：$url')));
 }
 
-class SettingsPage extends ConsumerWidget {
-  const SettingsPage({super.key, this.showAppBar = true});
+class SettingsDialogPage extends ConsumerWidget {
+  const SettingsDialogPage({super.key, this.showAppBar = true});
 
   final bool showAppBar;
 
@@ -67,7 +67,7 @@ class SettingsDialog extends ConsumerWidget {
                 ),
               ],
             ),
-            const Expanded(child: SettingsPage(showAppBar: false)),
+            const Expanded(child: SettingsDialogPage(showAppBar: false)),
           ],
         ),
       ),
