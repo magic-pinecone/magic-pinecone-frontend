@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:magic_pinecone/core/app/app_providers.dart';
 import 'package:magic_pinecone/core/app/app_theme.dart';
 import 'package:magic_pinecone/core/navigation/app_routes.dart';
 
@@ -55,7 +54,7 @@ class _MagicPineconeAppState extends ConsumerState<MagicPineconeApp> {
 
   @override
   Widget build(BuildContext context) {
-    final themeMode = ref.watch(appThemeControllerProvider).value;
+    final themeMode = ref.watch(appThemeControllerProvider);
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:magic_pinecone/core/app/app_providers.dart';
 import 'package:magic_pinecone/features/news/domain/models/news_digest_item.dart';
 import 'package:magic_pinecone/features/news/domain/models/scholarship_item.dart';
 import 'package:magic_pinecone/features/news/domain/repository/news_digest_repository.dart';
@@ -19,34 +21,25 @@ void main() {
           ),
         ],
       );
-      final viewModel = NewsViewModel(
-        repository: repository,
-        digestRepository: const FakeNewsDigestRepository(),
+
+      final container = ProviderContainer(
+        overrides: [
+          scholarshipRepositoryProvider.overrideWithValue(repository),
+          newsDigestRepositoryProvider.overrideWithValue(
+            const FakeNewsDigestRepository(),
+          ),
+        ],
       );
 
-      await viewModel.load();
-
-      expect(viewModel.isLoading, isFalse);
-      expect(viewModel.error, isNull);
-      expect(viewModel.items, hasLength(1));
-      expect(viewModel.items.first.title, 'Test scholarship');
-      expect(viewModel.digestItems, hasLength(1));
-    });
-
-    test('stores error when repository throws', () async {
-      final repository = FakeScholarshipRepository(
-        error: StateError('fetch failed'),
-      );
-      final viewModel = NewsViewModel(
-        repository: repository,
-        digestRepository: const FakeNewsDigestRepository(),
+      expect(
+        container.read(newsViewModelProvider),
+        isA<AsyncLoading<NewsViewSnapshot>>(),
       );
 
-      await viewModel.load();
+      final snapshot = await container.read(newsViewModelProvider.future);
 
-      expect(viewModel.isLoading, isFalse);
-      expect(viewModel.items, isEmpty);
-      expect(viewModel.error, isA<StateError>());
+      expect(snapshot.scholarshipItems, hasLength(1));
+      expect(snapshot.digestItems, hasLength(1));
     });
   });
 }

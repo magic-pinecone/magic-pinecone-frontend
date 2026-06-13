@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:magic_pinecone/features/course_selection/presentation/course_selection_layout.dart';
 import 'package:magic_pinecone/features/course_selection/presentation/view_models/course_selection_controller.dart';
 import 'package:magic_pinecone/features/course_selection/presentation/widgets/course_class_time_picker.dart';
@@ -8,22 +9,18 @@ import 'package:magic_pinecone/features/course_selection/presentation/widgets/co
 
 const _creditOptions = <int>[0, 1, 2, 3, 4, 6];
 
-class CourseAdvancedFilterSheet extends StatefulWidget {
-  const CourseAdvancedFilterSheet({
-    super.key,
-    required this.controller,
-    this.useDialogLayout = false,
-  });
+class CourseAdvancedFilterSheet extends ConsumerStatefulWidget {
+  const CourseAdvancedFilterSheet({super.key, this.useDialogLayout = false});
 
-  final CourseSelectionController controller;
   final bool useDialogLayout;
 
   @override
-  State<CourseAdvancedFilterSheet> createState() =>
+  ConsumerState<CourseAdvancedFilterSheet> createState() =>
       _CourseAdvancedFilterSheetState();
 }
 
-class _CourseAdvancedFilterSheetState extends State<CourseAdvancedFilterSheet> {
+class _CourseAdvancedFilterSheetState
+    extends ConsumerState<CourseAdvancedFilterSheet> {
   static const _classTimeWeekDays = ['一', '二', '三', '四', '五', '六', '日'];
   static const _classTimePeriods = [
     '1',
@@ -53,24 +50,26 @@ class _CourseAdvancedFilterSheetState extends State<CourseAdvancedFilterSheet> {
   late Set<String> _classTimes;
   int _visibleClassTimeDayCount = 5;
 
-  CourseSelectionController get controller => widget.controller;
+  CourseSelectionState get _state =>
+      ref.read(courseSelectionControllerProvider);
+  CourseSelectionController get _notifier =>
+      ref.read(courseSelectionControllerProvider.notifier);
 
   @override
   void initState() {
     super.initState();
-    _classNoController = TextEditingController(text: controller.classNo);
-    _serialNoController = TextEditingController(text: controller.serialNo);
+    final state = ref.read(courseSelectionControllerProvider);
+    _classNoController = TextEditingController(text: state.classNo);
+    _serialNoController = TextEditingController(text: state.serialNo);
     _departmentNameController = TextEditingController(
-      text: controller.departmentName,
+      text: state.departmentName,
     );
-    _collegeNameController = TextEditingController(
-      text: controller.collegeName,
-    );
-    _instructorController = TextEditingController(text: controller.instructor);
-    _courseType = controller.courseType;
-    _credits = controller.credits.toSet();
-    _hasVacancy = controller.hasVacancy;
-    _classTimes = controller.classTimes.toSet();
+    _collegeNameController = TextEditingController(text: state.collegeName);
+    _instructorController = TextEditingController(text: state.instructor);
+    _courseType = state.courseType;
+    _credits = state.credits.toSet();
+    _hasVacancy = state.hasVacancy;
+    _classTimes = state.classTimes.toSet();
   }
 
   @override
@@ -85,6 +84,7 @@ class _CourseAdvancedFilterSheetState extends State<CourseAdvancedFilterSheet> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(courseSelectionControllerProvider);
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     final contentPadding = widget.useDialogLayout
         ? const EdgeInsets.fromLTRB(28.0, 24.0, 28.0, 28.0)
@@ -131,7 +131,7 @@ class _CourseAdvancedFilterSheetState extends State<CourseAdvancedFilterSheet> {
           ),
           const SizedBox(height: 16.0),
           _AdvancedFilterActions(
-            isLoading: controller.isLoading,
+            isLoading: _state.isLoading,
             onApply: _applyFilters,
             onClear: _clearFilters,
           ),
@@ -157,14 +157,14 @@ class _CourseAdvancedFilterSheetState extends State<CourseAdvancedFilterSheet> {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: controller.isLoading ? null : _showClassTimePicker,
+              onPressed: _state.isLoading ? null : _showClassTimePicker,
               icon: const Icon(Icons.schedule_outlined),
               label: Text(_classTimeButtonText),
             ),
           ),
           const SizedBox(height: 12.0),
           _AdvancedFilterActions(
-            isLoading: controller.isLoading,
+            isLoading: _state.isLoading,
             onApply: _applyFilters,
             onClear: _clearFilters,
           ),
@@ -178,7 +178,7 @@ class _CourseAdvancedFilterSheetState extends State<CourseAdvancedFilterSheet> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _AdvancedSearchFields(
-          enabled: !controller.isLoading,
+          enabled: !_state.isLoading,
           classNoController: _classNoController,
           serialNoController: _serialNoController,
           departmentNameController: _departmentNameController,
@@ -191,7 +191,7 @@ class _CourseAdvancedFilterSheetState extends State<CourseAdvancedFilterSheet> {
         const SizedBox(height: 8.0),
         DraftCourseTypeSegmentedControl(
           value: _courseType,
-          enabled: !controller.isLoading,
+          enabled: !_state.isLoading,
           onChanged: (value) => setState(() => _courseType = value),
         ),
         const SizedBox(height: 12.0),
@@ -199,7 +199,7 @@ class _CourseAdvancedFilterSheetState extends State<CourseAdvancedFilterSheet> {
         const SizedBox(height: 8.0),
         _DraftCreditFilterGrid(
           selectedCredits: _credits,
-          enabled: !controller.isLoading,
+          enabled: !_state.isLoading,
           onToggle: _toggleCredit,
         ),
         const SizedBox(height: 12.0),
@@ -207,7 +207,7 @@ class _CourseAdvancedFilterSheetState extends State<CourseAdvancedFilterSheet> {
         const SizedBox(height: 8.0),
         DraftVacancySegmentedControl(
           value: _hasVacancy,
-          enabled: !controller.isLoading,
+          enabled: !_state.isLoading,
           onChanged: (value) => setState(() => _hasVacancy = value),
         ),
       ],
@@ -256,7 +256,7 @@ class _CourseAdvancedFilterSheetState extends State<CourseAdvancedFilterSheet> {
             days: visibleDays,
             periods: _classTimePeriods,
             selectedValues: _classTimes,
-            enabled: !controller.isLoading,
+            enabled: !_state.isLoading,
             onToggle: _toggleClassTime,
           ),
         ),
@@ -315,7 +315,7 @@ class _CourseAdvancedFilterSheetState extends State<CourseAdvancedFilterSheet> {
 
   void _applyFilters() {
     unawaited(
-      controller
+      _notifier
           .applyFilters(
             classNo: _classNoController.text,
             serialNo: _serialNoController.text,

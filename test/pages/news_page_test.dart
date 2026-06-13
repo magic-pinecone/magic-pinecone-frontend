@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:magic_pinecone/core/app/app_providers.dart';
 import 'package:magic_pinecone/features/news/domain/models/news_digest_item.dart';
 import 'package:magic_pinecone/features/news/domain/models/scholarship_item.dart';
 import 'package:magic_pinecone/features/news/domain/repository/news_digest_repository.dart';
 import 'package:magic_pinecone/features/news/domain/repository/scholarship_repository.dart';
 import 'package:magic_pinecone/features/news/presentation/news_page.dart';
-import 'package:magic_pinecone/features/news/presentation/view_models/news_view_model.dart';
 
 void main() {
   testWidgets('NewsPage renders fetched news', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: NewsPage(
-          viewModel: NewsViewModel(
-            repository: FakeScholarshipRepository(
+      ProviderScope(
+        overrides: [
+          scholarshipRepositoryProvider.overrideWithValue(
+            FakeScholarshipRepository(
               result: const [
                 ScholarshipItem(
                   id: 1,
@@ -26,9 +27,12 @@ void main() {
                 ),
               ],
             ),
-            digestRepository: const FakeNewsDigestRepository(),
           ),
-        ),
+          newsDigestRepositoryProvider.overrideWithValue(
+            const FakeNewsDigestRepository(),
+          ),
+        ],
+        child: MaterialApp(home: NewsPage()),
       ),
     );
     await tester.pumpAndSettle();

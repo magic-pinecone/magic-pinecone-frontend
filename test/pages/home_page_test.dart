@@ -8,11 +8,9 @@ import 'package:magic_pinecone/features/course_selection/domain/models/course_de
 import 'package:magic_pinecone/features/course_selection/domain/models/course_schedule_models.dart';
 import 'package:magic_pinecone/features/course_selection/domain/repository/course_repository.dart';
 import 'package:magic_pinecone/features/course_selection/domain/repository/course_supplemental_detail_repository.dart';
-import 'package:magic_pinecone/features/course_selection/presentation/view_models/course_selection_controller.dart';
 import 'package:magic_pinecone/features/home/domain/models/home_dashboard_models.dart';
 import 'package:magic_pinecone/features/home/domain/repository/home_dashboard_repository.dart';
 import 'package:magic_pinecone/features/home/presentation/home_page.dart';
-import 'package:magic_pinecone/features/home/presentation/view_models/home_view_model.dart';
 import 'package:magic_pinecone/features/portal/data/data_sources/portal_authenticator.dart';
 import 'package:magic_pinecone/features/portal/domain/models/portal_shortcut.dart';
 import 'package:magic_pinecone/features/portal/domain/repository/portal_shortcut_repository.dart';
@@ -24,10 +22,13 @@ void main() {
   ) async {
     await tester.pumpWidget(
       _buildTestApp(
-        HomePage(
-          viewModel: HomeViewModel(
-            repository: const FakeHomeDashboardRepository(),
-          ),
+        ProviderScope(
+          overrides: [
+            homeDashboardRepositoryProvider.overrideWithValue(
+              const FakeHomeDashboardRepository(),
+            ),
+          ],
+          child: HomePage(),
         ),
       ),
     );
@@ -45,10 +46,13 @@ void main() {
   ) async {
     await tester.pumpWidget(
       _buildTestApp(
-        HomePage(
-          viewModel: HomeViewModel(
-            repository: const FakeHomeDashboardRepository(),
-          ),
+        ProviderScope(
+          overrides: [
+            homeDashboardRepositoryProvider.overrideWithValue(
+              const FakeHomeDashboardRepository(),
+            ),
+          ],
+          child: HomePage(),
         ),
       ),
     );
@@ -70,10 +74,13 @@ void main() {
   ) async {
     await tester.pumpWidget(
       _buildTestApp(
-        HomePage(
-          viewModel: HomeViewModel(
-            repository: const FakeHomeDashboardRepository(),
-          ),
+        ProviderScope(
+          overrides: [
+            homeDashboardRepositoryProvider.overrideWithValue(
+              const FakeHomeDashboardRepository(),
+            ),
+          ],
+          child: HomePage(),
         ),
       ),
     );
@@ -97,17 +104,14 @@ Widget _buildTestApp(Widget child) {
   return ProviderScope(
     overrides: [
       courseRepositoryProvider.overrideWithValue(FakeCourseRepository()),
-      courseSelectionControllerProvider.overrideWith(
-        (ref) => CourseSelectionController(repository: FakeCourseRepository()),
-      ),
       courseSupplementalDetailRepositoryProvider.overrideWithValue(
         FakeCourseSupplementalDetailRepository(),
       ),
-      portalSessionControllerProvider.overrideWith(
-        (ref) => PortalSessionController(
-          authenticator: _NeverCompletingPortalAuthenticator(),
-          shortcutRepository: const FakePortalShortcutRepository(),
-        ),
+      portalAuthenticatorProvider.overrideWithValue(
+        _NeverCompletingPortalAuthenticator(),
+      ),
+      portalShortcutRepositoryProvider.overrideWithValue(
+        const FakePortalShortcutRepository(),
       ),
     ],
     child: MaterialApp(home: child),

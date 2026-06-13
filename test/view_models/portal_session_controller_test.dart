@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:magic_pinecone/core/app/app_providers.dart';
 import 'package:magic_pinecone/features/portal/data/data_sources/portal_authenticator.dart';
 import 'package:magic_pinecone/features/portal/domain/models/portal_session_state.dart';
 import 'package:magic_pinecone/features/portal/domain/models/portal_shortcut.dart';
@@ -11,69 +13,104 @@ void main() {
     test(
       'stores authenticated state when authenticator returns token',
       () async {
-        final controller = PortalSessionController(
-          authenticator: FakePortalAuthenticator(result: ' token123 '),
-          shortcutRepository: const FakePortalShortcutRepository(),
+        final container = ProviderContainer(
+          overrides: [
+            portalAuthenticatorProvider.overrideWithValue(
+              FakePortalAuthenticator(result: ' token123 '),
+            ),
+          ],
         );
+        addTearDown(container.dispose);
 
+        final controller = container.read(
+          portalSessionControllerProvider.notifier,
+        );
         final token = await controller.refreshSession();
 
+        final state = container.read(portalSessionControllerProvider);
         expect(token, 'token123');
-        expect(controller.state.status, PortalSessionStatus.authenticated);
-        expect(controller.state.token, 'token123');
-        expect(controller.state.isAuthenticated, isTrue);
+        expect(state.status, PortalSessionStatus.authenticated);
+        expect(state.token, 'token123');
+        expect(state.isAuthenticated, isTrue);
       },
     );
 
     test('stores expired state when authenticator returns no token', () async {
-      final controller = PortalSessionController(
-        authenticator: FakePortalAuthenticator(result: '   '),
-        shortcutRepository: const FakePortalShortcutRepository(),
+      final container = ProviderContainer(
+        overrides: [
+          portalAuthenticatorProvider.overrideWithValue(
+            FakePortalAuthenticator(result: '   '),
+          ),
+        ],
       );
+      addTearDown(container.dispose);
 
+      final controller = container.read(
+        portalSessionControllerProvider.notifier,
+      );
       await controller.refreshSession();
 
-      expect(controller.state.status, PortalSessionStatus.expired);
-      expect(controller.state.token, isNull);
+      final state = container.read(portalSessionControllerProvider);
+      expect(state.status, PortalSessionStatus.expired);
+      expect(state.token, isNull);
     });
 
     test('stores error state when authenticator throws', () async {
-      final controller = PortalSessionController(
-        authenticator: FakePortalAuthenticator(error: StateError('boom')),
-        shortcutRepository: const FakePortalShortcutRepository(),
+      final container = ProviderContainer(
+        overrides: [
+          portalAuthenticatorProvider.overrideWithValue(
+            FakePortalAuthenticator(error: StateError('boom')),
+          ),
+        ],
       );
+      addTearDown(container.dispose);
 
+      final controller = container.read(
+        portalSessionControllerProvider.notifier,
+      );
       await controller.refreshSession();
 
-      expect(controller.state.status, PortalSessionStatus.error);
-      expect(controller.state.token, isNull);
+      final state = container.read(portalSessionControllerProvider);
+      expect(state.status, PortalSessionStatus.error);
+      expect(state.token, isNull);
     });
 
     test('marks reauthentication as required and clears token', () async {
-      final controller = PortalSessionController(
-        authenticator: FakePortalAuthenticator(result: 'token123'),
-        shortcutRepository: const FakePortalShortcutRepository(),
+      final container = ProviderContainer(
+        overrides: [
+          portalAuthenticatorProvider.overrideWithValue(
+            FakePortalAuthenticator(result: 'token123'),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(
+        portalSessionControllerProvider.notifier,
       );
       await controller.refreshSession();
 
       controller.markReauthenticationRequired();
 
-      expect(
-        controller.state.status,
-        PortalSessionStatus.requireReauthentication,
-      );
-      expect(controller.state.token, isNull);
+      final state = container.read(portalSessionControllerProvider);
+      expect(state.status, PortalSessionStatus.requireReauthentication);
+      expect(state.token, isNull);
     });
 
     test('exposes shortcut sections from repository', () {
-      final controller = PortalSessionController(
-        authenticator: FakePortalAuthenticator(result: 'token123'),
-        shortcutRepository: const FakePortalShortcutRepository(),
+      final container = ProviderContainer(
+        overrides: [
+          portalShortcutRepositoryProvider.overrideWithValue(
+            const FakePortalShortcutRepository(),
+          ),
+        ],
       );
+      addTearDown(container.dispose);
 
-      expect(controller.shortcutSections, hasLength(1));
-      expect(controller.shortcutSections.first.title, '常用服務');
-      expect(controller.shortcutSections.first.items.first.label, '成績查詢');
+      final sections = container.read(portalShortcutSectionsProvider);
+      expect(sections, hasLength(1));
+      expect(sections.first.title, '常用服務');
+      expect(sections.first.items.first.label, '成績查詢');
     });
   });
 }

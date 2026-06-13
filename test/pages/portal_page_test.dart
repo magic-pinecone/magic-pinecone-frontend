@@ -6,28 +6,22 @@ import 'package:magic_pinecone/features/portal/data/data_sources/portal_authenti
 import 'package:magic_pinecone/features/portal/domain/models/portal_shortcut.dart';
 import 'package:magic_pinecone/features/portal/domain/repository/portal_shortcut_repository.dart';
 import 'package:magic_pinecone/features/portal/presentation/portal_page.dart';
-import 'package:magic_pinecone/features/portal/presentation/view_models/portal_session_controller.dart';
 
 void main() {
   testWidgets('PortalPage applies the initial shortcut search filter', (
     tester,
   ) async {
-    final controller = PortalSessionController(
-      authenticator: FakePortalAuthenticator(result: '   '),
-      shortcutRepository: const FakePortalShortcutRepository(),
-    );
-
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          portalSessionControllerProvider.overrideWith((ref) => controller),
-        ],
-        child: MaterialApp(
-          home: PortalPage(
-            sessionController: controller,
-            initialSearchQuery: '成績',
+          portalAuthenticatorProvider.overrideWithValue(
+            FakePortalAuthenticator(result: '   '),
           ),
-        ),
+          portalShortcutRepositoryProvider.overrideWithValue(
+            const FakePortalShortcutRepository(),
+          ),
+        ],
+        child: const MaterialApp(home: PortalPage(initialSearchQuery: '成績')),
       ),
     );
     await tester.pumpAndSettle();

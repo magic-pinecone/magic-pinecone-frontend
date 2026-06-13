@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:magic_pinecone/features/course_selection/domain/models/course_detail_models.dart';
 import 'package:magic_pinecone/features/course_selection/domain/models/course_schedule_models.dart';
 import 'package:magic_pinecone/features/course_selection/presentation/course_selection_layout.dart';
@@ -8,26 +9,25 @@ import 'package:magic_pinecone/features/course_selection/presentation/view_model
 import 'package:magic_pinecone/features/course_selection/presentation/widgets/course_detail_row.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class CourseResultSummary extends StatelessWidget {
+class CourseResultSummary extends ConsumerWidget {
   const CourseResultSummary({
     super.key,
-    required this.controller,
     required this.displayedCourseCount,
     required this.localFilterActive,
     required this.localFilterTotalCount,
     required this.onFilterPressed,
   });
 
-  final CourseSelectionController controller;
   final int displayedCourseCount;
   final bool localFilterActive;
   final int localFilterTotalCount;
   final VoidCallback onFilterPressed;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(courseSelectionControllerProvider);
     final colorScheme = Theme.of(context).colorScheme;
-    final lastUpdated = controller.lastUpdated;
+    final lastUpdated = state.lastUpdated;
     final subtitle = lastUpdated == null
         ? '資料更新時間未提供'
         : '更新於 ${_formatDateTime(lastUpdated)}';
@@ -41,9 +41,9 @@ class CourseResultSummary extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  controller.isLoading && controller.courses.isNotEmpty
+                  state.isLoading && state.courses.isNotEmpty
                       ? '更新中...'
-                      : _courseCountText(),
+                      : _courseCountText(state),
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 2.0),
@@ -57,7 +57,7 @@ class CourseResultSummary extends StatelessWidget {
               ],
             ),
           ),
-          if (controller.isLoading && controller.courses.isNotEmpty)
+          if (state.isLoading && state.courses.isNotEmpty)
             const SizedBox(
               width: 18.0,
               height: 18.0,
@@ -76,11 +76,11 @@ class CourseResultSummary extends StatelessWidget {
     );
   }
 
-  String _courseCountText() {
+  String _courseCountText(CourseSelectionState state) {
     if (localFilterActive) {
       return '顯示 $displayedCourseCount / $localFilterTotalCount 門課程';
     }
-    return '顯示 ${controller.courses.length} / ${controller.totalCount} 門課程';
+    return '顯示 ${state.courses.length} / ${state.totalCount} 門課程';
   }
 
   String _formatDateTime(DateTime value) {

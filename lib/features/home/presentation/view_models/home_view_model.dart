@@ -1,23 +1,34 @@
-import 'package:flutter/foundation.dart';
+import 'package:magic_pinecone/core/app/app_providers.dart';
 import 'package:magic_pinecone/features/home/domain/models/home_dashboard_models.dart';
-import 'package:magic_pinecone/features/home/domain/repository/home_dashboard_repository.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-// TODO: Migrate this controller from ChangeNotifier to a modern Riverpod Notifier/AsyncNotifier
-class HomeViewModel extends ChangeNotifier {
-  HomeViewModel({required HomeDashboardRepository repository}) {
+part 'home_view_model.g.dart';
+
+@riverpod
+class HomeViewModel extends _$HomeViewModel {
+  @override
+  HomeViewSnapshot build() {
+    final repository = ref.watch(homeDashboardRepositoryProvider);
     final dashboard = repository.loadDashboard();
-    _coursePreviews = List.unmodifiable(dashboard.coursePreviews);
-    _shortcuts = List.unmodifiable(dashboard.shortcuts);
-    _quickActionRows = dashboard.quickActionRows
-        .map(List<HomeQuickActionItem>.unmodifiable)
-        .toList(growable: false);
+    return HomeViewSnapshot(
+      coursePreviews: List.unmodifiable(dashboard.coursePreviews),
+      shortcuts: List.unmodifiable(dashboard.shortcuts),
+      quickActionRows: dashboard.quickActionRows
+          .map(List<HomeQuickActionItem>.unmodifiable)
+          .toList(growable: false),
+    );
   }
+}
 
-  late final List<HomeCoursePreview> _coursePreviews;
-  late final List<HomeShortcutItem> _shortcuts;
-  late final List<List<HomeQuickActionItem>> _quickActionRows;
+class HomeViewSnapshot {
+  HomeViewSnapshot({
+    required this.coursePreviews,
+    required this.shortcuts,
+    required this.quickActionRows,
+  });
 
-  List<HomeCoursePreview> get coursePreviews => _coursePreviews;
-  List<HomeShortcutItem> get shortcuts => _shortcuts;
-  List<List<HomeQuickActionItem>> get quickActionRows => _quickActionRows;
+  final List<HomeCoursePreview> coursePreviews;
+  // TODO: for these two, we keep it so a configurable home dashboard can be implemented in the future. But we might want to introduce a more generic "HomeDashboardItem" model that can represent both shortcuts and quick actions, since they are quite similar in nature.
+  final List<HomeShortcutItem> shortcuts;
+  final List<List<HomeQuickActionItem>> quickActionRows;
 }

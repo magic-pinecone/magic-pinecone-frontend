@@ -24,8 +24,15 @@ class SettingsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final SettingsViewModel viewModel = ref.watch(settingsViewModelProvider);
-    final content = _SettingsPageContent(viewModel: viewModel);
+    final state = ref.watch(settingsViewModelProvider);
+    final themeMode = ref.watch(appThemeControllerProvider);
+    final notifier = ref.read(settingsViewModelProvider.notifier);
+
+    final content = _SettingsPageContent(
+      state: state,
+      themeMode: themeMode,
+      notifier: notifier,
+    );
     if (!showAppBar) return content;
 
     return Scaffold(
@@ -69,73 +76,72 @@ class SettingsDialog extends ConsumerWidget {
 }
 
 class _SettingsPageContent extends StatelessWidget {
-  const _SettingsPageContent({required this.viewModel});
+  const _SettingsPageContent({
+    required this.state,
+    required this.themeMode,
+    required this.notifier,
+  });
 
-  final SettingsViewModel viewModel;
+  final SettingsState state;
+  final ThemeMode themeMode;
+  final SettingsViewModel notifier;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isDarkMode = switch (themeMode) {
+      ThemeMode.dark => true,
+      ThemeMode.light => false,
+      ThemeMode.system => Theme.of(context).brightness == Brightness.dark,
+    };
 
-    return ListenableBuilder(
-      listenable: viewModel,
-      child: _ProjectInfoSection(viewModel: viewModel),
-      builder: (context, child) {
-        final isDarkMode = switch (viewModel.themeMode) {
-          ThemeMode.dark => true,
-          ThemeMode.light => false,
-          ThemeMode.system => Theme.of(context).brightness == Brightness.dark,
-        };
-
-        return ListView(
-          padding: const EdgeInsets.fromLTRB(16.0, 12.0, 16.0, 24.0),
-          children: [
-            Text(
-              '顯示與偏好',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16.0, 12.0, 16.0, 24.0),
+      children: [
+        Text(
+          '顯示與偏好',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 10.0),
+        Card(
+          margin: EdgeInsets.zero,
+          child: Column(
+            children: [
+              SwitchListTile(
+                title: const Text('深色模式'),
+                subtitle: Text(isDarkMode ? '開啟' : '關閉'),
+                secondary: Icon(
+                  isDarkMode ? Icons.dark_mode : Icons.light_mode,
+                ),
+                value: isDarkMode,
+                onChanged: notifier.setDarkMode,
               ),
-            ),
-            const SizedBox(height: 10.0),
-            Card(
-              margin: EdgeInsets.zero,
-              child: Column(
-                children: [
-                  SwitchListTile(
-                    title: const Text('深色模式'),
-                    subtitle: Text(isDarkMode ? '開啟' : '關閉'),
-                    secondary: Icon(
-                      isDarkMode ? Icons.dark_mode : Icons.light_mode,
-                    ),
-                    value: isDarkMode,
-                    onChanged: viewModel.setDarkMode,
-                  ),
-                  const Divider(height: 1.0),
-                  SwitchListTile(
-                    title: const Text('隱藏週末'),
-                    subtitle: Text(
-                      viewModel.omitWeekendsOnTimetable ? '只顯示週一到週五' : '顯示整週',
-                    ),
-                    secondary: const Icon(Icons.weekend_outlined),
-                    value: viewModel.omitWeekendsOnTimetable,
-                    onChanged: viewModel.setOmitWeekendsOnTimetable,
-                  ),
-                ],
+              const Divider(height: 1.0),
+              SwitchListTile(
+                title: const Text('隱藏週末'),
+                subtitle: Text(
+                  state.omitWeekendsOnTimetable ? '只顯示週一到週五' : '顯示整週',
+                ),
+                secondary: const Icon(Icons.weekend_outlined),
+                value: state.omitWeekendsOnTimetable,
+                onChanged: notifier.setOmitWeekendsOnTimetable,
               ),
-            ),
-            const SizedBox(height: 20.0),
-            child!,
-            const SizedBox(height: 20.0),
-            const _CommunitySection(),
-            const SizedBox(height: 20.0),
-            const _SpecialThanksSection(),
-            const SizedBox(height: 24.0),
-            const _LicenseFooter(),
-          ],
-        );
-      },
+            ],
+          ),
+        ),
+        const SizedBox(height: 20.0),
+        _ProjectInfoSection(snapshot: state.snapshot),
+        const SizedBox(height: 20.0),
+        const _CommunitySection(),
+        const SizedBox(height: 20.0),
+        const _SpecialThanksSection(),
+        const SizedBox(height: 24.0),
+        const _LicenseFooter(),
+      ],
     );
   }
 }
@@ -288,9 +294,9 @@ class _LicenseFooter extends StatelessWidget {
 }
 
 class _ProjectInfoSection extends StatelessWidget {
-  const _ProjectInfoSection({required this.viewModel});
+  const _ProjectInfoSection({required this.snapshot});
 
-  final SettingsViewModel viewModel;
+  final SettingsSnapshot snapshot;
 
   @override
   Widget build(BuildContext context) {
@@ -321,7 +327,7 @@ class _ProjectInfoSection extends StatelessWidget {
                     const SizedBox(width: 10.0),
                     Expanded(
                       child: Text(
-                        viewModel.appName,
+                        snapshot.appName,
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -329,20 +335,20 @@ class _ProjectInfoSection extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'v${viewModel.appVersion}',
+                      'v${snapshot.appVersion}',
                       style: TextStyle(color: colorScheme.onSurfaceVariant),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12.0),
                 Text(
-                  viewModel.summary,
+                  snapshot.summary,
                   style: TextStyle(color: colorScheme.onSurfaceVariant),
                 ),
                 const SizedBox(height: 16.0),
-                for (var i = 0; i < viewModel.statusItems.length; i++) ...[
-                  _StatusRow(item: viewModel.statusItems[i]),
-                  if (i < viewModel.statusItems.length - 1)
+                for (var i = 0; i < snapshot.statusItems.length; i++) ...[
+                  _StatusRow(item: snapshot.statusItems[i]),
+                  if (i < snapshot.statusItems.length - 1)
                     const SizedBox(height: 8.0),
                 ],
               ],

@@ -21,7 +21,9 @@ import 'package:magic_pinecone/features/course_selection/presentation/widgets/co
 import 'package:magic_pinecone/features/course_selection/presentation/widgets/course_state_widgets.dart';
 import 'package:magic_pinecone/features/course_selection/presentation/widgets/course_timetable_view.dart';
 import 'package:magic_pinecone/features/course_selection/presentation/widgets/local_course_filter_sheet.dart';
-import 'package:magic_pinecone/features/settings/presentation/settings_dialog.dart';
+import 'package:magic_pinecone/features/settings/presentation/settings_dialog.dart'
+    hide SettingsPage;
+import 'package:magic_pinecone/features/settings/presentation/settings_page.dart';
 import 'package:magic_pinecone/features/settings/presentation/view_models/settings_view_model.dart';
 
 class LiteCourseSelectionPage extends ConsumerStatefulWidget {
@@ -60,33 +62,38 @@ class _LiteCourseSelectionPageState
 
   late final CourseSelectionStorage _courseSelectionStorage;
 
+  late CourseSelectionState _state;
+  late CourseSelectionController _notifier;
+  late SettingsState _settingsState;
+
   @override
   void initState() {
     super.initState();
     _courseSelectionStorage =
         widget.courseSelectionStorage ?? createCourseSelectionStorage();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      unawaited(ref.read(courseSelectionControllerProvider).load());
+      unawaited(ref.read(courseSelectionControllerProvider.notifier).load());
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final controller = ref.watch(courseSelectionControllerProvider);
-    final settingsViewModel = ref.watch(settingsViewModelProvider);
+    _state = ref.watch(courseSelectionControllerProvider);
+    _notifier = ref.read(courseSelectionControllerProvider.notifier);
+    _settingsState = ref.watch(settingsViewModelProvider);
     final supplementalDetailRepository = ref.watch(
       courseSupplementalDetailRepositoryProvider,
     );
 
-    if (controller.isLoading && controller.courses.isEmpty) {
+    if (_state.isLoading && _state.courses.isEmpty) {
       _courseScheduledCoursesCache.clear();
       _canSyncToTimetableCache.clear();
     }
-    if (!controller.isLoading && !_didRestoreSelectedCourses) {
+    if (!_state.isLoading && !_didRestoreSelectedCourses) {
       _didRestoreSelectedCourses = true;
-      unawaited(_restoreSelectedCourses(controller));
+      unawaited(_restoreSelectedCourses());
     }
-    final displayedCourses = _displayedCourses(controller, settingsViewModel);
+    final displayedCourses = _displayedCourses();
     return LayoutBuilder(
       builder: (context, constraints) {
         final useDesktopWorkspace =
@@ -95,16 +102,12 @@ class _LiteCourseSelectionPageState
         if (useDesktopWorkspace) {
           return _buildDesktopWorkspace(
             context,
-            controller,
-            settingsViewModel,
             supplementalDetailRepository,
             displayedCourses,
           );
         }
         return _buildMobileWorkspace(
           context,
-          controller,
-          settingsViewModel,
           supplementalDetailRepository,
           displayedCourses,
           useDesktopCourseDetails:
@@ -116,8 +119,6 @@ class _LiteCourseSelectionPageState
 
   Widget _buildMobileWorkspace(
     BuildContext context,
-    CourseSelectionController controller,
-    SettingsViewModel settingsViewModel,
     CourseSupplementalDetailRepository supplementalDetailRepository,
     List<CourseItem> displayedCourses, {
     required bool useDesktopCourseDetails,
@@ -133,16 +134,15 @@ class _LiteCourseSelectionPageState
           if (_selectedView == _CourseSelectionView.search)
             IconButton(
               tooltip: '重新整理',
-              onPressed: controller.isLoading
+              onPressed: _state.isLoading
                   ? null
-                  : () => unawaited(controller.search()),
+                  : () => unawaited(_notifier.search()),
               icon: const Icon(Icons.refresh),
             ),
         ],
       ),
       body: switch (_selectedView) {
         _CourseSelectionView.search => _buildCourseSearchView(
-          controller,
           supplementalDetailRepository,
           displayedCourses,
           useDesktopCourseDetails: useDesktopCourseDetails,
@@ -150,7 +150,6 @@ class _LiteCourseSelectionPageState
         ),
         _CourseSelectionView.timetable => _buildTimetableView(
           context,
-          settingsViewModel,
           supplementalDetailRepository,
           useDesktopDialog: useDesktopCourseDetails,
         ),
@@ -183,8 +182,6 @@ class _LiteCourseSelectionPageState
 
   Widget _buildDesktopWorkspace(
     BuildContext context,
-    CourseSelectionController controller,
-    SettingsViewModel settingsViewModel,
     CourseSupplementalDetailRepository supplementalDetailRepository,
     List<CourseItem> displayedCourses,
   ) {
@@ -200,9 +197,9 @@ class _LiteCourseSelectionPageState
         actions: [
           IconButton(
             tooltip: '重新整理',
-            onPressed: controller.isLoading
+            onPressed: _state.isLoading
                 ? null
-                : () => unawaited(controller.search()),
+                : () => unawaited(_notifier.search()),
             icon: const Icon(Icons.refresh),
           ),
           IconButton(
@@ -217,7 +214,6 @@ class _LiteCourseSelectionPageState
           SizedBox(
             width: CourseSelectionLayout.desktopCoursePaneWidth,
             child: _buildCourseSearchView(
-              controller,
               supplementalDetailRepository,
               displayedCourses,
               useDesktopCourseDetails: true,
@@ -232,7 +228,6 @@ class _LiteCourseSelectionPageState
           Expanded(
             child: _buildTimetableView(
               context,
-              settingsViewModel,
               supplementalDetailRepository,
               useDesktopDialog: true,
             ),
@@ -253,11 +248,10 @@ class _LiteCourseSelectionPageState
 
   Widget _buildTimetableView(
     BuildContext context,
-    SettingsViewModel settingsViewModel,
     CourseSupplementalDetailRepository supplementalDetailRepository, {
     required bool useDesktopDialog,
   }) {
-    final snapshot = _visibleScheduleSnapshot(settingsViewModel);
+    final snapshot = _visibleScheduleSnapshot();
     return CourseTimetableView(
       snapshot: snapshot,
       totalCredits: _selectedTotalCredits,
@@ -265,11 +259,7 @@ class _LiteCourseSelectionPageState
       showSaveAction: _canSaveCourseSelection && useDesktopDialog,
       showPreviewHint: _isPreviewingSharedCourses,
       onSavePressed: _saveCourseSelection,
-      onDiscardPressed: () => unawaited(
-        _discardUnsavedCourseSelection(
-          ref.read(courseSelectionControllerProvider),
-        ),
-      ),
+      onDiscardPressed: () => unawaited(_discardUnsavedCourseSelection()),
       onSharePressed: _hasUnsavedCourseSelection ? null : _shareSelectedCourses,
       onCourseTap: (course) => _showTimetableCourseDetails(
         context,
@@ -297,11 +287,7 @@ class _LiteCourseSelectionPageState
           tooltip: '還原課表',
           backgroundColor: colorScheme.errorContainer,
           foregroundColor: colorScheme.onErrorContainer,
-          onPressed: () => unawaited(
-            _discardUnsavedCourseSelection(
-              ref.read(courseSelectionControllerProvider),
-            ),
-          ),
+          onPressed: () => unawaited(_discardUnsavedCourseSelection()),
           child: const Icon(Icons.restore),
         ),
         const SizedBox(height: 12.0),
@@ -316,14 +302,12 @@ class _LiteCourseSelectionPageState
   }
 
   Widget _buildCourseSearchView(
-    CourseSelectionController controller,
     CourseSupplementalDetailRepository supplementalDetailRepository,
     List<CourseItem> displayedCourses, {
     required bool useDesktopCourseDetails,
     required bool useAdvancedFilterDialog,
   }) {
     return _CourseSearchView(
-      controller: controller,
       displayedCourses: displayedCourses,
       isCourseSelected: _isCourseSelected,
       canSyncToTimetable: _canSyncToTimetable,
@@ -338,7 +322,7 @@ class _LiteCourseSelectionPageState
           _showLocalFilterSheet(context, useDialog: useAdvancedFilterDialog),
       localFilterActive:
           _onlyShowTimetableCompatibleCourses || _onlyShowSelectedCourses,
-      localFilterTotalCount: _localFilterTotalCount(controller),
+      localFilterTotalCount: _localFilterTotalCount(),
       useAdvancedFilterDialog: useAdvancedFilterDialog,
     );
   }
@@ -463,17 +447,14 @@ class _LiteCourseSelectionPageState
     );
   }
 
-  List<CourseItem> _displayedCourses(
-    CourseSelectionController controller,
-    SettingsViewModel settingsViewModel,
-  ) {
+  List<CourseItem> _displayedCourses() {
     final courses = _onlyShowSelectedCourses
         ? _selectedCourses.values.toList(growable: false)
-        : controller.courses;
+        : _state.courses;
 
     if (!_onlyShowTimetableCompatibleCourses) return courses;
 
-    final currentSchedule = _syncedScheduleSnapshot(settingsViewModel);
+    final currentSchedule = _syncedScheduleSnapshot();
     final occupiedSlots = currentSchedule.courses
         .expand(_occupiedSlots)
         .toSet();
@@ -487,9 +468,9 @@ class _LiteCourseSelectionPageState
         .toList(growable: false);
   }
 
-  int _localFilterTotalCount(CourseSelectionController controller) {
+  int _localFilterTotalCount() {
     if (_onlyShowSelectedCourses) return _selectedCourses.length;
-    return controller.courses.length;
+    return _state.courses.length;
   }
 
   bool _isCourseSelected(CourseItem course) {
@@ -580,23 +561,20 @@ class _LiteCourseSelectionPageState
     await _courseSelectionStorage.writeShareCode(code);
   }
 
-  Future<void> _restoreSelectedCourses(
-    CourseSelectionController controller,
-  ) async {
+  Future<void> _restoreSelectedCourses() async {
     final restoreState = await _initialShareCode();
     if (restoreState == null) return;
 
-    await _restoreCourseSelection(controller, restoreState);
+    await _restoreCourseSelection(restoreState);
   }
 
   Future<void> _restoreCourseSelection(
-    CourseSelectionController controller,
     _CourseShareRestoreState restoreState,
   ) async {
     final serialNos = _decodeShareCode(restoreState.code);
     if (serialNos == null) return;
 
-    final courses = await controller.findCoursesBySerialNos(serialNos);
+    final courses = await _notifier.findCoursesBySerialNos(serialNos);
     if (!mounted || courses.isEmpty) return;
 
     if (restoreState.isPreview) {
@@ -620,9 +598,7 @@ class _LiteCourseSelectionPageState
     }
   }
 
-  Future<void> _discardUnsavedCourseSelection(
-    CourseSelectionController controller,
-  ) async {
+  Future<void> _discardUnsavedCourseSelection() async {
     final storedCode = await _courseSelectionStorage.readShareCode();
     final normalizedStoredCode = storedCode?.trim();
     if (normalizedStoredCode == null || normalizedStoredCode.isEmpty) {
@@ -640,7 +616,7 @@ class _LiteCourseSelectionPageState
       code: normalizedStoredCode,
       isPreview: false,
     );
-    await _restoreCourseSelection(controller, restoreState);
+    await _restoreCourseSelection(restoreState);
   }
 
   Future<void> _saveCourseSelection() async {
@@ -683,9 +659,7 @@ class _LiteCourseSelectionPageState
     }
   }
 
-  CourseScheduleSnapshot _syncedScheduleSnapshot(
-    SettingsViewModel settingsViewModel,
-  ) {
+  CourseScheduleSnapshot _syncedScheduleSnapshot() {
     final baseSchedule = _scheduleRepository.loadSchedule();
     final syncedCourses = _selectedCourses.values.expand(
       (course) => _getCachedScheduledCourses(course, baseSchedule.periods),
@@ -698,11 +672,9 @@ class _LiteCourseSelectionPageState
     );
   }
 
-  CourseScheduleSnapshot _visibleScheduleSnapshot(
-    SettingsViewModel settingsViewModel,
-  ) {
-    final snapshot = _syncedScheduleSnapshot(settingsViewModel);
-    if (!settingsViewModel.omitWeekendsOnTimetable) return snapshot;
+  CourseScheduleSnapshot _visibleScheduleSnapshot() {
+    final snapshot = _syncedScheduleSnapshot();
+    if (!_settingsState.omitWeekendsOnTimetable) return snapshot;
 
     return CourseScheduleSnapshot(
       courses: snapshot.courses
@@ -783,9 +755,8 @@ class _CourseTimeSlot {
   final int periodIndex;
 }
 
-class _CourseSearchView extends StatelessWidget {
+class _CourseSearchView extends ConsumerWidget {
   const _CourseSearchView({
-    required this.controller,
     required this.displayedCourses,
     required this.isCourseSelected,
     required this.canSyncToTimetable,
@@ -797,7 +768,6 @@ class _CourseSearchView extends StatelessWidget {
     required this.useAdvancedFilterDialog,
   });
 
-  final CourseSelectionController controller;
   final List<CourseItem> displayedCourses;
   final bool Function(CourseItem course) isCourseSelected;
   final bool Function(CourseItem course) canSyncToTimetable;
@@ -809,7 +779,10 @@ class _CourseSearchView extends StatelessWidget {
   final bool useAdvancedFilterDialog;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(courseSelectionControllerProvider);
+    final notifier = ref.read(courseSelectionControllerProvider.notifier);
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final useGrid =
@@ -823,11 +796,9 @@ class _CourseSearchView extends StatelessWidget {
             child: Column(
               children: [
                 CourseSearchPanel(
-                  controller: controller,
                   useAdvancedFilterDialog: useAdvancedFilterDialog,
                 ),
                 CourseResultSummary(
-                  controller: controller,
                   displayedCourseCount: displayedCourses.length,
                   localFilterActive: localFilterActive,
                   localFilterTotalCount: localFilterTotalCount,
@@ -835,21 +806,20 @@ class _CourseSearchView extends StatelessWidget {
                 ),
                 Expanded(
                   child: RefreshIndicator(
-                    onRefresh: controller.search,
+                    onRefresh: notifier.search,
                     child: CustomScrollView(
                       scrollCacheExtent: const ScrollCacheExtent.pixels(900.0),
                       slivers: [
-                        if (controller.isLoading && controller.courses.isEmpty)
+                        if (state.isLoading && state.courses.isEmpty)
                           const SliverFillRemaining(
                             hasScrollBody: false,
                             child: Center(child: CircularProgressIndicator()),
                           )
-                        else if (controller.error != null &&
-                            controller.courses.isEmpty)
+                        else if (state.error != null && state.courses.isEmpty)
                           SliverFillRemaining(
                             hasScrollBody: false,
                             child: CourseErrorState(
-                              onRetry: () => unawaited(controller.search()),
+                              onRetry: () => unawaited(notifier.search()),
                             ),
                           )
                         else if (displayedCourses.isEmpty)
@@ -873,18 +843,16 @@ class _CourseSearchView extends StatelessWidget {
                             onCourseTap: onCourseTap,
                             onCourseSyncToggle: onCourseSyncToggle,
                           ),
-                        if (!localFilterActive && controller.totalCount > 0)
-                          SliverToBoxAdapter(
+                        if (!localFilterActive && state.totalCount > 0)
+                          const SliverToBoxAdapter(
                             child: Padding(
-                              padding: const EdgeInsets.fromLTRB(
+                              padding: EdgeInsets.fromLTRB(
                                 CourseSelectionLayout.horizontalPadding,
                                 4.0,
                                 CourseSelectionLayout.horizontalPadding,
                                 24.0,
                               ),
-                              child: CoursePaginationControls(
-                                controller: controller,
-                              ),
+                              child: CoursePaginationControls(),
                             ),
                           ),
                       ],

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:magic_pinecone/core/app/app_providers.dart';
 import 'package:magic_pinecone/core/navigation/app_routes.dart';
 import 'package:magic_pinecone/features/home/domain/models/home_dashboard_models.dart';
 import 'package:magic_pinecone/features/home/presentation/view_models/home_view_model.dart';
@@ -22,7 +21,7 @@ class HomePage extends StatelessWidget {
         context.findAncestorWidgetOfExactType<UncontrolledProviderScope>() !=
             null;
 
-    final child = _HomePageInner(viewModel: viewModel);
+    final child = _HomePageInner();
 
     if (hasScope) {
       return child;
@@ -33,15 +32,13 @@ class HomePage extends StatelessWidget {
 }
 
 class _HomePageInner extends ConsumerWidget {
-  const _HomePageInner({this.viewModel});
+  const _HomePageInner();
 
   static const _horizontalPadding = 16.0;
 
-  final HomeViewModel? viewModel;
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final HomeViewModel vm = viewModel ?? ref.watch(homeViewModelProvider);
+    final HomeViewSnapshot vm = ref.watch(homeViewModelProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text(

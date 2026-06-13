@@ -1,21 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:magic_pinecone/core/app/app_providers.dart';
 import 'package:magic_pinecone/features/home/domain/models/home_dashboard_models.dart';
 import 'package:magic_pinecone/features/home/domain/repository/home_dashboard_repository.dart';
 import 'package:magic_pinecone/features/home/presentation/view_models/home_view_model.dart';
 
 void main() {
   test('HomeViewModel exposes dashboard snapshot from repository', () {
-    final viewModel = HomeViewModel(
-      repository: const FakeHomeDashboardRepository(),
+    final container = ProviderContainer(
+      overrides: [
+        homeDashboardRepositoryProvider.overrideWithValue(
+          const FakeHomeDashboardRepository(),
+        ),
+      ],
     );
+    addTearDown(container.dispose);
 
-    expect(viewModel.coursePreviews, hasLength(1));
-    expect(viewModel.coursePreviews.first.courseName, '計算機概論 I');
-    expect(viewModel.shortcuts, hasLength(1));
-    expect(viewModel.shortcuts.first.label, '校務系統');
-    expect(viewModel.quickActionRows, hasLength(1));
-    expect(viewModel.quickActionRows.first.first.label, '成績查詢');
+    final snapshot = container.read(homeViewModelProvider);
+
+    expect(snapshot.coursePreviews, hasLength(1));
+    expect(snapshot.coursePreviews.first.courseName, '計算機概論 I');
+    expect(snapshot.shortcuts, hasLength(1));
+    expect(snapshot.shortcuts.first.label, '校務系統');
+    expect(snapshot.quickActionRows, hasLength(1));
+    expect(snapshot.quickActionRows.first.first.label, '成績查詢');
   });
 }
 

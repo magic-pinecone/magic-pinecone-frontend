@@ -1,33 +1,28 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:magic_pinecone/features/course_selection/presentation/course_selection_layout.dart';
 import 'package:magic_pinecone/features/course_selection/presentation/view_models/course_selection_controller.dart';
 import 'package:magic_pinecone/features/course_selection/presentation/widgets/course_advanced_filter_sheet.dart';
 
-class CourseSearchPanel extends StatefulWidget {
-  const CourseSearchPanel({
-    super.key,
-    required this.controller,
-    required this.useAdvancedFilterDialog,
-  });
+class CourseSearchPanel extends ConsumerStatefulWidget {
+  const CourseSearchPanel({super.key, required this.useAdvancedFilterDialog});
 
-  final CourseSelectionController controller;
   final bool useAdvancedFilterDialog;
 
   @override
-  State<CourseSearchPanel> createState() => _CourseSearchPanelState();
+  ConsumerState<CourseSearchPanel> createState() => _CourseSearchPanelState();
 }
 
-class _CourseSearchPanelState extends State<CourseSearchPanel> {
+class _CourseSearchPanelState extends ConsumerState<CourseSearchPanel> {
   late final TextEditingController _keywordController;
-
-  CourseSelectionController get controller => widget.controller;
 
   @override
   void initState() {
     super.initState();
-    _keywordController = TextEditingController(text: controller.keyword);
+    final state = ref.read(courseSelectionControllerProvider);
+    _keywordController = TextEditingController(text: state.keyword);
   }
 
   @override
@@ -38,6 +33,8 @@ class _CourseSearchPanelState extends State<CourseSearchPanel> {
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(courseSelectionControllerProvider);
+    final notifier = ref.read(courseSelectionControllerProvider.notifier);
     final colorScheme = Theme.of(context).colorScheme;
 
     return Padding(
@@ -55,26 +52,25 @@ class _CourseSearchPanelState extends State<CourseSearchPanel> {
               trailing: [
                 IconButton(
                   tooltip: '搜尋',
-                  onPressed: controller.isLoading ? null : _applyTextFilters,
+                  onPressed: state.isLoading
+                      ? null
+                      : () => _applyTextFilters(notifier),
                   icon: const Icon(Icons.arrow_forward),
                 ),
               ],
-              enabled: !controller.isLoading,
-              onSubmitted: (_) => _applyTextFilters(),
+              enabled: !state.isLoading,
+              onSubmitted: (_) => _applyTextFilters(notifier),
             ),
           ),
-          if (controller.hasActiveFilter) ...[
+          if (state.hasActiveFilter) ...[
             const SizedBox(height: 10.0),
-            _ActiveFilterSummary(
-              controller: controller,
-              onClear: _clearFilters,
-            ),
+            _ActiveFilterSummary(onClear: () => _clearFilters(notifier)),
           ],
           const SizedBox(height: 10.0),
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: controller.isLoading
+              onPressed: state.isLoading
                   ? null
                   : () => _showAdvancedFilterSheet(context),
               icon: const Icon(Icons.tune),
@@ -82,10 +78,10 @@ class _CourseSearchPanelState extends State<CourseSearchPanel> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Text('進階查詢'),
-                  if (_advancedFilterCount > 0) ...[
+                  if (_advancedFilterCount(state) > 0) ...[
                     const SizedBox(width: 8.0),
                     Badge(
-                      label: Text(_advancedFilterCount.toString()),
+                      label: Text(_advancedFilterCount(state).toString()),
                       backgroundColor: colorScheme.primary,
                     ),
                   ],
@@ -93,7 +89,7 @@ class _CourseSearchPanelState extends State<CourseSearchPanel> {
               ),
             ),
           ),
-          if (controller.error != null && controller.courses.isNotEmpty) ...[
+          if (state.error != null && state.courses.isNotEmpty) ...[
             const SizedBox(height: 10.0),
             Text('更新失敗，保留目前結果', style: TextStyle(color: colorScheme.error)),
           ],
@@ -102,26 +98,26 @@ class _CourseSearchPanelState extends State<CourseSearchPanel> {
     );
   }
 
-  void _applyTextFilters() {
-    unawaited(controller.search(keyword: _keywordController.text));
+  void _applyTextFilters(CourseSelectionController notifier) {
+    unawaited(notifier.search(keyword: _keywordController.text));
   }
 
-  void _clearFilters() {
+  void _clearFilters(CourseSelectionController notifier) {
     _keywordController.clear();
-    unawaited(controller.clearFilters());
+    unawaited(notifier.clearFilters());
   }
 
-  int get _advancedFilterCount {
+  int _advancedFilterCount(CourseSelectionState state) {
     return [
-      controller.classNo.isNotEmpty,
-      controller.serialNo.isNotEmpty,
-      controller.departmentName.isNotEmpty,
-      controller.collegeName.isNotEmpty,
-      controller.instructor.isNotEmpty,
-      controller.courseType != null,
-      controller.credits.isNotEmpty,
-      controller.hasVacancy != null,
-      controller.classTimes.isNotEmpty,
+      state.classNo.isNotEmpty,
+      state.serialNo.isNotEmpty,
+      state.departmentName.isNotEmpty,
+      state.collegeName.isNotEmpty,
+      state.instructor.isNotEmpty,
+      state.courseType != null,
+      state.credits.isNotEmpty,
+      state.hasVacancy != null,
+      state.classTimes.isNotEmpty,
     ].where((isActive) => isActive).length;
   }
 
@@ -143,10 +139,7 @@ class _CourseSearchPanelState extends State<CourseSearchPanel> {
                     680.0,
                     760.0,
                   ),
-                  child: CourseAdvancedFilterSheet(
-                    controller: controller,
-                    useDialogLayout: true,
-                  ),
+                  child: const CourseAdvancedFilterSheet(useDialogLayout: true),
                 ),
               ),
             );
@@ -162,22 +155,22 @@ class _CourseSearchPanelState extends State<CourseSearchPanel> {
         showDragHandle: true,
         isScrollControlled: true,
         builder: (context) {
-          return CourseAdvancedFilterSheet(controller: controller);
+          return const CourseAdvancedFilterSheet();
         },
       ),
     );
   }
 }
 
-class _ActiveFilterSummary extends StatelessWidget {
-  const _ActiveFilterSummary({required this.controller, required this.onClear});
+class _ActiveFilterSummary extends ConsumerWidget {
+  const _ActiveFilterSummary({required this.onClear});
 
-  final CourseSelectionController controller;
   final VoidCallback onClear;
 
   @override
-  Widget build(BuildContext context) {
-    final chips = _filterLabels()
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(courseSelectionControllerProvider);
+    final chips = _filterLabels(state)
         .map(
           (label) =>
               Chip(label: Text(label), visualDensity: VisualDensity.compact),
@@ -193,44 +186,44 @@ class _ActiveFilterSummary extends StatelessWidget {
         ActionChip(
           avatar: const Icon(Icons.close, size: 18.0),
           label: const Text('清除全部'),
-          onPressed: controller.isLoading ? null : onClear,
+          onPressed: state.isLoading ? null : onClear,
           visualDensity: VisualDensity.compact,
         ),
       ],
     );
   }
 
-  List<String> _filterLabels() {
+  List<String> _filterLabels(CourseSelectionState state) {
     final labels = <String>[];
-    if (controller.keyword.isNotEmpty) {
-      labels.add('關鍵字：${controller.keyword}');
+    if (state.keyword.isNotEmpty) {
+      labels.add('關鍵字：${state.keyword}');
     }
-    if (controller.classNo.isNotEmpty) {
-      labels.add('課號：${controller.classNo}');
+    if (state.classNo.isNotEmpty) {
+      labels.add('課號：${state.classNo}');
     }
-    if (controller.serialNo.isNotEmpty) {
-      labels.add('流水號：${controller.serialNo}');
+    if (state.serialNo.isNotEmpty) {
+      labels.add('流水號：${state.serialNo}');
     }
-    if (controller.departmentName.isNotEmpty) {
-      labels.add('系所：${controller.departmentName}');
+    if (state.departmentName.isNotEmpty) {
+      labels.add('系所：${state.departmentName}');
     }
-    if (controller.collegeName.isNotEmpty) {
-      labels.add('學院：${controller.collegeName}');
+    if (state.collegeName.isNotEmpty) {
+      labels.add('學院：${state.collegeName}');
     }
-    if (controller.instructor.isNotEmpty) {
-      labels.add('授課教師：${controller.instructor}');
+    if (state.instructor.isNotEmpty) {
+      labels.add('授課教師：${state.instructor}');
     }
-    if (controller.courseType != null) {
-      labels.add('類型：${_courseTypeText(controller.courseType)}');
+    if (state.courseType != null) {
+      labels.add('類型：${_courseTypeText(state.courseType)}');
     }
-    if (controller.credits.isNotEmpty) {
-      labels.add('學分：${controller.credits.join('、')}');
+    if (state.credits.isNotEmpty) {
+      labels.add('學分：${state.credits.join('、')}');
     }
-    if (controller.hasVacancy != null) {
-      labels.add(controller.hasVacancy == true ? '尚有名額' : '已額滿');
+    if (state.hasVacancy != null) {
+      labels.add(state.hasVacancy == true ? '尚有名額' : '已額滿');
     }
-    if (controller.classTimes.isNotEmpty) {
-      labels.add('時段：${controller.classTimes.length} 個');
+    if (state.classTimes.isNotEmpty) {
+      labels.add('時段：${state.classTimes.length} 個');
     }
     return labels;
   }
