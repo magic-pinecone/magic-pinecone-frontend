@@ -4,18 +4,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:magic_pinecone/core/app/app_providers.dart';
-import 'package:magic_pinecone/features/course_selection/data/course_repository.dart';
-import 'package:magic_pinecone/features/course_selection/data/course_supplemental_detail_catalog.dart';
 import 'package:magic_pinecone/features/course_selection/domain/models/course_detail_models.dart';
 import 'package:magic_pinecone/features/course_selection/domain/models/course_schedule_models.dart';
+import 'package:magic_pinecone/features/course_selection/domain/repository/course_repository.dart';
+import 'package:magic_pinecone/features/course_selection/domain/repository/course_supplemental_detail_repository.dart';
 import 'package:magic_pinecone/features/course_selection/presentation/view_models/course_selection_controller.dart';
-import 'package:magic_pinecone/features/home/data/home_dashboard_repository.dart';
-import 'package:magic_pinecone/features/home/models/home_dashboard_models.dart';
+import 'package:magic_pinecone/features/home/domain/models/home_dashboard_models.dart';
+import 'package:magic_pinecone/features/home/domain/repository/home_dashboard_repository.dart';
 import 'package:magic_pinecone/features/home/presentation/home_page.dart';
 import 'package:magic_pinecone/features/home/presentation/view_models/home_view_model.dart';
-import 'package:magic_pinecone/features/portal/data/portal_authenticator.dart';
-import 'package:magic_pinecone/features/portal/data/portal_shortcut_repository.dart';
-import 'package:magic_pinecone/features/portal/models/portal_shortcut.dart';
+import 'package:magic_pinecone/features/portal/data/data_sources/portal_authenticator.dart';
+import 'package:magic_pinecone/features/portal/domain/models/portal_shortcut.dart';
+import 'package:magic_pinecone/features/portal/domain/repository/portal_shortcut_repository.dart';
 import 'package:magic_pinecone/features/portal/presentation/view_models/portal_session_controller.dart';
 
 void main() {

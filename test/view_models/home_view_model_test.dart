@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:magic_pinecone/features/home/data/home_dashboard_repository.dart';
-import 'package:magic_pinecone/features/home/models/home_dashboard_models.dart';
+import 'package:magic_pinecone/features/home/domain/models/home_dashboard_models.dart';
+import 'package:magic_pinecone/features/home/domain/repository/home_dashboard_repository.dart';
 import 'package:magic_pinecone/features/home/presentation/view_models/home_view_model.dart';
 
 void main() {

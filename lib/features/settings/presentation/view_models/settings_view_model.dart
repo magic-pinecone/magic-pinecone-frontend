@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:magic_pinecone/core/app/app_backend_config.dart';
 import 'package:magic_pinecone/core/app/app_theme.dart';
-import 'package:magic_pinecone/features/settings/data/settings_repository.dart';
 import 'package:magic_pinecone/features/settings/domain/models/settings_models.dart';
+import 'package:magic_pinecone/features/settings/domain/repository/settings_repository.dart';
 
+// TODO: Migrate this controller from ChangeNotifier to a modern Riverpod Notifier/AsyncNotifier
 class SettingsViewModel extends ChangeNotifier {
   SettingsViewModel({
     required this.appThemeController,

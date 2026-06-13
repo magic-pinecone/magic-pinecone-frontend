@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 const defaultBackendBaseUrl = 'http://localhost:18080';
 
+// TODO: Migrate this controller from ChangeNotifier to a modern Riverpod Notifier/AsyncNotifier
 class AppBackendConfigController extends ChangeNotifier {
   AppBackendConfigController({String baseUrl = defaultBackendBaseUrl})
     : _baseUrl = _normalize(baseUrl);

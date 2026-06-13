@@ -5,7 +5,7 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:magic_pinecone/core/app/app_providers.dart';
 import 'package:magic_pinecone/core/navigation/app_routes.dart';
-import 'package:magic_pinecone/features/portal/models/portal_shortcut.dart';
+import 'package:magic_pinecone/features/portal/domain/models/portal_shortcut.dart';
 import 'package:magic_pinecone/features/portal/presentation/portal_shortcuts_page.dart';
 import 'package:magic_pinecone/features/portal/presentation/view_models/portal_session_controller.dart';
 import 'package:magic_pinecone/features/portal/presentation/widgets/portal_session_indicator.dart';

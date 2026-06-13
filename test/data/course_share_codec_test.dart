@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:magic_pinecone/features/course_selection/data/course_share_codec.dart';
+import 'package:magic_pinecone/features/course_selection/domain/usecases/course_share_codec.dart';
 
 void main() {
   const codec = CourseShareCodec();

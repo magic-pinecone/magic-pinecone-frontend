@@ -1,7 +1,8 @@
 import 'package:flutter/foundation.dart';
-import 'package:magic_pinecone/features/home/data/home_dashboard_repository.dart';
-import 'package:magic_pinecone/features/home/models/home_dashboard_models.dart';
+import 'package:magic_pinecone/features/home/domain/models/home_dashboard_models.dart';
+import 'package:magic_pinecone/features/home/domain/repository/home_dashboard_repository.dart';
 
+// TODO: Migrate this controller from ChangeNotifier to a modern Riverpod Notifier/AsyncNotifier
 class HomeViewModel extends ChangeNotifier {
   HomeViewModel({required HomeDashboardRepository repository}) {
     final dashboard = repository.loadDashboard();

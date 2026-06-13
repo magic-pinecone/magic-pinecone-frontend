@@ -1,7 +1,8 @@
 import 'package:flutter/foundation.dart';
-import 'package:magic_pinecone/features/course_selection/data/course_repository.dart';
 import 'package:magic_pinecone/features/course_selection/domain/models/course_schedule_models.dart';
+import 'package:magic_pinecone/features/course_selection/domain/repository/course_repository.dart';
 
+// TODO: Migrate this controller from ChangeNotifier to a modern Riverpod Notifier/AsyncNotifier
 class CourseSelectionController extends ChangeNotifier {
   CourseSelectionController({required this.repository});
 

@@ -1,9 +1,10 @@
 import 'package:flutter/foundation.dart';
-import 'package:magic_pinecone/features/portal/data/portal_authenticator.dart';
-import 'package:magic_pinecone/features/portal/data/portal_shortcut_repository.dart';
-import 'package:magic_pinecone/features/portal/models/portal_session_state.dart';
-import 'package:magic_pinecone/features/portal/models/portal_shortcut.dart';
+import 'package:magic_pinecone/features/portal/data/data_sources/portal_authenticator.dart';
+import 'package:magic_pinecone/features/portal/domain/models/portal_session_state.dart';
+import 'package:magic_pinecone/features/portal/domain/models/portal_shortcut.dart';
+import 'package:magic_pinecone/features/portal/domain/repository/portal_shortcut_repository.dart';
 
+// TODO: Migrate this controller from ChangeNotifier to a modern Riverpod Notifier/AsyncNotifier
 class PortalSessionController extends ChangeNotifier {
   PortalSessionController({
     required this.authenticator,

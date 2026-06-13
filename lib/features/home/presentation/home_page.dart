@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:magic_pinecone/core/app/app_providers.dart';
 import 'package:magic_pinecone/core/navigation/app_routes.dart';
-import 'package:magic_pinecone/features/home/models/home_dashboard_models.dart';
+import 'package:magic_pinecone/features/home/domain/models/home_dashboard_models.dart';
 import 'package:magic_pinecone/features/home/presentation/view_models/home_view_model.dart';
 import 'package:magic_pinecone/features/home/presentation/widgets/home_course_card.dart';
 import 'package:magic_pinecone/features/home/presentation/widgets/home_quick_action_button.dart';

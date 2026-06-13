@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:magic_pinecone/features/portal/models/portal_session_state.dart';
+import 'package:magic_pinecone/features/portal/domain/models/portal_session_state.dart';
 import 'package:magic_pinecone/features/portal/presentation/view_models/portal_session_controller.dart';
 
 enum _SessionAction { refresh, login }

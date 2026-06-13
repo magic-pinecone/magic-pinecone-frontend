@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+// TODO: Migrate this controller from ValueNotifier to a modern Riverpod Notifier/AsyncNotifier
 class AppThemeController extends ValueNotifier<ThemeMode> {
   AppThemeController() : super(ThemeMode.system);
 

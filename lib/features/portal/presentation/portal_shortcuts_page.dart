@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:magic_pinecone/features/portal/models/portal_shortcut.dart';
+import 'package:magic_pinecone/features/portal/domain/models/portal_shortcut.dart';
 import 'package:magic_pinecone/features/portal/presentation/widgets/portal_shortcut_button.dart';
 
 class PortalShortcutsPage extends StatefulWidget {
