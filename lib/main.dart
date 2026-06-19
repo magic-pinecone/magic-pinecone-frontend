@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:magic_pinecone/core/app/app_theme.dart';
+import 'package:magic_pinecone/core/navigation/app_navigation_state.dart';
 import 'package:magic_pinecone/core/navigation/app_routes.dart';
 
 void main() {
@@ -31,7 +32,6 @@ class MagicPineconeApp extends ConsumerStatefulWidget {
 
 class _MagicPineconeAppState extends ConsumerState<MagicPineconeApp> {
   late final String? _initialShareCode;
-  late int _currentIndex;
 
   // Each tab gets its own GlobalKey so its Navigator state is preserved.
   final _tabKeys = List.generate(5, (_) => GlobalKey<NavigatorState>());
@@ -49,12 +49,15 @@ class _MagicPineconeAppState extends ConsumerState<MagicPineconeApp> {
     super.initState();
     final initialUri = widget.initialUri ?? Uri.base;
     _initialShareCode = courseShareCodeFromUri(initialUri);
-    _currentIndex = initialAppTabForUri(initialUri).index;
+    ref
+        .read(activeAppTabProvider.notifier)
+        .setTab(initialAppTabForUri(initialUri));
   }
 
   @override
   Widget build(BuildContext context) {
     final themeMode = ref.watch(appThemeControllerProvider);
+    final currentIndex = ref.watch(activeAppTabProvider).index;
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
@@ -65,26 +68,28 @@ class _MagicPineconeAppState extends ConsumerState<MagicPineconeApp> {
         canPop: false,
         onPopInvokedWithResult: (didPop, _) async {
           if (didPop) return;
-          final navState = _tabKeys[_currentIndex].currentState;
+          final navState = _tabKeys[currentIndex].currentState;
           if (navState != null && navState.canPop()) {
             navState.pop();
           }
         },
         child: Scaffold(
           body: IndexedStack(
-            index: _currentIndex,
+            index: currentIndex,
             children: List.generate(5, _buildTabNavigator),
           ),
           bottomNavigationBar: NavigationBar(
             onDestinationSelected: (int index) {
-              if (index == _currentIndex) {
+              if (index == currentIndex) {
                 // Tapping the active tab pops to its root.
                 _tabKeys[index].currentState?.popUntil((r) => r.isFirst);
               } else {
-                setState(() => _currentIndex = index);
+                ref
+                    .read(activeAppTabProvider.notifier)
+                    .setTab(AppTab.values[index]);
               }
             },
-            selectedIndex: _currentIndex,
+            selectedIndex: currentIndex,
             destinations: _destinations,
           ),
         ),
