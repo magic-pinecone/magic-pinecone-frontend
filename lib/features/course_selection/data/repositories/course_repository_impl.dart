@@ -30,6 +30,9 @@ class BackendCourseRepository implements CourseRepository {
       serialNo: _normalize(serialNo),
       departmentName: _normalize(departmentName),
       collegeName: _normalize(collegeName),
+      // TODO: Pass instructor once the backend course query contract exposes
+      // a teacher/instructor filter. The static catalog remains the default
+      // frontend course source until that contract is settled.
       courseType: _normalize(courseType),
       credits: _normalizeList(credits),
       hasVacancy: hasVacancy,
