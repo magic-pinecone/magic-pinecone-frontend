@@ -9,6 +9,48 @@ part of 'app_navigation_state.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
+@ProviderFor(initialActiveAppTab)
+final initialActiveAppTabProvider = InitialActiveAppTabProvider._();
+
+final class InitialActiveAppTabProvider
+    extends $FunctionalProvider<AppTab, AppTab, AppTab>
+    with $Provider<AppTab> {
+  InitialActiveAppTabProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'initialActiveAppTabProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$initialActiveAppTabHash();
+
+  @$internal
+  @override
+  $ProviderElement<AppTab> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  AppTab create(Ref ref) {
+    return initialActiveAppTab(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(AppTab value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<AppTab>(value),
+    );
+  }
+}
+
+String _$initialActiveAppTabHash() =>
+    r'0613b43628781b82837ef6ca3800ddebb2694353';
+
 @ProviderFor(ActiveAppTab)
 final activeAppTabProvider = ActiveAppTabProvider._();
 
@@ -41,7 +83,7 @@ final class ActiveAppTabProvider
   }
 }
 
-String _$activeAppTabHash() => r'eebccfd87b451f41452319d2fdeb57bd98d05059';
+String _$activeAppTabHash() => r'8ff01e89cc52deb3b5824d9fbf7b1f915ac35de1';
 
 abstract class _$ActiveAppTab extends $Notifier<AppTab> {
   AppTab build();

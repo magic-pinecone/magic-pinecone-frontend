@@ -6,7 +6,7 @@ import 'package:magic_pinecone/core/navigation/app_routes.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const ProviderScope(child: MagicPineconeApp()));
+  runApp(const MagicPineconeApp());
 }
 
 AppTab initialAppTabForUri(Uri uri) {
@@ -21,18 +21,40 @@ String? courseShareCodeFromUri(Uri uri) {
   return shareCode;
 }
 
-class MagicPineconeApp extends ConsumerStatefulWidget {
+class MagicPineconeApp extends StatelessWidget {
   const MagicPineconeApp({super.key, this.initialUri});
 
   final Uri? initialUri;
 
   @override
-  ConsumerState<MagicPineconeApp> createState() => _MagicPineconeAppState();
+  Widget build(BuildContext context) {
+    final resolvedInitialUri = initialUri ?? Uri.base;
+
+    return ProviderScope(
+      overrides: [
+        initialActiveAppTabProvider.overrideWithValue(
+          initialAppTabForUri(resolvedInitialUri),
+        ),
+      ],
+      child: _MagicPineconeAppShell(
+        initialShareCode: courseShareCodeFromUri(resolvedInitialUri),
+      ),
+    );
+  }
 }
 
-class _MagicPineconeAppState extends ConsumerState<MagicPineconeApp> {
-  late final String? _initialShareCode;
+class _MagicPineconeAppShell extends ConsumerStatefulWidget {
+  const _MagicPineconeAppShell({required this.initialShareCode});
 
+  final String? initialShareCode;
+
+  @override
+  ConsumerState<_MagicPineconeAppShell> createState() =>
+      _MagicPineconeAppShellState();
+}
+
+class _MagicPineconeAppShellState
+    extends ConsumerState<_MagicPineconeAppShell> {
   // Each tab gets its own GlobalKey so its Navigator state is preserved.
   final _tabKeys = List.generate(5, (_) => GlobalKey<NavigatorState>());
 
@@ -43,16 +65,6 @@ class _MagicPineconeAppState extends ConsumerState<MagicPineconeApp> {
     NavigationDestination(icon: Icon(Icons.calendar_view_week), label: '選課'),
     NavigationDestination(icon: Icon(Icons.settings), label: '設定'),
   ];
-
-  @override
-  void initState() {
-    super.initState();
-    final initialUri = widget.initialUri ?? Uri.base;
-    _initialShareCode = courseShareCodeFromUri(initialUri);
-    ref
-        .read(activeAppTabProvider.notifier)
-        .setTab(initialAppTabForUri(initialUri));
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -111,7 +123,7 @@ class _MagicPineconeAppState extends ConsumerState<MagicPineconeApp> {
       onGenerateRoute: (_) => AppRoutes.tabRoot(
         tabs[index],
         initialShareCode: index == AppTab.courseSelection.index
-            ? _initialShareCode
+            ? widget.initialShareCode
             : null,
       ),
     );

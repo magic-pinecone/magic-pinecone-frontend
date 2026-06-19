@@ -29,4 +29,19 @@ void main() {
 
     expect(container.read(activeAppTabProvider), AppTab.settings);
   });
+
+  test('active app tab provider uses scoped initial tab seed', () {
+    final container = ProviderContainer(
+      overrides: [
+        initialActiveAppTabProvider.overrideWithValue(AppTab.courseSelection),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    expect(container.read(activeAppTabProvider), AppTab.courseSelection);
+
+    container.read(activeAppTabProvider.notifier).setTab(AppTab.settings);
+
+    expect(container.read(activeAppTabProvider), AppTab.settings);
+  });
 }
