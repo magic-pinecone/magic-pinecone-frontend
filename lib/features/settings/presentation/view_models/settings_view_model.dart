@@ -1,7 +1,5 @@
 import 'package:magic_pinecone/features/settings/domain/models/settings_models.dart';
-import 'package:magic_pinecone/features/settings/domain/usecases/load_settings_use_case.dart';
-import 'package:magic_pinecone/features/settings/domain/usecases/update_backend_url_use_case.dart';
-import 'package:magic_pinecone/features/settings/domain/usecases/update_theme_use_case.dart';
+import 'package:magic_pinecone/features/settings/settings_providers.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'settings_view_model.g.dart';

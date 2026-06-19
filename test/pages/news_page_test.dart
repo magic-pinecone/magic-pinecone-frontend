@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:magic_pinecone/core/app/app_providers.dart';
 import 'package:magic_pinecone/features/news/domain/models/news_digest_item.dart';
 import 'package:magic_pinecone/features/news/domain/models/scholarship_item.dart';
 import 'package:magic_pinecone/features/news/domain/repository/news_digest_repository.dart';
 import 'package:magic_pinecone/features/news/domain/repository/scholarship_repository.dart';
+import 'package:magic_pinecone/features/news/news_providers.dart';
 import 'package:magic_pinecone/features/news/presentation/news_page.dart';
 
 void main() {

@@ -1,5 +1,5 @@
-import 'package:magic_pinecone/core/app/app_providers.dart';
 import 'package:magic_pinecone/features/home/domain/models/home_dashboard_models.dart';
+import 'package:magic_pinecone/features/home/home_providers.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'home_view_model.g.dart';

@@ -1,7 +1,6 @@
 import 'package:magic_pinecone/features/portal/domain/models/portal_session_state.dart';
 import 'package:magic_pinecone/features/portal/domain/models/portal_shortcut.dart';
-import 'package:magic_pinecone/features/portal/domain/usecases/load_portal_shortcuts_use_case.dart';
-import 'package:magic_pinecone/features/portal/domain/usecases/refresh_portal_session_use_case.dart';
+import 'package:magic_pinecone/features/portal/portal_providers.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'portal_session_controller.g.dart';

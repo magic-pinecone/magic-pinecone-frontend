@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:magic_pinecone/core/app/app_providers.dart';
+import 'package:magic_pinecone/features/course_selection/course_selection_providers.dart';
 import 'package:magic_pinecone/features/course_selection/domain/models/course_schedule_models.dart';
 import 'package:magic_pinecone/features/course_selection/domain/repository/course_repository.dart';
 import 'package:magic_pinecone/features/course_selection/presentation/view_models/course_selection_controller.dart';

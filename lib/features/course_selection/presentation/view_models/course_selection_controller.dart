@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
+import 'package:magic_pinecone/features/course_selection/course_selection_providers.dart';
 import 'package:magic_pinecone/features/course_selection/domain/models/course_schedule_models.dart';
-import 'package:magic_pinecone/features/course_selection/domain/usecases/find_courses_by_serial_nos_use_case.dart';
-import 'package:magic_pinecone/features/course_selection/domain/usecases/search_courses_use_case.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'course_selection_controller.g.dart';

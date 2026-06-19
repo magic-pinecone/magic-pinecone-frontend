@@ -3,17 +3,19 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:magic_pinecone/core/app/app_providers.dart';
+import 'package:magic_pinecone/features/course_selection/course_selection_providers.dart';
 import 'package:magic_pinecone/features/course_selection/domain/models/course_detail_models.dart';
 import 'package:magic_pinecone/features/course_selection/domain/models/course_schedule_models.dart';
 import 'package:magic_pinecone/features/course_selection/domain/repository/course_repository.dart';
 import 'package:magic_pinecone/features/course_selection/domain/repository/course_supplemental_detail_repository.dart';
 import 'package:magic_pinecone/features/home/domain/models/home_dashboard_models.dart';
 import 'package:magic_pinecone/features/home/domain/repository/home_dashboard_repository.dart';
+import 'package:magic_pinecone/features/home/home_providers.dart';
 import 'package:magic_pinecone/features/home/presentation/home_page.dart';
 import 'package:magic_pinecone/features/portal/data/data_sources/portal_authenticator.dart';
 import 'package:magic_pinecone/features/portal/domain/models/portal_shortcut.dart';
 import 'package:magic_pinecone/features/portal/domain/repository/portal_shortcut_repository.dart';
+import 'package:magic_pinecone/features/portal/portal_providers.dart';
 import 'package:magic_pinecone/features/portal/presentation/view_models/portal_session_controller.dart';
 
 void main() {

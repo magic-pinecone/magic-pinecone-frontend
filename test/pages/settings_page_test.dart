@@ -5,6 +5,7 @@ import 'package:magic_pinecone/core/app/app_providers.dart';
 import 'package:magic_pinecone/features/settings/domain/models/settings_models.dart';
 import 'package:magic_pinecone/features/settings/domain/repository/settings_repository.dart';
 import 'package:magic_pinecone/features/settings/presentation/settings_page.dart';
+import 'package:magic_pinecone/features/settings/settings_providers.dart';
 
 void main() {
   testWidgets('SettingsPage reflects system dark mode on first render', (

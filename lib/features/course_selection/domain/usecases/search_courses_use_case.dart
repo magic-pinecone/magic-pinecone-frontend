@@ -1,9 +1,5 @@
-import 'package:magic_pinecone/core/app/app_providers.dart';
 import 'package:magic_pinecone/features/course_selection/domain/models/course_schedule_models.dart';
 import 'package:magic_pinecone/features/course_selection/domain/repository/course_repository.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'search_courses_use_case.g.dart';
 
 class SearchCoursesUseCase {
   const SearchCoursesUseCase(this._repository);
@@ -39,9 +35,4 @@ class SearchCoursesUseCase {
       limit: limit,
     );
   }
-}
-
-@riverpod
-SearchCoursesUseCase searchCoursesUseCase(Ref ref) {
-  return SearchCoursesUseCase(ref.watch(courseRepositoryProvider));
 }

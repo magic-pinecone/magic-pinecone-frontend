@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:magic_pinecone/core/app/app_providers.dart';
 import 'package:magic_pinecone/features/settings/domain/models/settings_models.dart';
 import 'package:magic_pinecone/features/settings/domain/repository/settings_repository.dart';
 import 'package:magic_pinecone/features/settings/presentation/view_models/settings_view_model.dart';
+import 'package:magic_pinecone/features/settings/settings_providers.dart';
 
 void main() {
   test('SettingsViewModel exposes repository data and theme state', () {

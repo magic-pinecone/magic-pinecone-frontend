@@ -1,16 +1,11 @@
-import 'dart:convert';
-
-import 'package:dio/dio.dart';
 import 'package:magic_pinecone/features/course_selection/data/data_sources/course_api_service.dart';
+import 'package:magic_pinecone/features/course_selection/data/data_sources/static_course_catalog_data_source.dart';
 import 'package:magic_pinecone/features/course_selection/data/dtos/course_dto.dart';
 import 'package:magic_pinecone/features/course_selection/domain/models/course_schedule_models.dart';
 import 'package:magic_pinecone/features/course_selection/domain/repository/course_repository.dart';
 
-const staticRemoteCoursesUrl =
-    'https://raw.githubusercontent.com/magic-pinecone/magic-pinecone-lite/115-1/courses.json';
-
-class RemoteCourseRepository implements CourseRepository {
-  RemoteCourseRepository({required this.service});
+class BackendCourseRepository implements CourseRepository {
+  BackendCourseRepository({required this.service});
 
   final CourseApiService service;
 
@@ -57,14 +52,10 @@ class RemoteCourseRepository implements CourseRepository {
   }
 }
 
-class StaticRemoteCourseRepository implements CourseRepository {
-  StaticRemoteCourseRepository({
-    required this.dio,
-    this.coursesUrl = staticRemoteCoursesUrl,
-  });
+class StaticCourseCatalogRepository implements CourseRepository {
+  StaticCourseCatalogRepository({required this.dataSource});
 
-  final Dio dio;
-  final String coursesUrl;
+  final StaticCourseCatalogDataSource dataSource;
   CourseSearchResult? _cachedCatalog;
 
   @override
@@ -112,8 +103,7 @@ class StaticRemoteCourseRepository implements CourseRepository {
     final cachedCatalog = _cachedCatalog;
     if (cachedCatalog != null) return cachedCatalog;
 
-    final response = await dio.getUri<Object>(Uri.parse(coursesUrl));
-    final json = _decodeJsonObject(response.data);
+    final json = await dataSource.loadCatalogJson();
     final coursesJson = json['courses'] as List<dynamic>? ?? const [];
     final courses = coursesJson
         .map(
@@ -128,16 +118,6 @@ class StaticRemoteCourseRepository implements CourseRepository {
     );
     _cachedCatalog = result;
     return result;
-  }
-
-  Map<String, dynamic> _decodeJsonObject(Object? data) {
-    final decoded = switch (data) {
-      final Map<String, dynamic> value => value,
-      final Map<Object?, Object?> value => Map<String, dynamic>.from(value),
-      final String value => jsonDecode(value) as Map<String, dynamic>,
-      _ => throw FormatException('Unexpected courses payload: $data'),
-    };
-    return decoded;
   }
 
   DateTime? _parseDateTime(Object? value) {

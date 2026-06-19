@@ -1,12 +1,9 @@
-import 'package:magic_pinecone/core/app/app_backend_config.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'update_backend_url_use_case.g.dart';
+import 'package:magic_pinecone/features/settings/domain/repository/settings_controls.dart';
 
 class UpdateBackendUrlUseCase {
   const UpdateBackendUrlUseCase(this._configController);
 
-  final AppBackendConfigController _configController;
+  final BackendUrlConfig _configController;
 
   bool updateUrl(String url) {
     return _configController.setBaseUrl(url);
@@ -15,11 +12,4 @@ class UpdateBackendUrlUseCase {
   void reset() {
     _configController.reset();
   }
-}
-
-@riverpod
-UpdateBackendUrlUseCase updateBackendUrlUseCase(Ref ref) {
-  return UpdateBackendUrlUseCase(
-    ref.watch(appBackendConfigControllerProvider.notifier),
-  );
 }

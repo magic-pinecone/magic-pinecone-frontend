@@ -1,9 +1,5 @@
-import 'package:magic_pinecone/core/app/app_providers.dart';
 import 'package:magic_pinecone/features/course_selection/domain/models/course_schedule_models.dart';
 import 'package:magic_pinecone/features/course_selection/domain/repository/course_repository.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'find_courses_by_serial_nos_use_case.g.dart';
 
 class FindCoursesBySerialNosUseCase {
   const FindCoursesBySerialNosUseCase(this._repository);
@@ -42,9 +38,4 @@ class FindCoursesBySerialNosUseCase {
         if (coursesBySerialNo[serialNo] != null) coursesBySerialNo[serialNo]!,
     ];
   }
-}
-
-@riverpod
-FindCoursesBySerialNosUseCase findCoursesBySerialNosUseCase(Ref ref) {
-  return FindCoursesBySerialNosUseCase(ref.watch(courseRepositoryProvider));
 }

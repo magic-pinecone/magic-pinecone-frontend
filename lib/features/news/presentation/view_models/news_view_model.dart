@@ -1,7 +1,6 @@
 import 'package:magic_pinecone/features/news/domain/models/news_digest_item.dart';
 import 'package:magic_pinecone/features/news/domain/models/scholarship_item.dart';
-import 'package:magic_pinecone/features/news/domain/usecases/fetch_scholarships_use_case.dart';
-import 'package:magic_pinecone/features/news/domain/usecases/load_news_digest_use_case.dart';
+import 'package:magic_pinecone/features/news/news_providers.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'news_view_model.g.dart';
