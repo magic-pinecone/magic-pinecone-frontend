@@ -406,147 +406,170 @@ class _CourseDetailsContent extends StatefulWidget {
 }
 
 class _CourseDetailsContentState extends State<_CourseDetailsContent> {
+  late final ValueNotifier<bool> _isSelected = ValueNotifier<bool>(
+    widget._isCourseSelected(widget.course),
+  );
+
+  @override
+  void didUpdateWidget(covariant _CourseDetailsContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    final nextIsSelected = widget._isCourseSelected(widget.course);
+    if (_isSelected.value != nextIsSelected) {
+      _isSelected.value = nextIsSelected;
+    }
+  }
+
+  @override
+  void dispose() {
+    _isSelected.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isCourseSelected = widget._isCourseSelected(widget.course);
-
-    final content = Column(
-      mainAxisSize: widget.useHorizontalActions
-          ? MainAxisSize.max
-          : MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+    return ValueListenableBuilder<bool>(
+      valueListenable: _isSelected,
+      builder: (context, isCourseSelected, _) {
+        final content = Column(
+          mainAxisSize: widget.useHorizontalActions
+              ? MainAxisSize.max
+              : MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Flexible(
-                    child: SelectionAreaText(
-                      widget.course.title,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8.0),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 3.0),
-                    child: _CourseTypeBadge(
-                      label: widget.course.courseTypeText,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (widget.showCloseButton) ...[
-              const SizedBox(width: 8.0),
-              IconButton(
-                tooltip: '關閉',
-                onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(Icons.close),
-              ),
-            ],
-          ],
-        ),
-        const SizedBox(height: 16.0),
-        if (widget.useHorizontalActions)
-          Expanded(
-            child: Row(
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: SingleChildScrollView(
-                    key: const ValueKey('course-primary-details-scroll'),
-                    child: _CoursePrimaryDetails(
-                      course: widget.course,
-                      supplementalDetail: widget.supplementalDetail,
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Flexible(
+                        child: SelectionAreaText(
+                          widget.course.title,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8.0),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 3.0),
+                        child: _CourseTypeBadge(
+                          label: widget.course.courseTypeText,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const VerticalDivider(width: 32.0),
-                Expanded(
-                  child: widget.isLoadingSupplementalDetail
-                      ? const Center(child: CircularProgressIndicator())
-                      : LayoutBuilder(
-                          builder: (context, constraints) {
-                            return SingleChildScrollView(
-                              child: ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  minHeight: constraints.maxHeight,
-                                ),
-                                child: _CourseSupplementalDetails(
-                                  detail: widget.supplementalDetail,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                ),
+                if (widget.showCloseButton) ...[
+                  const SizedBox(width: 8.0),
+                  IconButton(
+                    tooltip: '關閉',
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
               ],
             ),
-          )
-        else
-          _CoursePrimaryDetails(course: widget.course),
-        const SizedBox(height: 12.0),
-        if (widget.useHorizontalActions)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              FilledButton.icon(
-                onPressed: _toggle,
-                label: Text(isCourseSelected ? '移除' : '加入'),
-                icon: Icon(isCourseSelected ? Icons.close : Icons.add),
+            const SizedBox(height: 16.0),
+            if (widget.useHorizontalActions)
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: SingleChildScrollView(
+                        key: const ValueKey('course-primary-details-scroll'),
+                        child: _CoursePrimaryDetails(
+                          course: widget.course,
+                          supplementalDetail: widget.supplementalDetail,
+                        ),
+                      ),
+                    ),
+                    const VerticalDivider(width: 32.0),
+                    Expanded(
+                      child: widget.isLoadingSupplementalDetail
+                          ? const Center(child: CircularProgressIndicator())
+                          : LayoutBuilder(
+                              builder: (context, constraints) {
+                                return SingleChildScrollView(
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      minHeight: constraints.maxHeight,
+                                    ),
+                                    child: _CourseSupplementalDetails(
+                                      detail: widget.supplementalDetail,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              _CoursePrimaryDetails(course: widget.course),
+            const SizedBox(height: 12.0),
+            if (widget.useHorizontalActions)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  FilledButton.icon(
+                    onPressed: _toggle,
+                    label: Text(isCourseSelected ? '移除' : '加入'),
+                    icon: Icon(isCourseSelected ? Icons.close : Icons.add),
+                  ),
+                  const SizedBox(width: 8.0),
+                  FilledButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('關閉'),
+                  ),
+                ],
+              )
+            else ...[
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => _openCourseDetailUrl(context),
+                  child: const Text('課程詳細資訊'),
+                ),
               ),
-              const SizedBox(width: 8.0),
-              FilledButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('關閉'),
+              const SizedBox(height: 8.0),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: _toggle,
+                  child: Text(isCourseSelected ? '移除' : '加入'),
+                ),
+              ),
+              const SizedBox(height: 8.0),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('關閉'),
+                ),
               ),
             ],
-          )
-        else ...[
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: () => _openCourseDetailUrl(context),
-              child: const Text('課程詳細資訊'),
-            ),
-          ),
-          const SizedBox(height: 8.0),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: _toggle,
-              child: Text(isCourseSelected ? '移除' : '加入'),
-            ),
-          ),
-          const SizedBox(height: 8.0),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('關閉'),
-            ),
-          ),
-        ],
-      ],
+          ],
+        );
+
+        if (widget.useHorizontalActions) {
+          return Padding(padding: widget.padding, child: content);
+        }
+
+        return SingleChildScrollView(padding: widget.padding, child: content);
+      },
     );
-
-    if (widget.useHorizontalActions) {
-      return Padding(padding: widget.padding, child: content);
-    }
-
-    return SingleChildScrollView(padding: widget.padding, child: content);
   }
 
   void _toggle() {
     widget._toggleCourseSelection(widget.course);
-    setState(() {});
+    _isSelected.value = widget._isCourseSelected(widget.course);
   }
 
   void _openCourseDetailUrl(BuildContext context) {
