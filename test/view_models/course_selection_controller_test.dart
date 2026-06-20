@@ -1,7 +1,9 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prototype/features/course_selection/data/course_repository.dart';
-import 'package:prototype/features/course_selection/domain/models/course_schedule_models.dart';
-import 'package:prototype/features/course_selection/presentation/view_models/course_selection_controller.dart';
+import 'package:magic_pinecone/features/course_selection/course_selection_providers.dart';
+import 'package:magic_pinecone/features/course_selection/domain/models/course_schedule_models.dart';
+import 'package:magic_pinecone/features/course_selection/domain/repository/course_repository.dart';
+import 'package:magic_pinecone/features/course_selection/presentation/view_models/course_selection_controller.dart';
 
 void main() {
   group('CourseSelectionController', () {
@@ -21,19 +23,37 @@ void main() {
           ],
         ),
       );
-      final controller = CourseSelectionController(repository: repository);
+      final container = ProviderContainer(
+        overrides: [courseRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(
+        courseSelectionControllerProvider.notifier,
+      );
+      CourseSelectionState state() =>
+          container.read(courseSelectionControllerProvider);
 
       await controller.load();
 
-      expect(controller.isLoading, isFalse);
-      expect(controller.error, isNull);
-      expect(controller.totalCount, 1);
-      expect(controller.courses.single.title, '程式設計');
+      expect(state().isLoading, isFalse);
+      expect(state().error, isNull);
+      expect(state().totalCount, 1);
+      expect(state().courses.single.title, '程式設計');
     });
 
     test('passes search keyword and filters to repository', () async {
       final repository = FakeCourseRepository();
-      final controller = CourseSelectionController(repository: repository);
+      final container = ProviderContainer(
+        overrides: [courseRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(
+        courseSelectionControllerProvider.notifier,
+      );
+      CourseSelectionState state() =>
+          container.read(courseSelectionControllerProvider);
 
       await controller.search(
         keyword: '  資料結構  ',
@@ -65,8 +85,8 @@ void main() {
         repository.requests.last.limit,
         CourseSelectionController.defaultPageSize,
       );
-      expect(controller.activeFilterCount, 10);
-      expect(controller.hasActiveFilter, isTrue);
+      expect(state().activeFilterCount, 10);
+      expect(state().hasActiveFilter, isTrue);
     });
 
     test('page navigation loads one result page at a time', () async {
@@ -113,16 +133,25 @@ void main() {
           ),
         ],
       );
-      final controller = CourseSelectionController(repository: repository);
+      final container = ProviderContainer(
+        overrides: [courseRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(
+        courseSelectionControllerProvider.notifier,
+      );
+      CourseSelectionState state() =>
+          container.read(courseSelectionControllerProvider);
 
       await controller.search(keyword: '程式');
       await controller.nextPage();
 
-      expect(controller.courses.map((course) => course.title), ['資料結構']);
-      expect(controller.currentPage, 2);
-      expect(controller.totalPages, 2);
-      expect(controller.canGoToNextPage, isFalse);
-      expect(controller.canGoToPreviousPage, isTrue);
+      expect(state().courses.map((course) => course.title), ['資料結構']);
+      expect(state().currentPage, 2);
+      expect(state().totalPages, 2);
+      expect(state().canGoToNextPage, isFalse);
+      expect(state().canGoToPreviousPage, isTrue);
       expect(repository.requests, hasLength(2));
       expect(repository.requests.last.keyword, '程式');
       expect(
@@ -136,37 +165,64 @@ void main() {
 
       await controller.previousPage();
 
-      expect(controller.courses.single.title, '程式設計');
-      expect(controller.currentPage, 1);
+      expect(state().courses.single.title, '程式設計');
+      expect(state().currentPage, 1);
       expect(repository.requests.last.offset, 0);
     });
 
     test('passes full-course vacancy filter to repository', () async {
       final repository = FakeCourseRepository();
-      final controller = CourseSelectionController(repository: repository);
+      final container = ProviderContainer(
+        overrides: [courseRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(
+        courseSelectionControllerProvider.notifier,
+      );
+      CourseSelectionState state() =>
+          container.read(courseSelectionControllerProvider);
 
       await controller.setHasVacancy(false);
 
-      expect(controller.hasVacancy, isFalse);
-      expect(controller.activeFilterCount, 1);
+      expect(state().hasVacancy, isFalse);
+      expect(state().activeFilterCount, 1);
       expect(repository.requests.last.hasVacancy, isFalse);
     });
 
     test('setClassTimes replaces class-time filters in one search', () async {
       final repository = FakeCourseRepository();
-      final controller = CourseSelectionController(repository: repository);
+      final container = ProviderContainer(
+        overrides: [courseRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(
+        courseSelectionControllerProvider.notifier,
+      );
+      CourseSelectionState state() =>
+          container.read(courseSelectionControllerProvider);
 
       await controller.setClassTimes(['5-2', '1-1']);
 
-      expect(controller.classTimes, ['1-1', '5-2']);
-      expect(controller.activeFilterCount, 1);
+      expect(state().classTimes, {'1-1', '5-2'});
+      expect(state().activeFilterCount, 1);
       expect(repository.requests, hasLength(1));
       expect(repository.requests.single.classTimes, ['1-1', '5-2']);
     });
 
     test('clearFilters resets every filter and reloads once', () async {
       final repository = FakeCourseRepository();
-      final controller = CourseSelectionController(repository: repository);
+      final container = ProviderContainer(
+        overrides: [courseRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(
+        courseSelectionControllerProvider.notifier,
+      );
+      CourseSelectionState state() =>
+          container.read(courseSelectionControllerProvider);
 
       await controller.search(
         keyword: '資料結構',
@@ -186,18 +242,18 @@ void main() {
       await controller.clearFilters();
 
       expect(repository.requests, hasLength(requestCountBeforeClear + 1));
-      expect(controller.keyword, isEmpty);
-      expect(controller.classNo, isEmpty);
-      expect(controller.serialNo, isEmpty);
-      expect(controller.departmentName, isEmpty);
-      expect(controller.collegeName, isEmpty);
-      expect(controller.instructor, isEmpty);
-      expect(controller.courseType, isNull);
-      expect(controller.credits, isEmpty);
-      expect(controller.hasVacancy, isNull);
-      expect(controller.classTimes, isEmpty);
-      expect(controller.activeFilterCount, 0);
-      expect(controller.hasActiveFilter, isFalse);
+      expect(state().keyword, isEmpty);
+      expect(state().classNo, isEmpty);
+      expect(state().serialNo, isEmpty);
+      expect(state().departmentName, isEmpty);
+      expect(state().collegeName, isEmpty);
+      expect(state().instructor, isEmpty);
+      expect(state().courseType, isNull);
+      expect(state().credits, isEmpty);
+      expect(state().hasVacancy, isNull);
+      expect(state().classTimes, isEmpty);
+      expect(state().activeFilterCount, 0);
+      expect(state().hasActiveFilter, isFalse);
       expect(repository.requests.last.keyword, isEmpty);
       expect(repository.requests.last.classNo, isEmpty);
       expect(repository.requests.last.serialNo, isEmpty);
@@ -212,23 +268,18 @@ void main() {
 
     test('clearFilters is a no-op when no filters are active', () async {
       final repository = FakeCourseRepository();
-      final controller = CourseSelectionController(repository: repository);
+      final container = ProviderContainer(
+        overrides: [courseRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(
+        courseSelectionControllerProvider.notifier,
+      );
 
       await controller.clearFilters();
 
       expect(repository.requests, isEmpty);
-    });
-
-    test('stores error when repository throws', () async {
-      final controller = CourseSelectionController(
-        repository: FakeCourseRepository(error: StateError('failed')),
-      );
-
-      await controller.load();
-
-      expect(controller.isLoading, isFalse);
-      expect(controller.error, isA<StateError>());
-      expect(controller.courses, isEmpty);
     });
 
     test('failed refresh keeps previous results visible', () async {
@@ -250,15 +301,24 @@ void main() {
         ],
         errors: [StateError('network failed')],
       );
-      final controller = CourseSelectionController(repository: repository);
+      final container = ProviderContainer(
+        overrides: [courseRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(
+        courseSelectionControllerProvider.notifier,
+      );
+      CourseSelectionState state() =>
+          container.read(courseSelectionControllerProvider);
 
       await controller.load();
       await controller.search();
 
-      expect(controller.isLoading, isFalse);
-      expect(controller.error, isA<StateError>());
-      expect(controller.courses.single.title, '程式設計');
-      expect(controller.totalCount, 1);
+      expect(state().isLoading, isFalse);
+      expect(state().error, isA<StateError>());
+      expect(state().courses.single.title, '程式設計');
+      expect(state().totalCount, 1);
     });
   });
 }

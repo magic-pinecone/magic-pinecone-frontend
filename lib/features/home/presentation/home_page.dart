@@ -1,19 +1,16 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:prototype/core/app/app_providers.dart';
-import 'package:prototype/core/navigation/app_routes.dart';
-import 'package:prototype/features/home/models/home_dashboard_models.dart';
-import 'package:prototype/features/home/presentation/view_models/home_view_model.dart';
-import 'package:prototype/features/home/presentation/widgets/home_course_card.dart';
-import 'package:prototype/features/home/presentation/widgets/home_quick_action_button.dart';
-import 'package:prototype/features/home/presentation/widgets/home_section_header.dart';
-import 'package:prototype/features/portal/presentation/widgets/portal_shortcut_button.dart';
+import 'package:magic_pinecone/core/navigation/app_routes.dart';
+import 'package:magic_pinecone/features/home/domain/models/home_dashboard_models.dart';
+import 'package:magic_pinecone/features/home/presentation/view_models/home_view_model.dart';
+import 'package:magic_pinecone/features/home/presentation/widgets/home_course_card.dart';
+import 'package:magic_pinecone/features/home/presentation/widgets/home_quick_action_button.dart';
+import 'package:magic_pinecone/features/home/presentation/widgets/home_section_header.dart';
+import 'package:magic_pinecone/features/portal/presentation/widgets/portal_shortcut_button.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key, this.viewModel});
-
-  static const _horizontalPadding = 16.0;
 
   final HomeViewModel? viewModel;
 
@@ -24,7 +21,7 @@ class HomePage extends StatelessWidget {
         context.findAncestorWidgetOfExactType<UncontrolledProviderScope>() !=
             null;
 
-    final child = _HomePageInner(viewModel: viewModel);
+    final child = _HomePageInner();
 
     if (hasScope) {
       return child;
@@ -35,15 +32,13 @@ class HomePage extends StatelessWidget {
 }
 
 class _HomePageInner extends ConsumerWidget {
-  const _HomePageInner({this.viewModel});
+  const _HomePageInner();
 
   static const _horizontalPadding = 16.0;
 
-  final HomeViewModel? viewModel;
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final vm = viewModel ?? ref.watch(homeViewModelProvider);
+    final HomeViewSnapshot vm = ref.watch(homeViewModelProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text(

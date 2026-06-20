@@ -1,13 +1,22 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prototype/core/app/app_dependencies.dart';
-import 'package:prototype/core/app/app_scope.dart';
-import 'package:prototype/features/course_selection/data/course_repository.dart';
-import 'package:prototype/features/course_selection/domain/models/course_schedule_models.dart';
-import 'package:prototype/features/home/data/home_dashboard_repository.dart';
-import 'package:prototype/features/home/models/home_dashboard_models.dart';
-import 'package:prototype/features/home/presentation/home_page.dart';
-import 'package:prototype/features/home/presentation/view_models/home_view_model.dart';
+import 'package:magic_pinecone/features/course_selection/course_selection_providers.dart';
+import 'package:magic_pinecone/features/course_selection/domain/models/course_detail_models.dart';
+import 'package:magic_pinecone/features/course_selection/domain/models/course_schedule_models.dart';
+import 'package:magic_pinecone/features/course_selection/domain/repository/course_repository.dart';
+import 'package:magic_pinecone/features/course_selection/domain/repository/course_supplemental_detail_repository.dart';
+import 'package:magic_pinecone/features/home/domain/models/home_dashboard_models.dart';
+import 'package:magic_pinecone/features/home/domain/repository/home_dashboard_repository.dart';
+import 'package:magic_pinecone/features/home/home_providers.dart';
+import 'package:magic_pinecone/features/home/presentation/home_page.dart';
+import 'package:magic_pinecone/features/portal/domain/models/portal_shortcut.dart';
+import 'package:magic_pinecone/features/portal/domain/repository/portal_session_client.dart';
+import 'package:magic_pinecone/features/portal/domain/repository/portal_shortcut_repository.dart';
+import 'package:magic_pinecone/features/portal/portal_providers.dart';
+import 'package:magic_pinecone/features/portal/presentation/view_models/portal_session_controller.dart';
 
 void main() {
   testWidgets('HomePage renders dashboard sections and course previews', (
@@ -15,10 +24,13 @@ void main() {
   ) async {
     await tester.pumpWidget(
       _buildTestApp(
-        HomePage(
-          viewModel: HomeViewModel(
-            repository: const FakeHomeDashboardRepository(),
-          ),
+        ProviderScope(
+          overrides: [
+            homeDashboardRepositoryProvider.overrideWithValue(
+              const FakeHomeDashboardRepository(),
+            ),
+          ],
+          child: HomePage(),
         ),
       ),
     );
@@ -36,10 +48,13 @@ void main() {
   ) async {
     await tester.pumpWidget(
       _buildTestApp(
-        HomePage(
-          viewModel: HomeViewModel(
-            repository: const FakeHomeDashboardRepository(),
-          ),
+        ProviderScope(
+          overrides: [
+            homeDashboardRepositoryProvider.overrideWithValue(
+              const FakeHomeDashboardRepository(),
+            ),
+          ],
+          child: HomePage(),
         ),
       ),
     );
@@ -61,10 +76,13 @@ void main() {
   ) async {
     await tester.pumpWidget(
       _buildTestApp(
-        HomePage(
-          viewModel: HomeViewModel(
-            repository: const FakeHomeDashboardRepository(),
-          ),
+        ProviderScope(
+          overrides: [
+            homeDashboardRepositoryProvider.overrideWithValue(
+              const FakeHomeDashboardRepository(),
+            ),
+          ],
+          child: HomePage(),
         ),
       ),
     );
@@ -85,8 +103,19 @@ void main() {
 }
 
 Widget _buildTestApp(Widget child) {
-  return AppScope(
-    dependencies: AppDependencies(courseRepository: FakeCourseRepository()),
+  return ProviderScope(
+    overrides: [
+      courseRepositoryProvider.overrideWithValue(FakeCourseRepository()),
+      courseSupplementalDetailRepositoryProvider.overrideWithValue(
+        FakeCourseSupplementalDetailRepository(),
+      ),
+      portalSessionClientProvider.overrideWithValue(
+        _NeverCompletingPortalSessionClient(),
+      ),
+      portalShortcutRepositoryProvider.overrideWithValue(
+        const FakePortalShortcutRepository(),
+      ),
+    ],
     child: MaterialApp(home: child),
   );
 }
@@ -158,4 +187,50 @@ class FakeHomeDashboardRepository implements HomeDashboardRepository {
       ],
     );
   }
+}
+
+class FakePortalShortcutRepository implements PortalShortcutRepository {
+  const FakePortalShortcutRepository();
+
+  @override
+  List<PortalShortcutSection> loadShortcutSections() {
+    return const [
+      PortalShortcutSection(
+        title: '常用服務',
+        items: [
+          PortalShortcutItem(
+            label: '成績查詢',
+            icon: Icons.grading,
+            destination: PortalWebShortcutDestination(
+              title: '成績查詢',
+              targetPath: '/system/incu-studentscore',
+            ),
+          ),
+          PortalShortcutItem(
+            label: 'NCU Mail',
+            icon: Icons.mail,
+            destination: PortalWebShortcutDestination(
+              title: 'NCU Mail',
+              targetPath: '/system/129',
+            ),
+          ),
+        ],
+      ),
+    ];
+  }
+}
+
+class FakeCourseSupplementalDetailRepository
+    implements CourseSupplementalDetailRepository {
+  @override
+  Future<CourseSupplementalDetail?> findBySerialNo(String serialNo) async {
+    return null;
+  }
+}
+
+/// Returns a [Future] that never completes so [PortalSessionController.refreshSession]
+/// never reaches its finally block, preventing notifyListeners() after disposal.
+class _NeverCompletingPortalSessionClient implements PortalSessionClient {
+  @override
+  Future<String?> refreshToken() => Completer<String?>().future;
 }

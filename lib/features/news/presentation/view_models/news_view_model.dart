@@ -1,40 +1,28 @@
-import 'package:flutter/foundation.dart';
-import 'package:prototype/features/news/data/news_digest_repository.dart';
-import 'package:prototype/features/news/data/scholarship_repository.dart';
-import 'package:prototype/features/news/models/news_digest_item.dart';
-import 'package:prototype/features/news/models/scholarship_item.dart';
+import 'package:magic_pinecone/features/news/domain/models/news_digest_item.dart';
+import 'package:magic_pinecone/features/news/domain/models/scholarship_item.dart';
+import 'package:magic_pinecone/features/news/news_providers.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-class NewsViewModel extends ChangeNotifier {
-  NewsViewModel({
-    required ScholarshipRepository repository,
-    required NewsDigestRepository digestRepository,
-  }) : _repository = repository,
-       _digestItems = List.unmodifiable(digestRepository.loadDigestItems());
+part 'news_view_model.g.dart';
 
-  final ScholarshipRepository _repository;
-  final List<NewsDigestItem> _digestItems;
-
-  bool _isLoading = false;
-  Object? _error;
-  List<ScholarshipItem> _items = const [];
-
-  bool get isLoading => _isLoading;
-  Object? get error => _error;
-  List<ScholarshipItem> get items => _items;
-  List<NewsDigestItem> get digestItems => _digestItems;
-
-  Future<void> load() async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-
-    try {
-      _items = await _repository.fetchScholarships();
-    } catch (error) {
-      _error = error;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
+@riverpod
+class NewsViewModel extends _$NewsViewModel {
+  @override
+  FutureOr<NewsViewSnapshot> build() async {
+    final digestItems = ref.watch(loadNewsDigestUseCaseProvider).execute();
+    final scholarshipItems = await ref
+        .watch(fetchScholarshipsUseCaseProvider)
+        .execute();
+    return NewsViewSnapshot(
+      scholarshipItems: scholarshipItems,
+      digestItems: digestItems,
+    );
   }
+}
+
+class NewsViewSnapshot {
+  NewsViewSnapshot({required this.scholarshipItems, required this.digestItems});
+
+  final List<ScholarshipItem> scholarshipItems;
+  final List<NewsDigestItem> digestItems;
 }

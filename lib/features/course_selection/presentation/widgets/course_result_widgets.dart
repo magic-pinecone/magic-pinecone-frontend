@@ -1,10 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:prototype/features/course_selection/domain/models/course_schedule_models.dart';
-import 'package:prototype/features/course_selection/presentation/course_selection_layout.dart';
-import 'package:prototype/features/course_selection/presentation/view_models/course_selection_controller.dart';
-import 'package:prototype/features/course_selection/presentation/widgets/course_card_widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:magic_pinecone/features/course_selection/domain/models/course_schedule_models.dart';
+import 'package:magic_pinecone/features/course_selection/presentation/course_selection_layout.dart';
+import 'package:magic_pinecone/features/course_selection/presentation/view_models/course_selection_controller.dart';
+import 'package:magic_pinecone/features/course_selection/presentation/widgets/course_card_widgets.dart';
 
 class CourseResultList extends StatelessWidget {
   const CourseResultList({
@@ -101,41 +102,41 @@ class CourseResultGrid extends StatelessWidget {
   }
 }
 
-class CoursePaginationControls extends StatelessWidget {
-  const CoursePaginationControls({super.key, required this.controller});
-
-  final CourseSelectionController controller;
+class CoursePaginationControls extends ConsumerWidget {
+  const CoursePaginationControls({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final isBusy = controller.isLoading || controller.isLoadingMore;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(courseSelectionControllerProvider);
+    final notifier = ref.read(courseSelectionControllerProvider.notifier);
+    final isBusy = state.isLoading || state.isLoadingMore;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         OutlinedButton.icon(
-          onPressed: isBusy || !controller.canGoToPreviousPage
+          onPressed: isBusy || !state.canGoToPreviousPage
               ? null
-              : () => unawaited(controller.previousPage()),
+              : () => unawaited(notifier.previousPage()),
           icon: const Icon(Icons.chevron_left),
           label: const Text('上一頁'),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12.0),
-          child: controller.isLoadingMore
+          child: state.isLoadingMore
               ? const SizedBox.square(
                   dimension: 18.0,
                   child: CircularProgressIndicator(strokeWidth: 2.0),
                 )
               : Text(
-                  '${controller.currentPage} / ${controller.totalPages}',
+                  '${state.currentPage} / ${state.totalPages}',
                   style: Theme.of(context).textTheme.labelLarge,
                 ),
         ),
         OutlinedButton.icon(
-          onPressed: isBusy || !controller.canGoToNextPage
+          onPressed: isBusy || !state.canGoToNextPage
               ? null
-              : () => unawaited(controller.nextPage()),
+              : () => unawaited(notifier.nextPage()),
           icon: const Icon(Icons.chevron_right),
           label: const Text('下一頁'),
         ),

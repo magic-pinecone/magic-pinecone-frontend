@@ -1,22 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prototype/features/course_selection/data/course_repository.dart';
-import 'package:prototype/features/course_selection/data/course_selection_storage.dart';
-import 'package:prototype/features/course_selection/data/course_share_codec.dart';
-import 'package:prototype/features/course_selection/data/course_supplemental_detail_catalog.dart';
-import 'package:prototype/features/course_selection/domain/models/course_detail_models.dart';
-import 'package:prototype/features/course_selection/domain/models/course_schedule_models.dart';
-import 'package:prototype/features/course_selection/presentation/course_selection_page.dart';
-import 'package:prototype/features/course_selection/presentation/view_models/course_selection_controller.dart';
+
+import 'package:magic_pinecone/features/course_selection/course_selection_providers.dart';
+import 'package:magic_pinecone/features/course_selection/data/data_sources/course_selection_storage.dart';
+import 'package:magic_pinecone/features/course_selection/domain/models/course_detail_models.dart';
+import 'package:magic_pinecone/features/course_selection/domain/models/course_schedule_models.dart';
+import 'package:magic_pinecone/features/course_selection/domain/repository/course_repository.dart';
+import 'package:magic_pinecone/features/course_selection/domain/repository/course_supplemental_detail_repository.dart';
+import 'package:magic_pinecone/features/course_selection/domain/usecases/course_share_codec.dart';
+import 'package:magic_pinecone/features/course_selection/presentation/course_selection_page.dart';
+import 'package:magic_pinecone/features/course_selection/presentation/view_models/course_selection_controller.dart';
+
+const _noOpRepo = _NoOpSupplementalRepository();
 
 void main() {
   testWidgets('CourseSelectionPage renders loaded courses', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: CourseSelectionPage(
-          controller: CourseSelectionController(
-            repository: FakeCourseRepository(
+      ProviderScope(
+        overrides: [
+          courseRepositoryProvider.overrideWithValue(
+            FakeCourseRepository(
               result: const CourseSearchResult(
                 totalCount: 1,
                 courses: [
@@ -37,6 +42,11 @@ void main() {
                 ],
               ),
             ),
+          ),
+        ],
+        child: MaterialApp(
+          home: CourseSelectionPage(
+            courseSupplementalDetailRepository: _noOpRepo,
           ),
         ),
       ),
@@ -69,15 +79,20 @@ void main() {
       );
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: CourseSelectionPage(
-            controller: CourseSelectionController(
-              repository: FakeCourseRepository(
+        ProviderScope(
+          overrides: [
+            courseRepositoryProvider.overrideWithValue(
+              FakeCourseRepository(
                 result: CourseSearchResult(
                   totalCount: courses.length,
                   courses: courses,
                 ),
               ),
+            ),
+          ],
+          child: MaterialApp(
+            home: CourseSelectionPage(
+              courseSupplementalDetailRepository: _noOpRepo,
             ),
           ),
         ),
@@ -104,10 +119,10 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: CourseSelectionPage(
-          controller: CourseSelectionController(
-            repository: FakeCourseRepository(
+      ProviderScope(
+        overrides: [
+          courseRepositoryProvider.overrideWithValue(
+            FakeCourseRepository(
               result: const CourseSearchResult(
                 totalCount: 2,
                 courses: [
@@ -131,6 +146,11 @@ void main() {
               ),
             ),
           ),
+        ],
+        child: MaterialApp(
+          home: CourseSelectionPage(
+            courseSupplementalDetailRepository: _noOpRepo,
+          ),
         ),
       ),
     );
@@ -148,10 +168,13 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: CourseSelectionPage(
-          controller: CourseSelectionController(
-            repository: FakeCourseRepository(),
+      ProviderScope(
+        overrides: [
+          courseRepositoryProvider.overrideWithValue(FakeCourseRepository()),
+        ],
+        child: MaterialApp(
+          home: CourseSelectionPage(
+            courseSupplementalDetailRepository: _noOpRepo,
           ),
         ),
       ),
@@ -166,11 +189,14 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: CourseSelectionPage(
-          showBackButton: true,
-          controller: CourseSelectionController(
-            repository: FakeCourseRepository(),
+      ProviderScope(
+        overrides: [
+          courseRepositoryProvider.overrideWithValue(FakeCourseRepository()),
+        ],
+        child: MaterialApp(
+          home: CourseSelectionPage(
+            courseSupplementalDetailRepository: _noOpRepo,
+            showBackButton: true,
           ),
         ),
       ),
@@ -187,9 +213,12 @@ void main() {
     final repository = FakeCourseRepository();
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: CourseSelectionPage(
-          controller: CourseSelectionController(repository: repository),
+      ProviderScope(
+        overrides: [courseRepositoryProvider.overrideWithValue(repository)],
+        child: MaterialApp(
+          home: CourseSelectionPage(
+            courseSupplementalDetailRepository: _noOpRepo,
+          ),
         ),
       ),
     );
@@ -208,9 +237,12 @@ void main() {
     final repository = FakeCourseRepository();
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: CourseSelectionPage(
-          controller: CourseSelectionController(repository: repository),
+      ProviderScope(
+        overrides: [courseRepositoryProvider.overrideWithValue(repository)],
+        child: MaterialApp(
+          home: CourseSelectionPage(
+            courseSupplementalDetailRepository: _noOpRepo,
+          ),
         ),
       ),
     );
@@ -248,9 +280,12 @@ void main() {
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: CourseSelectionPage(
-            controller: CourseSelectionController(repository: repository),
+        ProviderScope(
+          overrides: [courseRepositoryProvider.overrideWithValue(repository)],
+          child: MaterialApp(
+            home: CourseSelectionPage(
+              courseSupplementalDetailRepository: _noOpRepo,
+            ),
           ),
         ),
       );
@@ -284,10 +319,13 @@ void main() {
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: CourseSelectionPage(
-            controller: CourseSelectionController(
-              repository: FakeCourseRepository(),
+        ProviderScope(
+          overrides: [
+            courseRepositoryProvider.overrideWithValue(FakeCourseRepository()),
+          ],
+          child: MaterialApp(
+            home: CourseSelectionPage(
+              courseSupplementalDetailRepository: _noOpRepo,
             ),
           ),
         ),
@@ -315,9 +353,12 @@ void main() {
     final repository = FakeCourseRepository();
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: CourseSelectionPage(
-          controller: CourseSelectionController(repository: repository),
+      ProviderScope(
+        overrides: [courseRepositoryProvider.overrideWithValue(repository)],
+        child: MaterialApp(
+          home: CourseSelectionPage(
+            courseSupplementalDetailRepository: _noOpRepo,
+          ),
         ),
       ),
     );
@@ -341,9 +382,12 @@ void main() {
     final repository = FakeCourseRepository();
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: CourseSelectionPage(
-          controller: CourseSelectionController(repository: repository),
+      ProviderScope(
+        overrides: [courseRepositoryProvider.overrideWithValue(repository)],
+        child: MaterialApp(
+          home: CourseSelectionPage(
+            courseSupplementalDetailRepository: _noOpRepo,
+          ),
         ),
       ),
     );
@@ -394,9 +438,12 @@ void main() {
     );
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: CourseSelectionPage(
-          controller: CourseSelectionController(repository: repository),
+      ProviderScope(
+        overrides: [courseRepositoryProvider.overrideWithValue(repository)],
+        child: MaterialApp(
+          home: CourseSelectionPage(
+            courseSupplementalDetailRepository: _noOpRepo,
+          ),
         ),
       ),
     );
@@ -418,10 +465,10 @@ void main() {
     'CourseSelectionPage locally filters timetable-compatible courses',
     (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: CourseSelectionPage(
-            controller: CourseSelectionController(
-              repository: FakeCourseRepository(
+        ProviderScope(
+          overrides: [
+            courseRepositoryProvider.overrideWithValue(
+              FakeCourseRepository(
                 result: const CourseSearchResult(
                   totalCount: 2,
                   courses: [
@@ -452,6 +499,11 @@ void main() {
                   ],
                 ),
               ),
+            ),
+          ],
+          child: MaterialApp(
+            home: CourseSelectionPage(
+              courseSupplementalDetailRepository: _noOpRepo,
             ),
           ),
         ),
@@ -489,10 +541,10 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: CourseSelectionPage(
-          controller: CourseSelectionController(
-            repository: FakeCourseRepository(
+      ProviderScope(
+        overrides: [
+          courseRepositoryProvider.overrideWithValue(
+            FakeCourseRepository(
               result: const CourseSearchResult(
                 totalCount: 3,
                 courses: [
@@ -515,6 +567,11 @@ void main() {
                 ],
               ),
             ),
+          ),
+        ],
+        child: MaterialApp(
+          home: CourseSelectionPage(
+            courseSupplementalDetailRepository: _noOpRepo,
           ),
         ),
       ),
@@ -556,9 +613,12 @@ void main() {
       );
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: CourseSelectionPage(
-            controller: CourseSelectionController(repository: repository),
+        ProviderScope(
+          overrides: [courseRepositoryProvider.overrideWithValue(repository)],
+          child: MaterialApp(
+            home: CourseSelectionPage(
+              courseSupplementalDetailRepository: _noOpRepo,
+            ),
           ),
         ),
       );
@@ -583,10 +643,13 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: CourseSelectionPage(
-          controller: CourseSelectionController(
-            repository: FakeCourseRepository(),
+      ProviderScope(
+        overrides: [
+          courseRepositoryProvider.overrideWithValue(FakeCourseRepository()),
+        ],
+        child: MaterialApp(
+          home: CourseSelectionPage(
+            courseSupplementalDetailRepository: _noOpRepo,
           ),
         ),
       ),
@@ -607,10 +670,13 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: CourseSelectionPage(
-          controller: CourseSelectionController(
-            repository: FakeCourseRepository(),
+      ProviderScope(
+        overrides: [
+          courseRepositoryProvider.overrideWithValue(FakeCourseRepository()),
+        ],
+        child: MaterialApp(
+          home: CourseSelectionPage(
+            courseSupplementalDetailRepository: _noOpRepo,
           ),
         ),
       ),
@@ -630,10 +696,10 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: CourseSelectionPage(
-          controller: CourseSelectionController(
-            repository: FakeCourseRepository(
+      ProviderScope(
+        overrides: [
+          courseRepositoryProvider.overrideWithValue(
+            FakeCourseRepository(
               result: const CourseSearchResult(
                 totalCount: 1,
                 courses: [
@@ -650,6 +716,11 @@ void main() {
                 ],
               ),
             ),
+          ),
+        ],
+        child: MaterialApp(
+          home: CourseSelectionPage(
+            courseSupplementalDetailRepository: _noOpRepo,
           ),
         ),
       ),
@@ -686,10 +757,10 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: CourseSelectionPage(
-          controller: CourseSelectionController(
-            repository: FakeCourseRepository(
+      ProviderScope(
+        overrides: [
+          courseRepositoryProvider.overrideWithValue(
+            FakeCourseRepository(
               result: const CourseSearchResult(
                 totalCount: 2,
                 courses: [
@@ -712,6 +783,11 @@ void main() {
                 ],
               ),
             ),
+          ),
+        ],
+        child: MaterialApp(
+          home: CourseSelectionPage(
+            courseSupplementalDetailRepository: _noOpRepo,
           ),
         ),
       ),
@@ -754,10 +830,10 @@ void main() {
     });
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: CourseSelectionPage(
-          controller: CourseSelectionController(
-            repository: FakeCourseRepository(
+      ProviderScope(
+        overrides: [
+          courseRepositoryProvider.overrideWithValue(
+            FakeCourseRepository(
               result: const CourseSearchResult(
                 totalCount: 1,
                 courses: [
@@ -772,6 +848,11 @@ void main() {
                 ],
               ),
             ),
+          ),
+        ],
+        child: MaterialApp(
+          home: CourseSelectionPage(
+            courseSupplementalDetailRepository: _noOpRepo,
           ),
         ),
       ),
@@ -800,11 +881,10 @@ void main() {
     final storage = MemoryCourseSelectionStorage();
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: CourseSelectionPage(
-          courseSelectionStorage: storage,
-          controller: CourseSelectionController(
-            repository: FakeCourseRepository(
+      ProviderScope(
+        overrides: [
+          courseRepositoryProvider.overrideWithValue(
+            FakeCourseRepository(
               result: const CourseSearchResult(
                 totalCount: 1,
                 courses: [
@@ -819,6 +899,12 @@ void main() {
                 ],
               ),
             ),
+          ),
+        ],
+        child: MaterialApp(
+          home: CourseSelectionPage(
+            courseSupplementalDetailRepository: _noOpRepo,
+            courseSelectionStorage: storage,
           ),
         ),
       ),
@@ -849,11 +935,10 @@ void main() {
     );
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: CourseSelectionPage(
-          courseSelectionStorage: storage,
-          controller: CourseSelectionController(
-            repository: FakeCourseRepository(
+      ProviderScope(
+        overrides: [
+          courseRepositoryProvider.overrideWithValue(
+            FakeCourseRepository(
               result: const CourseSearchResult(
                 totalCount: 1,
                 courses: [
@@ -868,6 +953,12 @@ void main() {
                 ],
               ),
             ),
+          ),
+        ],
+        child: MaterialApp(
+          home: CourseSelectionPage(
+            courseSupplementalDetailRepository: _noOpRepo,
+            courseSelectionStorage: storage,
           ),
         ),
       ),
@@ -893,14 +984,10 @@ void main() {
       await storage.writeShareCode(storedCode);
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: CourseSelectionPage(
-            courseSelectionStorage: storage,
-            initialShareCode: const CourseShareCodec().encodeSerialNos(const [
-              '12345',
-            ]),
-            controller: CourseSelectionController(
-              repository: FakeCourseRepository(
+        ProviderScope(
+          overrides: [
+            courseRepositoryProvider.overrideWithValue(
+              FakeCourseRepository(
                 result: const CourseSearchResult(
                   totalCount: 1,
                   courses: [
@@ -915,6 +1002,15 @@ void main() {
                   ],
                 ),
               ),
+            ),
+          ],
+          child: MaterialApp(
+            home: CourseSelectionPage(
+              courseSupplementalDetailRepository: _noOpRepo,
+              courseSelectionStorage: storage,
+              initialShareCode: const CourseShareCodec().encodeSerialNos(const [
+                '12345',
+              ]),
             ),
           ),
         ),
@@ -949,9 +1045,12 @@ void main() {
     final repository = FakeCourseRepository();
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: CourseSelectionPage(
-          controller: CourseSelectionController(repository: repository),
+      ProviderScope(
+        overrides: [courseRepositoryProvider.overrideWithValue(repository)],
+        child: MaterialApp(
+          home: CourseSelectionPage(
+            courseSupplementalDetailRepository: _noOpRepo,
+          ),
         ),
       ),
     );
@@ -1017,10 +1116,10 @@ void main() {
 
   testWidgets('CourseSelectionPage shows course details sheet', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: CourseSelectionPage(
-          controller: CourseSelectionController(
-            repository: FakeCourseRepository(
+      ProviderScope(
+        overrides: [
+          courseRepositoryProvider.overrideWithValue(
+            FakeCourseRepository(
               result: const CourseSearchResult(
                 totalCount: 1,
                 courses: [
@@ -1042,6 +1141,11 @@ void main() {
                 ],
               ),
             ),
+          ),
+        ],
+        child: MaterialApp(
+          home: CourseSelectionPage(
+            courseSupplementalDetailRepository: _noOpRepo,
           ),
         ),
       ),
@@ -1075,10 +1179,10 @@ void main() {
       );
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: CourseSelectionPage(
-            controller: CourseSelectionController(
-              repository: FakeCourseRepository(
+        ProviderScope(
+          overrides: [
+            courseRepositoryProvider.overrideWithValue(
+              FakeCourseRepository(
                 result: const CourseSearchResult(
                   totalCount: 1,
                   courses: [
@@ -1099,15 +1203,19 @@ void main() {
                 ),
               ),
             ),
-            courseSupplementalDetailRepository: _FakeSupplementalRepository(
-              CourseSupplementalDetail(
-                serialNo: '00098',
-                objectives: '修習本課程同學可以培養深層閱讀理解能力',
-                content: '課程內容',
-                books: '短篇故事/線上資源',
-                teachingMethod: '講授',
-                gradingPolicy: '期中考30%',
-                distributionConditions: distributionConditions,
+          ],
+          child: MaterialApp(
+            home: CourseSelectionPage(
+              courseSupplementalDetailRepository: _FakeSupplementalRepository(
+                CourseSupplementalDetail(
+                  serialNo: '00098',
+                  objectives: '修習本課程同學可以培養深層閱讀理解能力',
+                  content: '課程內容',
+                  books: '短篇故事/線上資源',
+                  teachingMethod: '講授',
+                  gradingPolicy: '期中考30%',
+                  distributionConditions: distributionConditions,
+                ),
               ),
             ),
           ),
@@ -1145,6 +1253,16 @@ void main() {
       );
     },
   );
+}
+
+class _NoOpSupplementalRepository
+    implements CourseSupplementalDetailRepository {
+  const _NoOpSupplementalRepository();
+
+  @override
+  Future<CourseSupplementalDetail?> findBySerialNo(String serialNo) async {
+    return null;
+  }
 }
 
 class _FakeSupplementalRepository

@@ -1,33 +1,33 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:prototype/features/course_selection/domain/models/course_detail_models.dart';
-import 'package:prototype/features/course_selection/domain/models/course_schedule_models.dart';
-import 'package:prototype/features/course_selection/presentation/course_selection_layout.dart';
-import 'package:prototype/features/course_selection/presentation/view_models/course_selection_controller.dart';
-import 'package:prototype/features/course_selection/presentation/widgets/course_detail_row.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:magic_pinecone/features/course_selection/domain/models/course_detail_models.dart';
+import 'package:magic_pinecone/features/course_selection/domain/models/course_schedule_models.dart';
+import 'package:magic_pinecone/features/course_selection/presentation/course_selection_layout.dart';
+import 'package:magic_pinecone/features/course_selection/presentation/view_models/course_selection_controller.dart';
+import 'package:magic_pinecone/features/course_selection/presentation/widgets/course_detail_row.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class CourseResultSummary extends StatelessWidget {
+class CourseResultSummary extends ConsumerWidget {
   const CourseResultSummary({
     super.key,
-    required this.controller,
     required this.displayedCourseCount,
     required this.localFilterActive,
     required this.localFilterTotalCount,
     required this.onFilterPressed,
   });
 
-  final CourseSelectionController controller;
   final int displayedCourseCount;
   final bool localFilterActive;
   final int localFilterTotalCount;
   final VoidCallback onFilterPressed;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(courseSelectionControllerProvider);
     final colorScheme = Theme.of(context).colorScheme;
-    final lastUpdated = controller.lastUpdated;
+    final lastUpdated = state.lastUpdated;
     final subtitle = lastUpdated == null
         ? '資料更新時間未提供'
         : '更新於 ${_formatDateTime(lastUpdated)}';
@@ -41,9 +41,9 @@ class CourseResultSummary extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  controller.isLoading && controller.courses.isNotEmpty
+                  state.isLoading && state.courses.isNotEmpty
                       ? '更新中...'
-                      : _courseCountText(),
+                      : _courseCountText(state),
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 2.0),
@@ -57,7 +57,7 @@ class CourseResultSummary extends StatelessWidget {
               ],
             ),
           ),
-          if (controller.isLoading && controller.courses.isNotEmpty)
+          if (state.isLoading && state.courses.isNotEmpty)
             const SizedBox(
               width: 18.0,
               height: 18.0,
@@ -76,11 +76,11 @@ class CourseResultSummary extends StatelessWidget {
     );
   }
 
-  String _courseCountText() {
+  String _courseCountText(CourseSelectionState state) {
     if (localFilterActive) {
       return '顯示 $displayedCourseCount / $localFilterTotalCount 門課程';
     }
-    return '顯示 ${controller.courses.length} / ${controller.totalCount} 門課程';
+    return '顯示 ${state.courses.length} / ${state.totalCount} 門課程';
   }
 
   String _formatDateTime(DateTime value) {
@@ -406,147 +406,170 @@ class _CourseDetailsContent extends StatefulWidget {
 }
 
 class _CourseDetailsContentState extends State<_CourseDetailsContent> {
+  late final ValueNotifier<bool> _isSelected = ValueNotifier<bool>(
+    widget._isCourseSelected(widget.course),
+  );
+
+  @override
+  void didUpdateWidget(covariant _CourseDetailsContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    final nextIsSelected = widget._isCourseSelected(widget.course);
+    if (_isSelected.value != nextIsSelected) {
+      _isSelected.value = nextIsSelected;
+    }
+  }
+
+  @override
+  void dispose() {
+    _isSelected.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isCourseSelected = widget._isCourseSelected(widget.course);
-
-    final content = Column(
-      mainAxisSize: widget.useHorizontalActions
-          ? MainAxisSize.max
-          : MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+    return ValueListenableBuilder<bool>(
+      valueListenable: _isSelected,
+      builder: (context, isCourseSelected, _) {
+        final content = Column(
+          mainAxisSize: widget.useHorizontalActions
+              ? MainAxisSize.max
+              : MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Flexible(
-                    child: CourseSelectableText(
-                      widget.course.title,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8.0),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 3.0),
-                    child: _CourseTypeBadge(
-                      label: widget.course.courseTypeText,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (widget.showCloseButton) ...[
-              const SizedBox(width: 8.0),
-              IconButton(
-                tooltip: '關閉',
-                onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(Icons.close),
-              ),
-            ],
-          ],
-        ),
-        const SizedBox(height: 16.0),
-        if (widget.useHorizontalActions)
-          Expanded(
-            child: Row(
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: SingleChildScrollView(
-                    key: const ValueKey('course-primary-details-scroll'),
-                    child: _CoursePrimaryDetails(
-                      course: widget.course,
-                      supplementalDetail: widget.supplementalDetail,
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Flexible(
+                        child: SelectionAreaText(
+                          widget.course.title,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8.0),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 3.0),
+                        child: _CourseTypeBadge(
+                          label: widget.course.courseTypeText,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const VerticalDivider(width: 32.0),
-                Expanded(
-                  child: widget.isLoadingSupplementalDetail
-                      ? const Center(child: CircularProgressIndicator())
-                      : LayoutBuilder(
-                          builder: (context, constraints) {
-                            return SingleChildScrollView(
-                              child: ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  minHeight: constraints.maxHeight,
-                                ),
-                                child: _CourseSupplementalDetails(
-                                  detail: widget.supplementalDetail,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                ),
+                if (widget.showCloseButton) ...[
+                  const SizedBox(width: 8.0),
+                  IconButton(
+                    tooltip: '關閉',
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
               ],
             ),
-          )
-        else
-          _CoursePrimaryDetails(course: widget.course),
-        const SizedBox(height: 12.0),
-        if (widget.useHorizontalActions)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              FilledButton.icon(
-                onPressed: _toggle,
-                label: Text(isCourseSelected ? '移除' : '加入'),
-                icon: Icon(isCourseSelected ? Icons.close : Icons.add),
+            const SizedBox(height: 16.0),
+            if (widget.useHorizontalActions)
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: SingleChildScrollView(
+                        key: const ValueKey('course-primary-details-scroll'),
+                        child: _CoursePrimaryDetails(
+                          course: widget.course,
+                          supplementalDetail: widget.supplementalDetail,
+                        ),
+                      ),
+                    ),
+                    const VerticalDivider(width: 32.0),
+                    Expanded(
+                      child: widget.isLoadingSupplementalDetail
+                          ? const Center(child: CircularProgressIndicator())
+                          : LayoutBuilder(
+                              builder: (context, constraints) {
+                                return SingleChildScrollView(
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      minHeight: constraints.maxHeight,
+                                    ),
+                                    child: _CourseSupplementalDetails(
+                                      detail: widget.supplementalDetail,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              _CoursePrimaryDetails(course: widget.course),
+            const SizedBox(height: 12.0),
+            if (widget.useHorizontalActions)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  FilledButton.icon(
+                    onPressed: _toggle,
+                    label: Text(isCourseSelected ? '移除' : '加入'),
+                    icon: Icon(isCourseSelected ? Icons.close : Icons.add),
+                  ),
+                  const SizedBox(width: 8.0),
+                  FilledButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('關閉'),
+                  ),
+                ],
+              )
+            else ...[
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => _openCourseDetailUrl(context),
+                  child: const Text('課程詳細資訊'),
+                ),
               ),
-              const SizedBox(width: 8.0),
-              FilledButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('關閉'),
+              const SizedBox(height: 8.0),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: _toggle,
+                  child: Text(isCourseSelected ? '移除' : '加入'),
+                ),
+              ),
+              const SizedBox(height: 8.0),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('關閉'),
+                ),
               ),
             ],
-          )
-        else ...[
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: () => _openCourseDetailUrl(context),
-              child: const Text('課程詳細資訊'),
-            ),
-          ),
-          const SizedBox(height: 8.0),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: _toggle,
-              child: Text(isCourseSelected ? '移除' : '加入'),
-            ),
-          ),
-          const SizedBox(height: 8.0),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('關閉'),
-            ),
-          ),
-        ],
-      ],
+          ],
+        );
+
+        if (widget.useHorizontalActions) {
+          return Padding(padding: widget.padding, child: content);
+        }
+
+        return SingleChildScrollView(padding: widget.padding, child: content);
+      },
     );
-
-    if (widget.useHorizontalActions) {
-      return Padding(padding: widget.padding, child: content);
-    }
-
-    return SingleChildScrollView(padding: widget.padding, child: content);
   }
 
   void _toggle() {
     widget._toggleCourseSelection(widget.course);
-    setState(() {});
+    _isSelected.value = widget._isCourseSelected(widget.course);
   }
 
   void _openCourseDetailUrl(BuildContext context) {
@@ -710,7 +733,7 @@ class _CourseSupplementalSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CourseSelectableText(
+          SelectionAreaText(
             title,
             style: TextStyle(
               fontSize: 12.0,
@@ -719,7 +742,7 @@ class _CourseSupplementalSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4.0),
-          CourseSelectableText(
+          SelectionAreaText(
             value,
             style: TextStyle(height: 1.45, color: colorScheme.onSurface),
           ),
@@ -729,8 +752,8 @@ class _CourseSupplementalSection extends StatelessWidget {
   }
 }
 
-class CourseSelectableText extends StatelessWidget {
-  const CourseSelectableText(this.data, {super.key, this.style});
+class SelectionAreaText extends StatelessWidget {
+  const SelectionAreaText(this.data, {super.key, this.style});
 
   final String data;
   final TextStyle? style;

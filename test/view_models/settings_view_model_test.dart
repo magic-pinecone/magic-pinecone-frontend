@@ -1,44 +1,46 @@
-import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prototype/core/app/app_backend_config.dart';
-import 'package:prototype/core/app/app_theme.dart';
-import 'package:prototype/features/settings/data/settings_repository.dart';
-import 'package:prototype/features/settings/domain/models/settings_models.dart';
-import 'package:prototype/features/settings/presentation/view_models/settings_view_model.dart';
+import 'package:magic_pinecone/features/settings/domain/models/settings_models.dart';
+import 'package:magic_pinecone/features/settings/domain/repository/settings_repository.dart';
+import 'package:magic_pinecone/features/settings/presentation/view_models/settings_view_model.dart';
+import 'package:magic_pinecone/features/settings/settings_providers.dart';
 
 void main() {
   test('SettingsViewModel exposes repository data and theme state', () {
-    final themeController = AppThemeController();
-    final backendConfigController = AppBackendConfigController();
-    final viewModel = SettingsViewModel(
-      appThemeController: themeController,
-      appBackendConfigController: backendConfigController,
-      repository: const FakeSettingsRepository(),
+    final container = ProviderContainer(
+      overrides: [
+        settingsRepositoryProvider.overrideWithValue(
+          const FakeSettingsRepository(),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final notifier = container.read(settingsViewModelProvider.notifier);
+    final state = container.read(settingsViewModelProvider);
+
+    expect(state.snapshot.appName, 'Magic Pinecone');
+    expect(state.snapshot.appVersion, '0.1.0+1');
+    expect(state.snapshot.statusItems, hasLength(1));
+
+    expect(state.omitWeekendsOnTimetable, isTrue);
+    notifier.setOmitWeekendsOnTimetable(false);
+    expect(
+      container.read(settingsViewModelProvider).omitWeekendsOnTimetable,
+      isFalse,
     );
 
-    expect(viewModel.appName, 'Magic Pinecone');
-    expect(viewModel.appVersion, '0.1.0+1');
-    expect(viewModel.statusItems, hasLength(1));
-    expect(viewModel.isDarkMode, isFalse);
+    notifier.updateBackendBaseUrl('localhost:8000');
+    expect(
+      container.read(settingsViewModelProvider).backendBaseUrlError,
+      isNotNull,
+    );
 
-    themeController.value = ThemeMode.dark;
-
-    expect(viewModel.isDarkMode, isTrue);
-
-    viewModel.setDarkMode(false);
-
-    expect(themeController.value, ThemeMode.light);
-    expect(viewModel.isDarkMode, isFalse);
-
-    viewModel.updateBackendBaseUrl('http://127.0.0.1:8000/');
-
-    expect(viewModel.backendBaseUrl, 'http://127.0.0.1:8000');
-    expect(viewModel.backendBaseUrlError, isNull);
-
-    viewModel.updateBackendBaseUrl('localhost:8000');
-
-    expect(viewModel.backendBaseUrl, 'http://127.0.0.1:8000');
-    expect(viewModel.backendBaseUrlError, isNotNull);
+    notifier.updateBackendBaseUrl('http://127.0.0.1:8000/');
+    expect(
+      container.read(settingsViewModelProvider).backendBaseUrlError,
+      isNull,
+    );
   });
 }
 

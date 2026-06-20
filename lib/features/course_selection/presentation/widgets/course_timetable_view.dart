@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:prototype/features/course_selection/domain/models/course_schedule_models.dart';
-import 'package:prototype/features/course_selection/presentation/course_selection_layout.dart';
-import 'package:prototype/features/course_selection/presentation/widgets/calendar_item.dart';
-import 'package:prototype/features/course_selection/presentation/widgets/course_detail_row.dart';
+import 'package:magic_pinecone/features/course_selection/domain/models/course_schedule_models.dart';
+import 'package:magic_pinecone/features/course_selection/presentation/course_selection_layout.dart';
+import 'package:magic_pinecone/features/course_selection/presentation/widgets/calendar_item.dart';
+import 'package:magic_pinecone/features/course_selection/presentation/widgets/course_detail_row.dart';
 
 class CourseTimetableView extends StatelessWidget {
   const CourseTimetableView({

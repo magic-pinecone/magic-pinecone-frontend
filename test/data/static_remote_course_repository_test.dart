@@ -2,21 +2,22 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prototype/features/course_selection/data/course_repository.dart';
-import 'package:prototype/features/course_selection/data/course_supplemental_detail_catalog.dart';
+import 'package:magic_pinecone/features/course_selection/data/data_sources/static_course_catalog_data_source.dart';
+import 'package:magic_pinecone/features/course_selection/data/repositories/course_repository_impl.dart';
+import 'package:magic_pinecone/features/course_selection/data/repositories/course_supplemental_detail_repository_impl.dart';
 
 void main() {
   test('static course URLs use current semester branch', () {
-    expect(staticRemoteCoursesUrl, contains('/magic-pinecone-lite/'));
-    expect(staticRemoteCoursesUrl, contains('/115-1/courses.json'));
+    expect(staticCourseCatalogUrl, contains('/magic-pinecone-lite/'));
+    expect(staticCourseCatalogUrl, contains('/115-1/courses.json'));
     expect(staticRemoteCourseDetailsBaseUrl, contains('/magic-pinecone-lite/'));
     expect(staticRemoteCourseDetailsBaseUrl, contains('/115-1/detail'));
   });
 
-  test('StaticRemoteCourseRepository filters and paginates courses', () async {
+  test('StaticCourseCatalogRepository filters and paginates courses', () async {
     final dio = Dio()
       ..httpClientAdapter = _FakeJsonAdapter({
-        staticRemoteCoursesUrl: {
+        staticCourseCatalogUrl: {
           'last_updated': '2026-05-30T01:54:41.657634+00:00',
           'courses': [
             {
@@ -48,7 +49,9 @@ void main() {
           ],
         },
       });
-    final repository = StaticRemoteCourseRepository(dio: dio);
+    final repository = StaticCourseCatalogRepository(
+      dataSource: StaticCourseCatalogDataSource(dio: dio),
+    );
 
     final result = await repository.searchCourses(
       keyword: '日文',

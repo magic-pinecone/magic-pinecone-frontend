@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:prototype/core/widgets/label.dart';
+import 'package:magic_pinecone/core/widgets/label.dart';
 
 class AnnouncementCard extends StatelessWidget {
   const AnnouncementCard({

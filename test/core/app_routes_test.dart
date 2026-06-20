@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prototype/core/navigation/app_routes.dart';
-import 'package:prototype/features/course_selection/presentation/course_selection_page.dart';
-import 'package:prototype/features/home/presentation/home_page.dart';
-import 'package:prototype/features/news/presentation/news_page.dart';
-import 'package:prototype/features/portal/presentation/portal_page.dart';
-import 'package:prototype/features/settings/presentation/settings_page.dart';
+import 'package:magic_pinecone/core/navigation/app_routes.dart';
+import 'package:magic_pinecone/features/course_selection/presentation/course_selection_page.dart';
+import 'package:magic_pinecone/features/home/presentation/home_page.dart';
+import 'package:magic_pinecone/features/news/presentation/news_page.dart';
+import 'package:magic_pinecone/features/portal/presentation/portal_page.dart';
+import 'package:magic_pinecone/features/settings/presentation/settings_page.dart';
 
 void main() {
   test('AppRoutes maps each root tab to the expected page', () {
