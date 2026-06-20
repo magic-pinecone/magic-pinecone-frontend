@@ -57,53 +57,53 @@ final class PortalShortcutRepositoryProvider
 String _$portalShortcutRepositoryHash() =>
     r'60328b79ecf06b205117386f3de9986319485657';
 
-@ProviderFor(portalAuthenticator)
-final portalAuthenticatorProvider = PortalAuthenticatorProvider._();
+@ProviderFor(portalSessionClient)
+final portalSessionClientProvider = PortalSessionClientProvider._();
 
-final class PortalAuthenticatorProvider
+final class PortalSessionClientProvider
     extends
         $FunctionalProvider<
-          PortalAuthenticator,
-          PortalAuthenticator,
-          PortalAuthenticator
+          PortalSessionClient,
+          PortalSessionClient,
+          PortalSessionClient
         >
-    with $Provider<PortalAuthenticator> {
-  PortalAuthenticatorProvider._()
+    with $Provider<PortalSessionClient> {
+  PortalSessionClientProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'portalAuthenticatorProvider',
+        name: r'portalSessionClientProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$portalAuthenticatorHash();
+  String debugGetCreateSourceHash() => _$portalSessionClientHash();
 
   @$internal
   @override
-  $ProviderElement<PortalAuthenticator> $createElement(
+  $ProviderElement<PortalSessionClient> $createElement(
     $ProviderPointer pointer,
   ) => $ProviderElement(pointer);
 
   @override
-  PortalAuthenticator create(Ref ref) {
-    return portalAuthenticator(ref);
+  PortalSessionClient create(Ref ref) {
+    return portalSessionClient(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(PortalAuthenticator value) {
+  Override overrideWithValue(PortalSessionClient value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<PortalAuthenticator>(value),
+      providerOverride: $SyncValueProvider<PortalSessionClient>(value),
     );
   }
 }
 
-String _$portalAuthenticatorHash() =>
-    r'31a143f466c541b97e9c829f8beea53f0c7106ff';
+String _$portalSessionClientHash() =>
+    r'7974fa178a69899d7996aca8cc84a2da3cf0897d';
 
 @ProviderFor(loadPortalShortcutsUseCase)
 final loadPortalShortcutsUseCaseProvider =
@@ -201,4 +201,4 @@ final class RefreshPortalSessionUseCaseProvider
 }
 
 String _$refreshPortalSessionUseCaseHash() =>
-    r'f677150d56ab11fd460052a34ed230ad48f19819';
+    r'c5de79aa7b44ff7e4294de6351c90579553b158d';

@@ -2,23 +2,24 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:magic_pinecone/features/portal/domain/repository/portal_session_client.dart';
 
-class PortalAuthenticator {
+class HeadlessWebViewPortalSessionClient implements PortalSessionClient {
   HeadlessInAppWebView? _headless;
   Future<String?>? _fetching;
 
-  PortalAuthenticator();
+  HeadlessWebViewPortalSessionClient();
 
-  // Fetches the portal token, ensuring only one fetch operation is active at a time
-  Future<String?> fetchPortalToken() async {
+  @override
+  Future<String?> refreshToken() async {
     if (_fetching != null) {
       return _fetching!;
     }
-    _fetching = _fetchPortalTokenInternal();
+    _fetching = _refreshTokenInternal();
     return _fetching!;
   }
 
-  Future<String?> _fetchPortalTokenInternal() async {
+  Future<String?> _refreshTokenInternal() async {
     final completer = Completer<String?>();
 
     _headless = HeadlessInAppWebView(

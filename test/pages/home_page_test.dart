@@ -12,8 +12,8 @@ import 'package:magic_pinecone/features/home/domain/models/home_dashboard_models
 import 'package:magic_pinecone/features/home/domain/repository/home_dashboard_repository.dart';
 import 'package:magic_pinecone/features/home/home_providers.dart';
 import 'package:magic_pinecone/features/home/presentation/home_page.dart';
-import 'package:magic_pinecone/features/portal/data/data_sources/portal_authenticator.dart';
 import 'package:magic_pinecone/features/portal/domain/models/portal_shortcut.dart';
+import 'package:magic_pinecone/features/portal/domain/repository/portal_session_client.dart';
 import 'package:magic_pinecone/features/portal/domain/repository/portal_shortcut_repository.dart';
 import 'package:magic_pinecone/features/portal/portal_providers.dart';
 import 'package:magic_pinecone/features/portal/presentation/view_models/portal_session_controller.dart';
@@ -109,8 +109,8 @@ Widget _buildTestApp(Widget child) {
       courseSupplementalDetailRepositoryProvider.overrideWithValue(
         FakeCourseSupplementalDetailRepository(),
       ),
-      portalAuthenticatorProvider.overrideWithValue(
-        _NeverCompletingPortalAuthenticator(),
+      portalSessionClientProvider.overrideWithValue(
+        _NeverCompletingPortalSessionClient(),
       ),
       portalShortcutRepositoryProvider.overrideWithValue(
         const FakePortalShortcutRepository(),
@@ -189,15 +189,6 @@ class FakeHomeDashboardRepository implements HomeDashboardRepository {
   }
 }
 
-class FakePortalAuthenticator extends PortalAuthenticator {
-  FakePortalAuthenticator({this.result});
-
-  final String? result;
-
-  @override
-  Future<String?> fetchPortalToken() async => result;
-}
-
 class FakePortalShortcutRepository implements PortalShortcutRepository {
   const FakePortalShortcutRepository();
 
@@ -239,7 +230,7 @@ class FakeCourseSupplementalDetailRepository
 
 /// Returns a [Future] that never completes so [PortalSessionController.refreshSession]
 /// never reaches its finally block, preventing notifyListeners() after disposal.
-class _NeverCompletingPortalAuthenticator extends PortalAuthenticator {
+class _NeverCompletingPortalSessionClient implements PortalSessionClient {
   @override
-  Future<String?> fetchPortalToken() => Completer<String?>().future;
+  Future<String?> refreshToken() => Completer<String?>().future;
 }

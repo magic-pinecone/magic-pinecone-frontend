@@ -1,11 +1,11 @@
-import 'package:magic_pinecone/features/portal/data/data_sources/portal_authenticator.dart';
+import 'package:magic_pinecone/features/portal/domain/repository/portal_session_client.dart';
 
 class RefreshPortalSessionUseCase {
-  const RefreshPortalSessionUseCase(this._authenticator);
+  const RefreshPortalSessionUseCase(this._sessionClient);
 
-  final PortalAuthenticator _authenticator;
+  final PortalSessionClient _sessionClient;
 
   Future<String?> execute() {
-    return _authenticator.fetchPortalToken();
+    return _sessionClient.refreshToken();
   }
 }

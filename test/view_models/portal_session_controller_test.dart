@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:magic_pinecone/features/portal/data/data_sources/portal_authenticator.dart';
 import 'package:magic_pinecone/features/portal/domain/models/portal_session_state.dart';
 import 'package:magic_pinecone/features/portal/domain/models/portal_shortcut.dart';
+import 'package:magic_pinecone/features/portal/domain/repository/portal_session_client.dart';
 import 'package:magic_pinecone/features/portal/domain/repository/portal_shortcut_repository.dart';
 import 'package:magic_pinecone/features/portal/portal_providers.dart';
 import 'package:magic_pinecone/features/portal/presentation/view_models/portal_session_controller.dart';
@@ -11,12 +11,12 @@ import 'package:magic_pinecone/features/portal/presentation/view_models/portal_s
 void main() {
   group('PortalSessionController', () {
     test(
-      'stores authenticated state when authenticator returns token',
+      'stores authenticated state when session client returns token',
       () async {
         final container = ProviderContainer(
           overrides: [
-            portalAuthenticatorProvider.overrideWithValue(
-              FakePortalAuthenticator(result: ' token123 '),
+            portalSessionClientProvider.overrideWithValue(
+              FakePortalSessionClient(result: ' token123 '),
             ),
           ],
         );
@@ -35,11 +35,11 @@ void main() {
       },
     );
 
-    test('stores expired state when authenticator returns no token', () async {
+    test('stores expired state when session client returns no token', () async {
       final container = ProviderContainer(
         overrides: [
-          portalAuthenticatorProvider.overrideWithValue(
-            FakePortalAuthenticator(result: '   '),
+          portalSessionClientProvider.overrideWithValue(
+            FakePortalSessionClient(result: '   '),
           ),
         ],
       );
@@ -55,11 +55,11 @@ void main() {
       expect(state.token, isNull);
     });
 
-    test('stores error state when authenticator throws', () async {
+    test('stores error state when session client throws', () async {
       final container = ProviderContainer(
         overrides: [
-          portalAuthenticatorProvider.overrideWithValue(
-            FakePortalAuthenticator(error: StateError('boom')),
+          portalSessionClientProvider.overrideWithValue(
+            FakePortalSessionClient(error: StateError('boom')),
           ),
         ],
       );
@@ -78,8 +78,8 @@ void main() {
     test('marks reauthentication as required and clears token', () async {
       final container = ProviderContainer(
         overrides: [
-          portalAuthenticatorProvider.overrideWithValue(
-            FakePortalAuthenticator(result: 'token123'),
+          portalSessionClientProvider.overrideWithValue(
+            FakePortalSessionClient(result: 'token123'),
           ),
         ],
       );
@@ -115,14 +115,14 @@ void main() {
   });
 }
 
-class FakePortalAuthenticator extends PortalAuthenticator {
-  FakePortalAuthenticator({this.result, this.error});
+class FakePortalSessionClient implements PortalSessionClient {
+  FakePortalSessionClient({this.result, this.error});
 
   final String? result;
   final Object? error;
 
   @override
-  Future<String?> fetchPortalToken() async {
+  Future<String?> refreshToken() async {
     if (error != null) {
       throw error!;
     }

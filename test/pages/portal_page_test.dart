@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:magic_pinecone/features/portal/data/data_sources/portal_authenticator.dart';
 import 'package:magic_pinecone/features/portal/domain/models/portal_shortcut.dart';
+import 'package:magic_pinecone/features/portal/domain/repository/portal_session_client.dart';
 import 'package:magic_pinecone/features/portal/domain/repository/portal_shortcut_repository.dart';
 import 'package:magic_pinecone/features/portal/portal_providers.dart';
 import 'package:magic_pinecone/features/portal/presentation/portal_page.dart';
@@ -14,8 +14,8 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          portalAuthenticatorProvider.overrideWithValue(
-            FakePortalAuthenticator(result: '   '),
+          portalSessionClientProvider.overrideWithValue(
+            FakePortalSessionClient(result: '   '),
           ),
           portalShortcutRepositoryProvider.overrideWithValue(
             const FakePortalShortcutRepository(),
@@ -32,13 +32,13 @@ void main() {
   });
 }
 
-class FakePortalAuthenticator extends PortalAuthenticator {
-  FakePortalAuthenticator({this.result});
+class FakePortalSessionClient implements PortalSessionClient {
+  FakePortalSessionClient({this.result});
 
   final String? result;
 
   @override
-  Future<String?> fetchPortalToken() async => result;
+  Future<String?> refreshToken() async => result;
 }
 
 class FakePortalShortcutRepository implements PortalShortcutRepository {
