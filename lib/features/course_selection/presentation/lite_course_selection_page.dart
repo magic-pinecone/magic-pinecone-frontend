@@ -25,24 +25,50 @@ import 'package:magic_pinecone/features/settings/presentation/settings_dialog.da
 import 'package:magic_pinecone/features/settings/presentation/settings_page.dart';
 import 'package:magic_pinecone/features/settings/presentation/view_models/settings_view_model.dart';
 
+enum CourseSelectionNavigationMode { bottomNavigation, drawer }
+
+class CourseSelectionExtraDestination {
+  const CourseSelectionExtraDestination({
+    required this.icon,
+    required this.selectedIcon,
+    required this.label,
+    required this.builder,
+    this.hidesFloatingActions = true,
+  });
+
+  final Widget icon;
+  final Widget selectedIcon;
+  final String label;
+  final WidgetBuilder builder;
+  final bool hidesFloatingActions;
+}
+
 class LiteCourseSelectionPage extends ConsumerStatefulWidget {
   const LiteCourseSelectionPage({
     super.key,
     this.courseSelectionStorage,
     this.initialShareCode,
     this.showBackButton = false,
+    this.title = '神奇松果 Lite',
+    this.navigationMode = CourseSelectionNavigationMode.bottomNavigation,
+    this.showSettingsDestination = true,
+    this.extraDestination,
   });
 
   final CourseSelectionStorage? courseSelectionStorage;
   final String? initialShareCode;
   final bool showBackButton;
+  final String title;
+  final CourseSelectionNavigationMode navigationMode;
+  final bool showSettingsDestination;
+  final CourseSelectionExtraDestination? extraDestination;
 
   @override
   ConsumerState<LiteCourseSelectionPage> createState() =>
       _LiteCourseSelectionPageState();
 }
 
-enum _CourseSelectionView { search, timetable, settings }
+enum _CourseSelectionView { search, timetable, settings, extra }
 
 class _LiteCourseSelectionPageState
     extends ConsumerState<LiteCourseSelectionPage> {
@@ -64,6 +90,15 @@ class _LiteCourseSelectionPageState
   late CourseSelectionState _state;
   late CourseSelectionController _notifier;
   late SettingsState _settingsState;
+
+  List<_CourseSelectionView> get _availableViews {
+    return [
+      _CourseSelectionView.search,
+      _CourseSelectionView.timetable,
+      if (widget.showSettingsDestination) _CourseSelectionView.settings,
+      if (widget.extraDestination != null) _CourseSelectionView.extra,
+    ];
+  }
 
   @override
   void initState() {
@@ -124,10 +159,10 @@ class _LiteCourseSelectionPageState
   }) {
     return Scaffold(
       appBar: AppBar(
-        leading: widget.showBackButton ? const BackButton() : null,
-        title: const Text(
-          '神奇松果 Lite',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        leading: _buildMobileLeading(),
+        title: Text(
+          widget.title,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
           if (_selectedView == _CourseSelectionView.search)
@@ -153,30 +188,38 @@ class _LiteCourseSelectionPageState
           useDesktopDialog: useDesktopCourseDetails,
         ),
         _CourseSelectionView.settings => const SettingsPage(showAppBar: false),
+        _CourseSelectionView.extra => widget.extraDestination!.builder(context),
       },
       floatingActionButton: _buildMobileCourseSelectionActions(),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedView.index,
-        onDestinationSelected: (index) {
-          setState(() {
-            _selectedView = _CourseSelectionView.values[index];
-          });
-        },
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.search), label: '課程查詢'),
-          NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            selectedIcon: Icon(Icons.calendar_month),
-            label: '課表',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
-            label: '設定',
-          ),
-        ],
-      ),
+      drawer: widget.navigationMode == CourseSelectionNavigationMode.drawer
+          ? _buildNavigationDrawer()
+          : null,
+      bottomNavigationBar:
+          widget.navigationMode ==
+              CourseSelectionNavigationMode.bottomNavigation
+          ? NavigationBar(
+              selectedIndex: _availableViews.indexOf(_selectedView),
+              onDestinationSelected: _selectViewAt,
+              destinations: _availableViews
+                  .map(_navigationDestination)
+                  .toList(),
+            )
+          : null,
     );
+  }
+
+  Widget? _buildMobileLeading() {
+    if (widget.showBackButton) return const BackButton();
+    if (widget.navigationMode == CourseSelectionNavigationMode.drawer) {
+      return Builder(
+        builder: (context) => IconButton(
+          tooltip: '切換課程工具',
+          onPressed: () => Scaffold.of(context).openDrawer(),
+          icon: const Icon(Icons.menu),
+        ),
+      );
+    }
+    return null;
   }
 
   Widget _buildDesktopWorkspace(
@@ -189,8 +232,8 @@ class _LiteCourseSelectionPageState
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: widget.showBackButton,
-        title: const Text(
-          '神奇松果 Lite',
+        title: Text(
+          widget.title,
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
@@ -201,11 +244,12 @@ class _LiteCourseSelectionPageState
                 : () => unawaited(_notifier.search()),
             icon: const Icon(Icons.refresh),
           ),
-          IconButton(
-            tooltip: '設定',
-            onPressed: () => _showSettingsDialog(context),
-            icon: const Icon(Icons.settings_outlined),
-          ),
+          if (widget.showSettingsDestination)
+            IconButton(
+              tooltip: '設定',
+              onPressed: () => _showSettingsDialog(context),
+              icon: const Icon(Icons.settings_outlined),
+            ),
         ],
       ),
       body: Row(
@@ -271,7 +315,9 @@ class _LiteCourseSelectionPageState
 
   Widget? _buildMobileCourseSelectionActions() {
     if (!_canSaveCourseSelection ||
-        _selectedView == _CourseSelectionView.settings) {
+        _selectedView == _CourseSelectionView.settings ||
+        (_selectedView == _CourseSelectionView.extra &&
+            widget.extraDestination!.hidesFloatingActions)) {
       return null;
     }
 
@@ -298,6 +344,76 @@ class _LiteCourseSelectionPageState
         ),
       ],
     );
+  }
+
+  NavigationDrawer _buildNavigationDrawer() {
+    return NavigationDrawer(
+      selectedIndex: _availableViews.indexOf(_selectedView),
+      onDestinationSelected: (index) {
+        Navigator.of(context).pop();
+        _selectViewAt(index);
+      },
+      children: [
+        const SizedBox(height: 12.0),
+        for (final view in _availableViews) _drawerDestination(view),
+      ],
+    );
+  }
+
+  NavigationDestination _navigationDestination(_CourseSelectionView view) {
+    return switch (view) {
+      _CourseSelectionView.search => const NavigationDestination(
+        icon: Icon(Icons.search),
+        label: '課程查詢',
+      ),
+      _CourseSelectionView.timetable => const NavigationDestination(
+        icon: Icon(Icons.calendar_month_outlined),
+        selectedIcon: Icon(Icons.calendar_month),
+        label: '課表',
+      ),
+      _CourseSelectionView.settings => const NavigationDestination(
+        icon: Icon(Icons.settings_outlined),
+        selectedIcon: Icon(Icons.settings),
+        label: '設定',
+      ),
+      _CourseSelectionView.extra => NavigationDestination(
+        icon: widget.extraDestination!.icon,
+        selectedIcon: widget.extraDestination!.selectedIcon,
+        label: widget.extraDestination!.label,
+      ),
+    };
+  }
+
+  NavigationDrawerDestination _drawerDestination(_CourseSelectionView view) {
+    return switch (view) {
+      _CourseSelectionView.search => const NavigationDrawerDestination(
+        icon: Icon(Icons.search),
+        label: Text('課程查詢'),
+      ),
+      _CourseSelectionView.timetable => const NavigationDrawerDestination(
+        icon: Icon(Icons.calendar_month_outlined),
+        selectedIcon: Icon(Icons.calendar_month),
+        label: Text('課表'),
+      ),
+      _CourseSelectionView.settings => const NavigationDrawerDestination(
+        icon: Icon(Icons.settings_outlined),
+        selectedIcon: Icon(Icons.settings),
+        label: Text('設定'),
+      ),
+      _CourseSelectionView.extra => NavigationDrawerDestination(
+        icon: widget.extraDestination!.icon,
+        selectedIcon: widget.extraDestination!.selectedIcon,
+        label: Text(widget.extraDestination!.label),
+      ),
+    };
+  }
+
+  void _selectViewAt(int index) {
+    final views = _availableViews;
+    if (index < 0 || index >= views.length) return;
+    setState(() {
+      _selectedView = views[index];
+    });
   }
 
   Widget _buildCourseSearchView(

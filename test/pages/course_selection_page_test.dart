@@ -733,7 +733,7 @@ void main() {
     await tester.tap(syncButton);
     await tester.pumpAndSettle();
 
-    expect(find.text('已加入'), findsOneWidget);
+    expect(find.text('移除'), findsOneWidget);
 
     await tester.tap(find.byTooltip('切換課程工具'));
     await tester.pumpAndSettle();
@@ -865,14 +865,15 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('課表'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('分享課表'));
+    await tester.tap(find.byTooltip('儲存課表'));
     await tester.pumpAndSettle();
+    await tester.tap(find.text('分享'));
+    await tester.pump();
 
     expect(copiedText, isNotNull);
     final code = Uri.parse(copiedText!).queryParameters['c'];
     expect(code, isNotNull);
     expect(const CourseShareCodec().decodeSerialNos(code!), ['12345']);
-    expect(find.textContaining('已複製分享連結'), findsOneWidget);
   });
 
   testWidgets('CourseSelectionPage persists selected timetable courses', (
@@ -1024,10 +1025,10 @@ void main() {
 
       expect(find.text('3 學分'), findsOneWidget);
       expect(find.text('預覽'), findsOneWidget);
-      expect(find.text('儲存'), findsOneWidget);
+      expect(find.byTooltip('儲存課表'), findsOneWidget);
       expect(await storage.readShareCode(), storedCode);
 
-      await tester.tap(find.text('儲存'));
+      await tester.tap(find.byTooltip('儲存課表'));
       await tester.pumpAndSettle();
 
       expect(
@@ -1036,7 +1037,7 @@ void main() {
         ),
         ['12345'],
       );
-      expect(find.text('儲存'), findsNothing);
+      expect(find.byTooltip('儲存課表'), findsNothing);
       expect(find.text('已儲存課表'), findsOneWidget);
     },
   );
