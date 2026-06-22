@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:magic_pinecone/features/course_selection/course_selection_providers.dart';
 import 'package:magic_pinecone/features/course_selection/data/data_sources/course_selection_storage.dart';
 import 'package:magic_pinecone/features/course_selection/domain/repository/course_supplemental_detail_repository.dart';
-import 'package:magic_pinecone/features/course_selection/presentation/lite_course_selection_page.dart';
+import 'package:magic_pinecone/features/course_selection/presentation/course_selection_shell.dart';
 
 class CourseSelectionPage extends StatelessWidget {
   const CourseSelectionPage({
@@ -25,7 +25,7 @@ class CourseSelectionPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final child = LiteCourseSelectionPage(
+    final child = CourseSelectionShell(
       title: '課程查詢',
       navigationMode: CourseSelectionNavigationMode.drawer,
       showSettingsDestination: false,
