@@ -288,8 +288,8 @@ class _CourseSelectionShellState extends ConsumerState<CourseSelectionShell> {
       conflictSlotCount: _planController.conflictSlotCount(snapshot),
       showSaveAction: _planState.canSaveCourseSelection && useDesktopDialog,
       showPreviewHint: _planState.isPreviewingSharedCourses,
-      onSavePressed: _saveCourseSelection,
-      onDiscardPressed: () => unawaited(_discardUnsavedCourseSelection()),
+      onSavePressed: () => _saveCourseSelection(showSnackBar: false),
+      onDiscardPressed: _discardUnsavedCourseSelection,
       onSharePressed: _planState.hasUnsavedCourseSelection
           ? null
           : _shareSelectedCourses,
@@ -550,11 +550,6 @@ class _CourseSelectionShellState extends ConsumerState<CourseSelectionShell> {
   Future<void> _shareSelectedCourses() async {
     final shareUrl = _planController.selectedCourseShareUrl(baseUri: Uri.base);
     await Clipboard.setData(ClipboardData(text: shareUrl.toString()));
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('已複製分享連結：$shareUrl')));
   }
 
   Future<void> _restoreSelectedCourses() async {
@@ -577,9 +572,9 @@ class _CourseSelectionShellState extends ConsumerState<CourseSelectionShell> {
     );
   }
 
-  Future<void> _saveCourseSelection() async {
+  Future<void> _saveCourseSelection({bool showSnackBar = true}) async {
     await _planController.saveCourseSelection(storage: _courseSelectionStorage);
-    if (!mounted) return;
+    if (!mounted || !showSnackBar) return;
 
     ScaffoldMessenger.of(
       context,

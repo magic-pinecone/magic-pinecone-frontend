@@ -868,12 +868,19 @@ void main() {
     await tester.tap(find.byTooltip('儲存課表'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('分享'));
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     expect(copiedText, isNotNull);
     final code = Uri.parse(copiedText!).queryParameters['c'];
     expect(code, isNotNull);
     expect(const CourseShareCodec().decodeSerialNos(code!), ['12345']);
+    expect(find.text('已複製'), findsOneWidget);
+
+    await tester.pump(const Duration(milliseconds: 1600));
+    await tester.pumpAndSettle();
+
+    expect(find.text('分享'), findsOneWidget);
+    expect(find.text('已複製'), findsNothing);
   });
 
   testWidgets('CourseSelectionPage persists selected timetable courses', (
