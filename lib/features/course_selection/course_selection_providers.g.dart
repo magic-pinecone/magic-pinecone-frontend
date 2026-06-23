@@ -251,6 +251,54 @@ final class CourseSupplementalDetailRepositoryProvider
 String _$courseSupplementalDetailRepositoryHash() =>
     r'6bfe9cec527d48e617a0e7e98f89d8880a3e1d62';
 
+@ProviderFor(courseSelectionStorage)
+final courseSelectionStorageProvider = CourseSelectionStorageProvider._();
+
+final class CourseSelectionStorageProvider
+    extends
+        $FunctionalProvider<
+          CourseSelectionStorage,
+          CourseSelectionStorage,
+          CourseSelectionStorage
+        >
+    with $Provider<CourseSelectionStorage> {
+  CourseSelectionStorageProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'courseSelectionStorageProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$courseSelectionStorageHash();
+
+  @$internal
+  @override
+  $ProviderElement<CourseSelectionStorage> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  CourseSelectionStorage create(Ref ref) {
+    return courseSelectionStorage(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(CourseSelectionStorage value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<CourseSelectionStorage>(value),
+    );
+  }
+}
+
+String _$courseSelectionStorageHash() =>
+    r'ac325d4726cbf75dd6464b2c97c2f028f2ac7bd4';
+
 @ProviderFor(searchCoursesUseCase)
 final searchCoursesUseCaseProvider = SearchCoursesUseCaseProvider._();
 
@@ -298,6 +346,54 @@ final class SearchCoursesUseCaseProvider
 
 String _$searchCoursesUseCaseHash() =>
     r'58b9ce13628900746b2a4dc38898cdd92d07fbf1';
+
+@ProviderFor(coursePlanScheduleBuilder)
+final coursePlanScheduleBuilderProvider = CoursePlanScheduleBuilderProvider._();
+
+final class CoursePlanScheduleBuilderProvider
+    extends
+        $FunctionalProvider<
+          CoursePlanScheduleBuilder,
+          CoursePlanScheduleBuilder,
+          CoursePlanScheduleBuilder
+        >
+    with $Provider<CoursePlanScheduleBuilder> {
+  CoursePlanScheduleBuilderProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'coursePlanScheduleBuilderProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$coursePlanScheduleBuilderHash();
+
+  @$internal
+  @override
+  $ProviderElement<CoursePlanScheduleBuilder> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  CoursePlanScheduleBuilder create(Ref ref) {
+    return coursePlanScheduleBuilder(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(CoursePlanScheduleBuilder value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<CoursePlanScheduleBuilder>(value),
+    );
+  }
+}
+
+String _$coursePlanScheduleBuilderHash() =>
+    r'b6871ec452351e43a454a42b8029a4a6675e39a7';
 
 @ProviderFor(findCoursesBySerialNosUseCase)
 final findCoursesBySerialNosUseCaseProvider =

@@ -32,9 +32,9 @@ class CourseTimetableView extends StatelessWidget {
   final int conflictSlotCount;
   final bool showSaveAction;
   final bool showPreviewHint;
-  final VoidCallback onSavePressed;
-  final VoidCallback onDiscardPressed;
-  final VoidCallback? onSharePressed;
+  final Future<void> Function() onSavePressed;
+  final Future<void> Function() onDiscardPressed;
+  final Future<void> Function()? onSharePressed;
   final ValueChanged<ScheduledCourse> onCourseTap;
 
   @override
@@ -143,7 +143,7 @@ class CourseTimetableView extends StatelessWidget {
             right: 12.0,
             child: Align(
               alignment: Alignment.topCenter,
-              child: _TimetableToolbar(
+              child: _TimetableActionPill(
                 totalCredits: totalCredits,
                 conflictSlotCount: conflictSlotCount,
                 showSaveAction: showSaveAction,
@@ -160,8 +160,10 @@ class CourseTimetableView extends StatelessWidget {
   }
 }
 
-class _TimetableToolbar extends StatelessWidget {
-  const _TimetableToolbar({
+enum _TimetableActionPillFeedbackAction { save }
+
+class _TimetableActionPill extends StatefulWidget {
+  const _TimetableActionPill({
     required this.totalCredits,
     required this.conflictSlotCount,
     required this.showSaveAction,
@@ -175,14 +177,29 @@ class _TimetableToolbar extends StatelessWidget {
   final int conflictSlotCount;
   final bool showSaveAction;
   final bool showPreviewHint;
-  final VoidCallback onSavePressed;
-  final VoidCallback onDiscardPressed;
-  final VoidCallback? onSharePressed;
+  final Future<void> Function() onSavePressed;
+  final Future<void> Function() onDiscardPressed;
+  final Future<void> Function()? onSharePressed;
+
+  @override
+  State<_TimetableActionPill> createState() => _TimetableActionPillState();
+}
+
+class _TimetableActionPillState extends State<_TimetableActionPill> {
+  static const _successDuration = Duration(milliseconds: 1400);
+
+  _TimetableActionPillFeedbackAction? _visibleFeedbackAction;
+  _TimetableActionPillFeedbackAction? _successFeedbackAction;
+  var _feedbackVersion = 0;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final hasConflict = conflictSlotCount > 0;
+    final hasConflict = widget.conflictSlotCount > 0;
+    final showSaveFeedback =
+        _visibleFeedbackAction == _TimetableActionPillFeedbackAction.save;
+    final showSavedFeedback =
+        _successFeedbackAction == _TimetableActionPillFeedbackAction.save;
 
     return Material(
       elevation: 4.0,
@@ -194,24 +211,24 @@ class _TimetableToolbar extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _TimetableToolbarItem(
+            _TimetableActionPillItem(
               icon: Icons.school_outlined,
-              label: '$totalCredits 學分',
+              label: '${widget.totalCredits} 學分',
               foregroundColor: colorScheme.onSurface,
             ),
-            _TimetableToolbarItem(
+            _TimetableActionPillItem(
               icon: hasConflict
                   ? Icons.warning_amber_rounded
                   : Icons.check_circle_outline,
-              label: hasConflict ? '衝堂 $conflictSlotCount 節' : '無衝堂',
+              label: hasConflict ? '衝堂 ${widget.conflictSlotCount} 節' : '無衝堂',
               foregroundColor: hasConflict
                   ? colorScheme.error
                   : colorScheme.primary,
             ),
-            if (showPreviewHint)
+            if (widget.showPreviewHint)
               Tooltip(
                 message: '預覽中，儲存後才會覆蓋本機課表。',
-                child: _TimetableToolbarItem(
+                child: _TimetableActionPillItem(
                   icon: Icons.visibility_outlined,
                   label: '預覽',
                   foregroundColor: colorScheme.tertiary,
@@ -225,41 +242,219 @@ class _TimetableToolbar extends StatelessWidget {
                 color: colorScheme.outlineVariant,
               ),
             ),
-            if (showSaveAction)
-              _TimetableToolbarTextAction(
-                label: '還原',
-                onPressed: onDiscardPressed,
-                foregroundColor: colorScheme.error,
-              ),
-            if (showSaveAction)
-              _TimetableToolbarTextAction(
-                label: '儲存',
-                onPressed: onSavePressed,
-                foregroundColor: colorScheme.primary,
-              ),
-            Tooltip(
-              message: onSharePressed == null ? '請先儲存後再分享' : '複製分享連結',
-              child: _TimetableToolbarTextAction(
-                label: '分享',
-                onPressed: onSharePressed,
-                foregroundColor: colorScheme.onSurface,
-              ),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeInOut,
+              alignment: Alignment.centerLeft,
+              child: showSaveFeedback
+                  ? _TimetableActionPillFeedbackTextAction(
+                      label: showSavedFeedback ? '已儲存' : '儲存',
+                      showSuccessIcon: showSavedFeedback,
+                      onPressed: null,
+                      foregroundColor: colorScheme.primary,
+                    )
+                  : widget.showSaveAction
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _TimetableActionPillFeedbackTextAction(
+                          label: '還原',
+                          showSuccessIcon: false,
+                          onPressed:
+                              widget.showSaveAction &&
+                                  _visibleFeedbackAction == null
+                              ? widget.onDiscardPressed
+                              : null,
+                          foregroundColor: colorScheme.error,
+                        ),
+                        _TimetableActionPillFeedbackTextAction(
+                          label: '儲存',
+                          showSuccessIcon: false,
+                          onPressed:
+                              widget.showSaveAction &&
+                                  _visibleFeedbackAction == null
+                              ? () =>
+                                    _runSaveFeedbackAction(widget.onSavePressed)
+                              : null,
+                          foregroundColor: colorScheme.primary,
+                        ),
+                        Tooltip(
+                          message: widget.onSharePressed == null
+                              ? '請先儲存後再分享'
+                              : '複製分享連結',
+                          child: _TimetableShareAction(
+                            onPressed: widget.onSharePressed,
+                            foregroundColor: colorScheme.onSurface,
+                          ),
+                        ),
+                      ],
+                    )
+                  : Tooltip(
+                      message: widget.onSharePressed == null
+                          ? '請先儲存後再分享'
+                          : '複製分享連結',
+                      child: _TimetableShareAction(
+                        onPressed: widget.onSharePressed,
+                        foregroundColor: colorScheme.onSurface,
+                      ),
+                    ),
             ),
           ],
         ),
       ),
     );
   }
+
+  Future<void> _runSaveFeedbackAction(Future<void> Function() callback) async {
+    final version = _feedbackVersion + 1;
+    setState(() {
+      _feedbackVersion = version;
+      _visibleFeedbackAction = _TimetableActionPillFeedbackAction.save;
+      _successFeedbackAction = null;
+    });
+
+    await callback();
+    if (!mounted || _feedbackVersion != version) return;
+
+    setState(() {
+      _successFeedbackAction = _TimetableActionPillFeedbackAction.save;
+    });
+
+    await Future<void>.delayed(_successDuration);
+    if (!mounted || _feedbackVersion != version) return;
+
+    setState(() {
+      _visibleFeedbackAction = null;
+      _successFeedbackAction = null;
+    });
+  }
 }
 
-class _TimetableToolbarTextAction extends StatelessWidget {
-  const _TimetableToolbarTextAction({
+class _TimetableShareAction extends StatefulWidget {
+  const _TimetableShareAction({
+    required this.onPressed,
+    required this.foregroundColor,
+  });
+
+  final Future<void> Function()? onPressed;
+  final Color foregroundColor;
+
+  @override
+  State<_TimetableShareAction> createState() => _TimetableShareActionState();
+}
+
+class _TimetableShareActionState extends State<_TimetableShareAction> {
+  static const _successDuration = Duration(milliseconds: 1400);
+
+  var _showSuccess = false;
+  var _feedbackVersion = 0;
+
+  @override
+  void didUpdateWidget(_TimetableShareAction oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.onPressed == null && _showSuccess) {
+      _feedbackVersion += 1;
+      _showSuccess = false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final effectiveForegroundColor = widget.onPressed == null
+        ? theme.disabledColor
+        : _showSuccess
+        ? colorScheme.primary
+        : widget.foregroundColor;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16.0),
+        splashFactory: NoSplash.splashFactory,
+        highlightColor: Colors.transparent,
+        onTap: widget.onPressed == null ? null : _share,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 3.0),
+          child: AnimatedSize(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeInOut,
+            alignment: Alignment.centerLeft,
+            child: _TimetableShareActionLabel(
+              label: _showSuccess ? '已複製' : '分享',
+              showSuccessIcon: _showSuccess,
+              foregroundColor: effectiveForegroundColor,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _share() async {
+    final onPressed = widget.onPressed;
+    if (onPressed == null) return;
+
+    await onPressed();
+    if (!mounted) return;
+
+    final version = _feedbackVersion + 1;
+    setState(() {
+      _feedbackVersion = version;
+      _showSuccess = true;
+    });
+
+    await Future<void>.delayed(_successDuration);
+    if (!mounted || _feedbackVersion != version) return;
+
+    setState(() {
+      _showSuccess = false;
+    });
+  }
+}
+
+class _TimetableShareActionLabel extends StatelessWidget {
+  const _TimetableShareActionLabel({
     required this.label,
+    required this.showSuccessIcon,
+    required this.foregroundColor,
+  });
+
+  final String label;
+  final bool showSuccessIcon;
+  final Color foregroundColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final textStyle = Theme.of(context).textTheme.labelLarge?.copyWith(
+      color: foregroundColor,
+      fontWeight: FontWeight.w700,
+    );
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(label, style: textStyle),
+        if (showSuccessIcon) ...[
+          const SizedBox(width: 4.0),
+          Icon(Icons.check_circle_rounded, size: 16.0, color: foregroundColor),
+        ],
+      ],
+    );
+  }
+}
+
+class _TimetableActionPillFeedbackTextAction extends StatelessWidget {
+  const _TimetableActionPillFeedbackTextAction({
+    required this.label,
+    required this.showSuccessIcon,
     required this.onPressed,
     required this.foregroundColor,
   });
 
   final String label;
+  final bool showSuccessIcon;
   final VoidCallback? onPressed;
   final Color foregroundColor;
 
@@ -273,14 +468,34 @@ class _TimetableToolbarTextAction extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(16.0),
+        splashFactory: NoSplash.splashFactory,
+        highlightColor: Colors.transparent,
         onTap: onPressed,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 3.0),
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: effectiveForegroundColor,
-              fontWeight: FontWeight.w700,
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 180),
+            switchInCurve: Curves.easeInOut,
+            switchOutCurve: Curves.easeInOut,
+            transitionBuilder: (child, animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: SizeTransition(
+                  sizeFactor: animation,
+                  axis: Axis.horizontal,
+                  child: child,
+                ),
+              );
+            },
+            child: KeyedSubtree(
+              key: ValueKey(label),
+              child: _TimetableShareActionLabel(
+                label: label,
+                showSuccessIcon: showSuccessIcon,
+                foregroundColor: showSuccessIcon
+                    ? foregroundColor
+                    : effectiveForegroundColor,
+              ),
             ),
           ),
         ),
@@ -289,8 +504,8 @@ class _TimetableToolbarTextAction extends StatelessWidget {
   }
 }
 
-class _TimetableToolbarItem extends StatelessWidget {
-  const _TimetableToolbarItem({
+class _TimetableActionPillItem extends StatelessWidget {
+  const _TimetableActionPillItem({
     required this.icon,
     required this.label,
     required this.foregroundColor,
