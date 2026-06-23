@@ -1,10 +1,12 @@
 import 'package:magic_pinecone/core/app/app_providers.dart';
 import 'package:magic_pinecone/features/course_selection/data/data_sources/course_api_service.dart';
+import 'package:magic_pinecone/features/course_selection/data/data_sources/course_selection_storage.dart';
 import 'package:magic_pinecone/features/course_selection/data/data_sources/static_course_catalog_data_source.dart';
 import 'package:magic_pinecone/features/course_selection/data/repositories/course_repository_impl.dart';
 import 'package:magic_pinecone/features/course_selection/data/repositories/course_supplemental_detail_repository_impl.dart';
 import 'package:magic_pinecone/features/course_selection/domain/repository/course_repository.dart';
 import 'package:magic_pinecone/features/course_selection/domain/repository/course_supplemental_detail_repository.dart';
+import 'package:magic_pinecone/features/course_selection/domain/usecases/course_plan_schedule_builder.dart';
 import 'package:magic_pinecone/features/course_selection/domain/usecases/find_courses_by_serial_nos_use_case.dart';
 import 'package:magic_pinecone/features/course_selection/domain/usecases/search_courses_use_case.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -41,9 +43,19 @@ CourseSupplementalDetailRepository courseSupplementalDetailRepository(Ref ref) {
   return StaticRemoteCourseSupplementalDetailRepository(dio: dio);
 }
 
+@Riverpod(keepAlive: true)
+CourseSelectionStorage courseSelectionStorage(Ref ref) {
+  return createCourseSelectionStorage();
+}
+
 @riverpod
 SearchCoursesUseCase searchCoursesUseCase(Ref ref) {
   return SearchCoursesUseCase(ref.watch(courseRepositoryProvider));
+}
+
+@riverpod
+CoursePlanScheduleBuilder coursePlanScheduleBuilder(Ref ref) {
+  return const CoursePlanScheduleBuilder();
 }
 
 @riverpod

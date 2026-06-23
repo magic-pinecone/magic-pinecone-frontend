@@ -5,14 +5,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:magic_pinecone/features/course_selection/course_selection_providers.dart';
 import 'package:magic_pinecone/features/course_selection/data/data_sources/course_selection_storage.dart';
-import 'package:magic_pinecone/features/course_selection/data/data_sources/course_share_url.dart';
-import 'package:magic_pinecone/features/course_selection/data/data_sources/course_share_url_cleaner.dart';
-import 'package:magic_pinecone/features/course_selection/data/repositories/course_schedule_repository_impl.dart';
 import 'package:magic_pinecone/features/course_selection/domain/models/course_schedule_models.dart';
-import 'package:magic_pinecone/features/course_selection/domain/repository/course_schedule_repository.dart';
 import 'package:magic_pinecone/features/course_selection/domain/repository/course_supplemental_detail_repository.dart';
-import 'package:magic_pinecone/features/course_selection/domain/usecases/course_share_codec.dart';
 import 'package:magic_pinecone/features/course_selection/presentation/course_selection_layout.dart';
+import 'package:magic_pinecone/features/course_selection/presentation/view_models/course_plan_controller.dart';
 import 'package:magic_pinecone/features/course_selection/presentation/view_models/course_selection_controller.dart';
 import 'package:magic_pinecone/features/course_selection/presentation/widgets/course_card_widgets.dart';
 import 'package:magic_pinecone/features/course_selection/presentation/widgets/course_search_view.dart';
@@ -68,24 +64,15 @@ class CourseSelectionShell extends ConsumerStatefulWidget {
 enum _CourseSelectionView { search, timetable, settings, extra }
 
 class _CourseSelectionShellState extends ConsumerState<CourseSelectionShell> {
-  final CourseScheduleRepository _scheduleRepository =
-      const StaticCourseScheduleRepository();
-  final CourseShareCodec _shareCodec = const CourseShareCodec();
-  final Map<String, CourseItem> _selectedCourses = {};
   _CourseSelectionView _selectedView = _CourseSelectionView.search;
-  bool _onlyShowTimetableCompatibleCourses = false;
-  bool _onlyShowSelectedCourses = false;
   bool _didRestoreSelectedCourses = false;
-  bool _isPreviewingSharedCourses = false;
-  bool _hasUnsavedCourseSelection = false;
-  final Map<String, List<ScheduledCourse>> _courseScheduledCoursesCache = {};
-  final Map<String, bool> _canSyncToTimetableCache = {};
-
-  late final CourseSelectionStorage _courseSelectionStorage;
 
   late CourseSelectionState _state;
   late CourseSelectionController _notifier;
+  late CoursePlanState _planState;
+  late CoursePlanController _planController;
   late SettingsState _settingsState;
+  late CourseSelectionStorage _courseSelectionStorage;
 
   List<_CourseSelectionView> get _availableViews {
     return [
@@ -99,8 +86,6 @@ class _CourseSelectionShellState extends ConsumerState<CourseSelectionShell> {
   @override
   void initState() {
     super.initState();
-    _courseSelectionStorage =
-        widget.courseSelectionStorage ?? createCourseSelectionStorage();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(ref.read(courseSelectionControllerProvider.notifier).load());
     });
@@ -110,20 +95,24 @@ class _CourseSelectionShellState extends ConsumerState<CourseSelectionShell> {
   Widget build(BuildContext context) {
     _state = ref.watch(courseSelectionControllerProvider);
     _notifier = ref.read(courseSelectionControllerProvider.notifier);
+    _planState = ref.watch(coursePlanControllerProvider);
+    _planController = ref.read(coursePlanControllerProvider.notifier);
     _settingsState = ref.watch(settingsViewModelProvider);
+    _courseSelectionStorage =
+        widget.courseSelectionStorage ??
+        ref.watch(courseSelectionStorageProvider);
     final supplementalDetailRepository = ref.watch(
       courseSupplementalDetailRepositoryProvider,
     );
 
     if (_state.isLoading && _state.courses.isEmpty) {
-      _courseScheduledCoursesCache.clear();
-      _canSyncToTimetableCache.clear();
+      _planController.clearCourseCaches();
     }
     if (!_state.isLoading && !_didRestoreSelectedCourses) {
       _didRestoreSelectedCourses = true;
       unawaited(_restoreSelectedCourses());
     }
-    final displayedCourses = _displayedCourses();
+    final displayedCourses = _planController.displayedCourses(_state.courses);
     return LayoutBuilder(
       builder: (context, constraints) {
         final useDesktopWorkspace =
@@ -290,16 +279,20 @@ class _CourseSelectionShellState extends ConsumerState<CourseSelectionShell> {
     CourseSupplementalDetailRepository supplementalDetailRepository, {
     required bool useDesktopDialog,
   }) {
-    final snapshot = _visibleScheduleSnapshot();
+    final snapshot = _planController.visibleScheduleSnapshot(
+      omitWeekends: _settingsState.omitWeekendsOnTimetable,
+    );
     return CourseTimetableView(
       snapshot: snapshot,
-      totalCredits: _selectedTotalCredits,
-      conflictSlotCount: _conflictSlotCount(snapshot),
-      showSaveAction: _canSaveCourseSelection && useDesktopDialog,
-      showPreviewHint: _isPreviewingSharedCourses,
+      totalCredits: _planState.selectedTotalCredits,
+      conflictSlotCount: _planController.conflictSlotCount(snapshot),
+      showSaveAction: _planState.canSaveCourseSelection && useDesktopDialog,
+      showPreviewHint: _planState.isPreviewingSharedCourses,
       onSavePressed: _saveCourseSelection,
       onDiscardPressed: () => unawaited(_discardUnsavedCourseSelection()),
-      onSharePressed: _hasUnsavedCourseSelection ? null : _shareSelectedCourses,
+      onSharePressed: _planState.hasUnsavedCourseSelection
+          ? null
+          : _shareSelectedCourses,
       onCourseTap: (course) => _showTimetableCourseDetails(
         context,
         course,
@@ -310,7 +303,7 @@ class _CourseSelectionShellState extends ConsumerState<CourseSelectionShell> {
   }
 
   Widget? _buildMobileCourseSelectionActions() {
-    if (!_canSaveCourseSelection ||
+    if (!_planState.canSaveCourseSelection ||
         _selectedView == _CourseSelectionView.settings ||
         (_selectedView == _CourseSelectionView.extra &&
             widget.extraDestination!.hidesFloatingActions)) {
@@ -420,20 +413,23 @@ class _CourseSelectionShellState extends ConsumerState<CourseSelectionShell> {
   }) {
     return CourseSearchView(
       displayedCourses: displayedCourses,
-      isCourseSelected: _isCourseSelected,
-      canSyncToTimetable: _canSyncToTimetable,
+      isCourseSelected: _planController.isCourseSelected,
+      canSyncToTimetable: _planController.canSyncToTimetable,
       onCourseTap: (course) => _showCourseDetails(
         context,
         course,
         supplementalDetailRepository,
         useDesktopDialog: useDesktopCourseDetails,
       ),
-      onCourseSyncToggle: _toggleCourseSelection,
+      onCourseSyncToggle: _planController.toggleCourseSelection,
       onLocalFilterPressed: () =>
           _showLocalFilterSheet(context, useDialog: useAdvancedFilterDialog),
       localFilterActive:
-          _onlyShowTimetableCompatibleCourses || _onlyShowSelectedCourses,
-      localFilterTotalCount: _localFilterTotalCount(),
+          _planState.onlyShowTimetableCompatibleCourses ||
+          _planState.onlyShowSelectedCourses,
+      localFilterTotalCount: _planController.localFilterTotalCount(
+        _state.courses.length,
+      ),
       useAdvancedFilterDialog: useAdvancedFilterDialog,
     );
   }
@@ -453,8 +449,8 @@ class _CourseSelectionShellState extends ConsumerState<CourseSelectionShell> {
             supplementalDetail: supplementalDetailRepository.findBySerialNo(
               course.serialNo,
             ),
-            toggleCourseSelection: _toggleCourseSelection,
-            isCourseSelected: _isCourseSelected,
+            toggleCourseSelection: _planController.toggleCourseSelection,
+            isCourseSelected: _planController.isCourseSelected,
           ),
         ),
       );
@@ -468,8 +464,8 @@ class _CourseSelectionShellState extends ConsumerState<CourseSelectionShell> {
         isScrollControlled: true,
         builder: (context) => CourseDetailsSheet(
           course: course,
-          toggleCourseSelection: _toggleCourseSelection,
-          isCourseSelected: _isCourseSelected,
+          toggleCourseSelection: _planController.toggleCourseSelection,
+          isCourseSelected: _planController.isCourseSelected,
         ),
       ),
     );
@@ -482,7 +478,9 @@ class _CourseSelectionShellState extends ConsumerState<CourseSelectionShell> {
     required bool useDesktopDialog,
   }) {
     final serialNo = scheduledCourse.serialNo;
-    final course = serialNo == null ? null : _selectedCourses[serialNo];
+    final course = serialNo == null
+        ? null
+        : _planState.selectedCourses[serialNo];
     if (course != null) {
       _showCourseDetails(
         context,
@@ -509,8 +507,9 @@ class _CourseSelectionShellState extends ConsumerState<CourseSelectionShell> {
   }) async {
     Widget buildContent(BuildContext context, {required bool useDialogLayout}) {
       return LocalCourseFilterSheet(
-        onlyShowTimetableCompatibleCourses: _onlyShowTimetableCompatibleCourses,
-        onlyShowSelectedCourses: _onlyShowSelectedCourses,
+        onlyShowTimetableCompatibleCourses:
+            _planState.onlyShowTimetableCompatibleCourses,
+        onlyShowSelectedCourses: _planState.onlyShowSelectedCourses,
         useDialogLayout: useDialogLayout,
       );
     }
@@ -541,100 +540,15 @@ class _CourseSelectionShellState extends ConsumerState<CourseSelectionShell> {
     if (!mounted || nextValue == null) {
       return;
     }
-    setState(() {
-      _onlyShowTimetableCompatibleCourses =
-          nextValue.onlyShowTimetableCompatibleCourses;
-      _onlyShowSelectedCourses = nextValue.onlyShowSelectedCourses;
-    });
-  }
-
-  List<ScheduledCourse> _getCachedScheduledCourses(
-    CourseItem course,
-    List<String> periods,
-  ) {
-    return _courseScheduledCoursesCache.putIfAbsent(
-      course.serialNo,
-      () => _courseToScheduledCourses(course, periods),
+    _planController.setLocalFilters(
+      onlyShowTimetableCompatibleCourses:
+          nextValue.onlyShowTimetableCompatibleCourses,
+      onlyShowSelectedCourses: nextValue.onlyShowSelectedCourses,
     );
-  }
-
-  List<CourseItem> _displayedCourses() {
-    final courses = _onlyShowSelectedCourses
-        ? _selectedCourses.values.toList(growable: false)
-        : _state.courses;
-
-    if (!_onlyShowTimetableCompatibleCourses) return courses;
-
-    final currentSchedule = _syncedScheduleSnapshot();
-    final occupiedSlots = currentSchedule.courses
-        .expand(_occupiedSlots)
-        .toSet();
-    final periods = currentSchedule.periods;
-
-    return courses
-        .where(
-          (course) =>
-              _canFitCurrentTimetableCached(course, occupiedSlots, periods),
-        )
-        .toList(growable: false);
-  }
-
-  int _localFilterTotalCount() {
-    if (_onlyShowSelectedCourses) return _selectedCourses.length;
-    return _state.courses.length;
-  }
-
-  bool _isCourseSelected(CourseItem course) {
-    return _selectedCourses.containsKey(course.serialNo);
-  }
-
-  int get _selectedTotalCredits {
-    return _selectedCourses.values.fold(
-      0,
-      (total, course) => total + course.credit,
-    );
-  }
-
-  bool _canSyncToTimetable(CourseItem course) {
-    return _canSyncToTimetableCache.putIfAbsent(course.serialNo, () {
-      final baseSchedule = _scheduleRepository.loadSchedule();
-      return _getCachedScheduledCourses(
-        course,
-        baseSchedule.periods,
-      ).isNotEmpty;
-    });
-  }
-
-  bool _canFitCurrentTimetableCached(
-    CourseItem course,
-    Set<String> occupiedSlots,
-    List<String> periods,
-  ) {
-    final candidateCourses = _getCachedScheduledCourses(course, periods);
-    if (candidateCourses.isEmpty) return false;
-
-    final candidateSlots = candidateCourses.expand(_occupiedSlots);
-    return candidateSlots.every((slot) => !occupiedSlots.contains(slot));
-  }
-
-  Iterable<String> _occupiedSlots(ScheduledCourse course) sync* {
-    for (var index = 0; index < course.length; index++) {
-      yield '${course.dayIndex}:${course.startPeriodIndex + index}';
-    }
-  }
-
-  int _conflictSlotCount(CourseScheduleSnapshot snapshot) {
-    final slotCounts = <String, int>{};
-    for (final course in snapshot.courses) {
-      for (final slot in _occupiedSlots(course)) {
-        slotCounts.update(slot, (count) => count + 1, ifAbsent: () => 1);
-      }
-    }
-    return slotCounts.values.where((count) => count > 1).length;
   }
 
   Future<void> _shareSelectedCourses() async {
-    final shareUrl = _selectedCourseShareUrl();
+    final shareUrl = _planController.selectedCourseShareUrl(baseUri: Uri.base);
     await Clipboard.setData(ClipboardData(text: shareUrl.toString()));
     if (!mounted) return;
 
@@ -643,225 +557,32 @@ class _CourseSelectionShellState extends ConsumerState<CourseSelectionShell> {
     ).showSnackBar(SnackBar(content: Text('已複製分享連結：$shareUrl')));
   }
 
-  Uri _selectedCourseShareUrl() {
-    final code = _selectedCourseShareCode();
-    return buildCourseShareUrl(baseUri: Uri.base, code: code);
-  }
-
-  String _selectedCourseShareCode() {
-    return _shareCodec.encodeSerialNos(_selectedCourses.keys);
-  }
-
-  void _toggleCourseSelection(CourseItem course) {
-    setState(() {
-      if (_selectedCourses.containsKey(course.serialNo)) {
-        _selectedCourses.remove(course.serialNo);
-      } else {
-        _selectedCourses[course.serialNo] = course;
-      }
-      _hasUnsavedCourseSelection = true;
-    });
-  }
-
-  bool get _canSaveCourseSelection {
-    return _isPreviewingSharedCourses || _hasUnsavedCourseSelection;
-  }
-
-  Future<void> _persistSelectedCourses() async {
-    final code = _selectedCourseShareCode();
-    await _courseSelectionStorage.writeShareCode(code);
-  }
-
   Future<void> _restoreSelectedCourses() async {
-    final restoreState = await _initialShareCode();
-    if (restoreState == null) return;
-
-    await _restoreCourseSelection(restoreState);
-  }
-
-  Future<void> _restoreCourseSelection(
-    _CourseShareRestoreState restoreState,
-  ) async {
-    final serialNos = _decodeShareCode(restoreState.code);
-    if (serialNos == null) return;
-
-    final courses = await _notifier.findCoursesBySerialNos(serialNos);
-    if (!mounted || courses.isEmpty) return;
-
-    if (restoreState.isPreview) {
-      clearCourseShareCodeFromBrowserUrl();
-    }
-
-    setState(() {
-      _isPreviewingSharedCourses = restoreState.isPreview;
-      _hasUnsavedCourseSelection = false;
-      if (restoreState.isPreview) {
+    final result = await _planController.restoreInitialSelection(
+      storage: _courseSelectionStorage,
+      initialShareCode: widget.initialShareCode,
+      baseUri: Uri.base,
+    );
+    if (!mounted) return;
+    if (result.restored && result.preview) {
+      setState(() {
         _selectedView = _CourseSelectionView.timetable;
-      }
-      _selectedCourses
-        ..clear()
-        ..addEntries(
-          courses.map((course) => MapEntry(course.serialNo, course)),
-        );
-    });
-    if (!restoreState.isPreview) {
-      await _courseSelectionStorage.writeShareCode(restoreState.code);
+      });
     }
   }
 
   Future<void> _discardUnsavedCourseSelection() async {
-    final storedCode = await _courseSelectionStorage.readShareCode();
-    final normalizedStoredCode = storedCode?.trim();
-    if (normalizedStoredCode == null || normalizedStoredCode.isEmpty) {
-      if (!mounted) return;
-
-      setState(() {
-        _isPreviewingSharedCourses = false;
-        _hasUnsavedCourseSelection = false;
-        _selectedCourses.clear();
-      });
-      return;
-    }
-
-    final restoreState = _CourseShareRestoreState(
-      code: normalizedStoredCode,
-      isPreview: false,
+    await _planController.discardUnsavedCourseSelection(
+      storage: _courseSelectionStorage,
     );
-    await _restoreCourseSelection(restoreState);
   }
 
   Future<void> _saveCourseSelection() async {
-    await _persistSelectedCourses();
+    await _planController.saveCourseSelection(storage: _courseSelectionStorage);
     if (!mounted) return;
 
-    setState(() {
-      _isPreviewingSharedCourses = false;
-      _hasUnsavedCourseSelection = false;
-    });
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('已儲存課表')));
   }
-
-  Future<_CourseShareRestoreState?> _initialShareCode() async {
-    final sharedCode =
-        widget.initialShareCode?.trim() ??
-        Uri.base.queryParameters['c']?.trim();
-    if (sharedCode != null && sharedCode.isNotEmpty) {
-      return _CourseShareRestoreState(code: sharedCode, isPreview: true);
-    }
-
-    final storedCode = await _courseSelectionStorage.readShareCode();
-    final normalizedStoredCode = storedCode?.trim();
-    if (normalizedStoredCode == null || normalizedStoredCode.isEmpty) {
-      return null;
-    }
-    return _CourseShareRestoreState(
-      code: normalizedStoredCode,
-      isPreview: false,
-    );
-  }
-
-  List<String>? _decodeShareCode(String code) {
-    try {
-      return _shareCodec.decodeSerialNos(code);
-    } on ArgumentError {
-      return null;
-    }
-  }
-
-  CourseScheduleSnapshot _syncedScheduleSnapshot() {
-    final baseSchedule = _scheduleRepository.loadSchedule();
-    final syncedCourses = _selectedCourses.values.expand(
-      (course) => _getCachedScheduledCourses(course, baseSchedule.periods),
-    );
-
-    return CourseScheduleSnapshot(
-      courses: [...baseSchedule.courses, ...syncedCourses],
-      weekDays: baseSchedule.weekDays,
-      periods: baseSchedule.periods,
-    );
-  }
-
-  CourseScheduleSnapshot _visibleScheduleSnapshot() {
-    final snapshot = _syncedScheduleSnapshot();
-    if (!_settingsState.omitWeekendsOnTimetable) return snapshot;
-
-    return CourseScheduleSnapshot(
-      courses: snapshot.courses
-          .where((course) => course.dayIndex < 5)
-          .toList(growable: false),
-      weekDays: snapshot.weekDays.take(5).toList(growable: false),
-      periods: snapshot.periods,
-    );
-  }
-
-  List<ScheduledCourse> _courseToScheduledCourses(
-    CourseItem course,
-    List<String> periods,
-  ) {
-    final slots = <_CourseTimeSlot>[];
-
-    for (final classTime in course.classTimes) {
-      final parts = classTime.split('-');
-      if (parts.length != 2) continue;
-
-      final day = int.tryParse(parts[0]);
-      if (day == null || day < 1 || day > 7) continue;
-
-      final periodIndex = periods.indexOf(parts[1]);
-      if (periodIndex < 0) continue;
-
-      slots.add(_CourseTimeSlot(dayIndex: day - 1, periodIndex: periodIndex));
-    }
-
-    slots.sort((a, b) {
-      final dayComparison = a.dayIndex.compareTo(b.dayIndex);
-      if (dayComparison != 0) return dayComparison;
-      return a.periodIndex.compareTo(b.periodIndex);
-    });
-
-    final courses = <ScheduledCourse>[];
-    var index = 0;
-    while (index < slots.length) {
-      final start = slots[index];
-      var length = 1;
-      index += 1;
-
-      while (index < slots.length &&
-          slots[index].dayIndex == start.dayIndex &&
-          slots[index].periodIndex == start.periodIndex + length) {
-        length += 1;
-        index += 1;
-      }
-
-      courses.add(
-        ScheduledCourse(
-          name: course.title,
-          serialNo: course.serialNo,
-          dayIndex: start.dayIndex,
-          startPeriodIndex: start.periodIndex,
-          length: length,
-          location: course.classNo,
-          category: course.courseTypeText,
-        ),
-      );
-    }
-
-    return courses;
-  }
-}
-
-class _CourseShareRestoreState {
-  const _CourseShareRestoreState({required this.code, required this.isPreview});
-
-  final String code;
-  final bool isPreview;
-}
-
-class _CourseTimeSlot {
-  const _CourseTimeSlot({required this.dayIndex, required this.periodIndex});
-
-  final int dayIndex;
-  final int periodIndex;
 }
