@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prototype/features/course_selection/data/dtos/course_dto.dart';
+import 'package:magic_pinecone/features/course_selection/data/dtos/course_dto.dart';
 
 void main() {
   test('CourseResultDto parses backend course response', () {

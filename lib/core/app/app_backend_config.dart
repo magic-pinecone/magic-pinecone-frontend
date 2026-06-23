@@ -1,21 +1,21 @@
-import 'package:flutter/foundation.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+part 'app_backend_config.g.dart';
 
 const defaultBackendBaseUrl = 'http://localhost:18080';
 
-class AppBackendConfigController extends ChangeNotifier {
-  AppBackendConfigController({String baseUrl = defaultBackendBaseUrl})
-    : _baseUrl = _normalize(baseUrl);
+@Riverpod(keepAlive: true)
+class AppBackendConfigController extends _$AppBackendConfigController {
+  @override
+  String build() => defaultBackendBaseUrl;
 
-  String _baseUrl;
-
-  String get baseUrl => _baseUrl;
+  String get baseUrl => state;
 
   bool setBaseUrl(String value) {
     final normalized = _normalize(value);
     if (!_isSupportedBaseUrl(normalized)) return false;
-    if (_baseUrl == normalized) return true;
-    _baseUrl = normalized;
-    notifyListeners();
+    if (state == normalized) return true;
+    state = normalized;
     return true;
   }
 

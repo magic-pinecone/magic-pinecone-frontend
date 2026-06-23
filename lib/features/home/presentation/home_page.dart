@@ -1,42 +1,57 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:prototype/core/app/app_scope.dart';
-import 'package:prototype/core/navigation/app_routes.dart';
-import 'package:prototype/core/widgets/owned_change_notifier_builder.dart';
-import 'package:prototype/features/home/models/home_dashboard_models.dart';
-import 'package:prototype/features/home/presentation/view_models/home_view_model.dart';
-import 'package:prototype/features/home/presentation/widgets/home_course_card.dart';
-import 'package:prototype/features/home/presentation/widgets/home_quick_action_button.dart';
-import 'package:prototype/features/home/presentation/widgets/home_section_header.dart';
-import 'package:prototype/features/portal/presentation/widgets/portal_shortcut_button.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:magic_pinecone/core/navigation/app_routes.dart';
+import 'package:magic_pinecone/features/home/domain/models/home_dashboard_models.dart';
+import 'package:magic_pinecone/features/home/presentation/view_models/home_view_model.dart';
+import 'package:magic_pinecone/features/home/presentation/widgets/home_course_card.dart';
+import 'package:magic_pinecone/features/home/presentation/widgets/home_quick_action_button.dart';
+import 'package:magic_pinecone/features/home/presentation/widgets/home_section_header.dart';
+import 'package:magic_pinecone/features/portal/presentation/widgets/portal_shortcut_button.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key, this.viewModel});
-
-  static const _horizontalPadding = 16.0;
 
   final HomeViewModel? viewModel;
 
   @override
   Widget build(BuildContext context) {
-    return OwnedChangeNotifierBuilder<HomeViewModel>(
-      notifier: viewModel,
-      create: (context) => AppScope.of(context).createHomeViewModel(),
-      builder: (context, viewModel) => Scaffold(
-        appBar: AppBar(
-          title: const Text(
-            '神奇松果',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+    final hasScope =
+        context.findAncestorWidgetOfExactType<ProviderScope>() != null ||
+        context.findAncestorWidgetOfExactType<UncontrolledProviderScope>() !=
+            null;
+
+    final child = _HomePageInner();
+
+    if (hasScope) {
+      return child;
+    } else {
+      return ProviderScope(child: child);
+    }
+  }
+}
+
+class _HomePageInner extends ConsumerWidget {
+  const _HomePageInner();
+
+  static const _horizontalPadding = 16.0;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final HomeViewSnapshot vm = ref.watch(homeViewModelProvider);
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          '神奇松果',
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        body: CustomScrollView(
-          slivers: [
-            _buildCourseSection(context, viewModel.coursePreviews),
-            _buildShortcutSection(context, viewModel.shortcuts),
-            _buildQuickActionSection(context, viewModel.quickActionRows),
-          ],
-        ),
+      ),
+      body: CustomScrollView(
+        slivers: [
+          _buildCourseSection(context, vm.coursePreviews),
+          _buildShortcutSection(context, vm.shortcuts),
+          _buildQuickActionSection(context, vm.quickActionRows),
+        ],
       ),
     );
   }

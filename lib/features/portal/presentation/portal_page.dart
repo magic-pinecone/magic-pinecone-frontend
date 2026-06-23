@@ -2,67 +2,59 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:prototype/core/app/app_scope.dart';
-import 'package:prototype/core/navigation/app_routes.dart';
-import 'package:prototype/core/widgets/owned_change_notifier_builder.dart';
-import 'package:prototype/features/portal/models/portal_shortcut.dart';
-import 'package:prototype/features/portal/presentation/portal_shortcuts_page.dart';
-import 'package:prototype/features/portal/presentation/view_models/portal_session_controller.dart';
-import 'package:prototype/features/portal/presentation/widgets/portal_session_indicator.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:magic_pinecone/core/navigation/app_routes.dart';
+import 'package:magic_pinecone/features/portal/domain/models/portal_shortcut.dart';
+import 'package:magic_pinecone/features/portal/presentation/portal_shortcuts_page.dart';
+import 'package:magic_pinecone/features/portal/presentation/view_models/portal_session_controller.dart';
+import 'package:magic_pinecone/features/portal/presentation/widgets/portal_session_indicator.dart';
 
-class PortalPage extends StatelessWidget {
-  const PortalPage({
-    super.key,
-    this.sessionController,
-    this.initialSearchQuery = '',
-  });
+class PortalPage extends ConsumerStatefulWidget {
+  const PortalPage({super.key, this.initialSearchQuery = ''});
 
-  final PortalSessionController? sessionController;
   final String initialSearchQuery;
 
   @override
-  Widget build(BuildContext context) {
-    return OwnedChangeNotifierBuilder<PortalSessionController>(
-      notifier: sessionController,
-      create: (context) => AppScope.of(context).createPortalSessionController(),
-      onReady: (controller) => unawaited(controller.refreshSession()),
-      builder: (context, controller) => _PortalPageContent(
-        sessionController: controller,
-        initialSearchQuery: initialSearchQuery,
-      ),
-    );
-  }
+  ConsumerState<PortalPage> createState() => _PortalPageState();
 }
 
-class _PortalPageContent extends StatelessWidget {
-  const _PortalPageContent({
-    required this.sessionController,
-    required this.initialSearchQuery,
-  });
-
+class _PortalPageState extends ConsumerState<PortalPage> {
   static const _portalAuthHost = 'portal.ncu.edu.tw';
 
-  final PortalSessionController sessionController;
-  final String initialSearchQuery;
+  @override
+  void initState() {
+    super.initState();
+    scheduleMicrotask(() {
+      if (mounted) {
+        unawaited(
+          ref.read(portalSessionControllerProvider.notifier).refreshSession(),
+        );
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    final sessionState = ref.watch(portalSessionControllerProvider);
+    final shortcutSections = ref.watch(portalShortcutSectionsProvider);
+
     return PortalShortcutsPage(
-      sections: sessionController.shortcutSections,
-      initialSearchQuery: initialSearchQuery,
+      sections: shortcutSections,
+      initialSearchQuery: widget.initialSearchQuery,
       appBarActions: [
         PortalSessionIndicator(
-          controller: sessionController,
+          sessionState: sessionState,
           onRefresh: () => unawaited(_refreshPortalAuth()),
           onOpenLogin: () => unawaited(_openPortalLogin(context)),
         ),
       ],
-      onShortcutTap: (item) => unawaited(_openShortcut(context, item)),
+      onShortcutTap: (item) =>
+          unawaited(_openShortcut(context, item, sessionState.token)),
     );
   }
 
   Future<void> _refreshPortalAuth() async {
-    await sessionController.refreshSession();
+    await ref.read(portalSessionControllerProvider.notifier).refreshSession();
   }
 
   Future<void> _openPortalLogin(BuildContext context) {
@@ -79,7 +71,11 @@ class _PortalPageContent extends StatelessWidget {
         .then((_) => _refreshPortalAuth());
   }
 
-  Future<void> _openShortcut(BuildContext context, PortalShortcutItem item) {
+  Future<void> _openShortcut(
+    BuildContext context,
+    PortalShortcutItem item,
+    String? token,
+  ) {
     final destination = item.destination;
 
     switch (destination) {
@@ -93,9 +89,7 @@ class _PortalPageContent extends StatelessWidget {
         :final sessionProbeHosts,
       ):
         final targetUrl = destination.buildTargetUrl(
-          token: destination.openExternally
-              ? sessionController.state.token
-              : null,
+          token: destination.openExternally ? token : null,
         );
         if (targetUrl == null) {
           ScaffoldMessenger.of(
@@ -123,6 +117,6 @@ class _PortalPageContent extends StatelessWidget {
     Uri currentUrl,
   ) async {
     if (currentUrl.host != _portalAuthHost) return;
-    await sessionController.refreshSession();
+    await ref.read(portalSessionControllerProvider.notifier).refreshSession();
   }
 }

@@ -32,7 +32,7 @@ class PortalWebViewPage extends StatefulWidget {
 class _PortalWebViewPageState extends State<PortalWebViewPage> {
   InAppWebViewController? _webViewController;
   PullToRefreshController? _pullToRefreshController;
-  int _progress = 0;
+  final ValueNotifier<int> _progress = ValueNotifier<int>(0);
 
   @override
   void initState() {
@@ -50,6 +50,12 @@ class _PortalWebViewPageState extends State<PortalWebViewPage> {
         }
       },
     );
+  }
+
+  @override
+  void dispose() {
+    _progress.dispose();
+    super.dispose();
   }
 
   @override
@@ -76,8 +82,13 @@ class _PortalWebViewPageState extends State<PortalWebViewPage> {
       ),
       body: Column(
         children: [
-          if (_progress < 100)
-            LinearProgressIndicator(value: _progress / 100.0),
+          ValueListenableBuilder<int>(
+            valueListenable: _progress,
+            builder: (context, progress, _) {
+              if (progress >= 100) return const SizedBox.shrink();
+              return LinearProgressIndicator(value: progress / 100.0);
+            },
+          ),
           Expanded(
             child: InAppWebView(
               initialUrlRequest: URLRequest(url: WebUri.uri(widget.targetUrl)),
@@ -104,7 +115,7 @@ class _PortalWebViewPageState extends State<PortalWebViewPage> {
                   unawaited(_pullToRefreshController?.endRefreshing());
                 }
                 if (!mounted) return;
-                setState(() => _progress = progress);
+                _progress.value = progress;
               },
             ),
           ),

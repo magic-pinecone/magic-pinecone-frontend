@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:prototype/features/portal/models/portal_shortcut.dart';
-import 'package:prototype/features/portal/presentation/widgets/portal_shortcut_button.dart';
+import 'package:magic_pinecone/features/portal/domain/models/portal_shortcut.dart';
+import 'package:magic_pinecone/features/portal/presentation/widgets/portal_shortcut_button.dart';
 
 class PortalShortcutsPage extends StatefulWidget {
   const PortalShortcutsPage({
@@ -24,13 +24,11 @@ class PortalShortcutsPage extends StatefulWidget {
 
 class _PortalShortcutsPageState extends State<PortalShortcutsPage> {
   late final TextEditingController _searchController;
-  late String _searchQuery;
 
   @override
   void initState() {
     super.initState();
-    _searchQuery = widget.initialSearchQuery;
-    _searchController = TextEditingController(text: _searchQuery);
+    _searchController = TextEditingController(text: widget.initialSearchQuery);
   }
 
   @override
@@ -41,13 +39,61 @@ class _PortalShortcutsPageState extends State<PortalShortcutsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final filteredSections = widget.sections
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          widget.title,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        actions: widget.appBarActions,
+      ),
+      body: ListenableBuilder(
+        listenable: _searchController,
+        builder: (context, _) {
+          final filteredSections = _filteredSections(_searchController.text);
+
+          return ListView(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 8.0,
+            ),
+            children: [
+              SearchBar(
+                controller: _searchController,
+                hintText: '搜尋功能...',
+                leading: const Icon(Icons.search),
+              ),
+              const SizedBox(height: 16.0),
+              if (filteredSections.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.only(top: 40.0),
+                  child: Center(child: Text('找不到相關功能')),
+                )
+              else
+                for (final section in filteredSections) ...[
+                  _PortalSectionTitle(title: section.title),
+                  const SizedBox(height: 8.0),
+                  _ShortcutGrid(
+                    items: section.items,
+                    onTap: widget.onShortcutTap,
+                  ),
+                  const SizedBox(height: 20.0),
+                ],
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  List<PortalShortcutSection> _filteredSections(String query) {
+    final normalizedQuery = query.toLowerCase();
+
+    return widget.sections
         .map((section) {
           final filteredItems = section.items
               .where(
-                (item) => item.label.toLowerCase().contains(
-                  _searchQuery.toLowerCase(),
-                ),
+                (item) => item.label.toLowerCase().contains(normalizedQuery),
               )
               .toList();
           if (filteredItems.isEmpty) return null;
@@ -58,44 +104,6 @@ class _PortalShortcutsPageState extends State<PortalShortcutsPage> {
         })
         .whereType<PortalShortcutSection>()
         .toList();
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          widget.title,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        actions: widget.appBarActions,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-        children: [
-          SearchBar(
-            controller: _searchController,
-            hintText: '搜尋功能...',
-            leading: const Icon(Icons.search),
-            onChanged: (value) {
-              setState(() {
-                _searchQuery = value;
-              });
-            },
-          ),
-          const SizedBox(height: 16.0),
-          if (filteredSections.isEmpty)
-            const Padding(
-              padding: EdgeInsets.only(top: 40.0),
-              child: Center(child: Text('找不到相關功能')),
-            )
-          else
-            for (final section in filteredSections) ...[
-              _PortalSectionTitle(title: section.title),
-              const SizedBox(height: 8.0),
-              _ShortcutGrid(items: section.items, onTap: widget.onShortcutTap),
-              const SizedBox(height: 20.0),
-            ],
-        ],
-      ),
-    );
   }
 }
 

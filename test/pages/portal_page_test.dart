@@ -1,26 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prototype/features/portal/data/portal_authenticator.dart';
-import 'package:prototype/features/portal/data/portal_shortcut_repository.dart';
-import 'package:prototype/features/portal/models/portal_shortcut.dart';
-import 'package:prototype/features/portal/presentation/portal_page.dart';
-import 'package:prototype/features/portal/presentation/view_models/portal_session_controller.dart';
+import 'package:magic_pinecone/features/portal/domain/models/portal_shortcut.dart';
+import 'package:magic_pinecone/features/portal/domain/repository/portal_session_client.dart';
+import 'package:magic_pinecone/features/portal/domain/repository/portal_shortcut_repository.dart';
+import 'package:magic_pinecone/features/portal/portal_providers.dart';
+import 'package:magic_pinecone/features/portal/presentation/portal_page.dart';
 
 void main() {
   testWidgets('PortalPage applies the initial shortcut search filter', (
     tester,
   ) async {
-    final controller = PortalSessionController(
-      authenticator: FakePortalAuthenticator(result: '   '),
-      shortcutRepository: const FakePortalShortcutRepository(),
-    );
-
     await tester.pumpWidget(
-      MaterialApp(
-        home: PortalPage(
-          sessionController: controller,
-          initialSearchQuery: '成績',
-        ),
+      ProviderScope(
+        overrides: [
+          portalSessionClientProvider.overrideWithValue(
+            FakePortalSessionClient(result: '   '),
+          ),
+          portalShortcutRepositoryProvider.overrideWithValue(
+            const FakePortalShortcutRepository(),
+          ),
+        ],
+        child: const MaterialApp(home: PortalPage(initialSearchQuery: '成績')),
       ),
     );
     await tester.pumpAndSettle();
@@ -31,13 +32,13 @@ void main() {
   });
 }
 
-class FakePortalAuthenticator extends PortalAuthenticator {
-  FakePortalAuthenticator({this.result});
+class FakePortalSessionClient implements PortalSessionClient {
+  FakePortalSessionClient({this.result});
 
   final String? result;
 
   @override
-  Future<String?> fetchPortalToken() async => result;
+  Future<String?> refreshToken() async => result;
 }
 
 class FakePortalShortcutRepository implements PortalShortcutRepository {

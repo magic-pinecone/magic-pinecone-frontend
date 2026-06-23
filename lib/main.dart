@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:prototype/core/app/app_dependencies.dart';
-import 'package:prototype/core/app/app_scope.dart';
-import 'package:prototype/core/app/app_theme.dart';
-import 'package:prototype/core/navigation/app_routes.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:magic_pinecone/core/app/app_theme.dart';
+import 'package:magic_pinecone/core/navigation/app_navigation_state.dart';
+import 'package:magic_pinecone/core/navigation/app_routes.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,20 +21,40 @@ String? courseShareCodeFromUri(Uri uri) {
   return shareCode;
 }
 
-class MagicPineconeApp extends StatefulWidget {
+class MagicPineconeApp extends StatelessWidget {
   const MagicPineconeApp({super.key, this.initialUri});
 
   final Uri? initialUri;
 
   @override
-  State<MagicPineconeApp> createState() => _MagicPineconeAppState();
+  Widget build(BuildContext context) {
+    final resolvedInitialUri = initialUri ?? Uri.base;
+
+    return ProviderScope(
+      overrides: [
+        initialActiveAppTabProvider.overrideWithValue(
+          initialAppTabForUri(resolvedInitialUri),
+        ),
+      ],
+      child: _MagicPineconeAppShell(
+        initialShareCode: courseShareCodeFromUri(resolvedInitialUri),
+      ),
+    );
+  }
 }
 
-class _MagicPineconeAppState extends State<MagicPineconeApp> {
-  late final String? _initialShareCode;
-  late int _currentIndex;
-  late final AppDependencies _dependencies;
+class _MagicPineconeAppShell extends ConsumerStatefulWidget {
+  const _MagicPineconeAppShell({required this.initialShareCode});
 
+  final String? initialShareCode;
+
+  @override
+  ConsumerState<_MagicPineconeAppShell> createState() =>
+      _MagicPineconeAppShellState();
+}
+
+class _MagicPineconeAppShellState
+    extends ConsumerState<_MagicPineconeAppShell> {
   // Each tab gets its own GlobalKey so its Navigator state is preserved.
   final _tabKeys = List.generate(5, (_) => GlobalKey<NavigatorState>());
 
@@ -47,59 +67,42 @@ class _MagicPineconeAppState extends State<MagicPineconeApp> {
   ];
 
   @override
-  void initState() {
-    super.initState();
-    _dependencies = AppDependencies();
-    final initialUri = widget.initialUri ?? Uri.base;
-    _initialShareCode = courseShareCodeFromUri(initialUri);
-    _currentIndex = initialAppTabForUri(initialUri).index;
-  }
-
-  @override
-  void dispose() {
-    _dependencies.appThemeController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<ThemeMode>(
-      valueListenable: _dependencies.appThemeController,
-      builder: (context, themeMode, _) => AppScope(
-        dependencies: _dependencies,
-        child: MaterialApp(
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.light,
-          darkTheme: AppTheme.dark,
-          themeMode: themeMode,
-          // Pop within the current tab first; if already at root, allow system back.
-          home: PopScope(
-            canPop: false,
-            onPopInvokedWithResult: (didPop, _) async {
-              if (didPop) return;
-              final navState = _tabKeys[_currentIndex].currentState;
-              if (navState != null && navState.canPop()) {
-                navState.pop();
+    final themeMode = ref.watch(appThemeControllerProvider);
+    final currentIndex = ref.watch(activeAppTabProvider).index;
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: themeMode,
+      // Pop within the current tab first; if already at root, allow system back.
+      home: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) async {
+          if (didPop) return;
+          final navState = _tabKeys[currentIndex].currentState;
+          if (navState != null && navState.canPop()) {
+            navState.pop();
+          }
+        },
+        child: Scaffold(
+          body: IndexedStack(
+            index: currentIndex,
+            children: List.generate(5, _buildTabNavigator),
+          ),
+          bottomNavigationBar: NavigationBar(
+            onDestinationSelected: (int index) {
+              if (index == currentIndex) {
+                // Tapping the active tab pops to its root.
+                _tabKeys[index].currentState?.popUntil((r) => r.isFirst);
+              } else {
+                ref
+                    .read(activeAppTabProvider.notifier)
+                    .setTab(AppTab.values[index]);
               }
             },
-            child: Scaffold(
-              body: IndexedStack(
-                index: _currentIndex,
-                children: List.generate(5, _buildTabNavigator),
-              ),
-              bottomNavigationBar: NavigationBar(
-                onDestinationSelected: (int index) {
-                  if (index == _currentIndex) {
-                    // Tapping the active tab pops to its root.
-                    _tabKeys[index].currentState?.popUntil((r) => r.isFirst);
-                  } else {
-                    setState(() => _currentIndex = index);
-                  }
-                },
-                selectedIndex: _currentIndex,
-                destinations: _destinations,
-              ),
-            ),
+            selectedIndex: currentIndex,
+            destinations: _destinations,
           ),
         ),
       ),
@@ -120,7 +123,7 @@ class _MagicPineconeAppState extends State<MagicPineconeApp> {
       onGenerateRoute: (_) => AppRoutes.tabRoot(
         tabs[index],
         initialShareCode: index == AppTab.courseSelection.index
-            ? _initialShareCode
+            ? widget.initialShareCode
             : null,
       ),
     );

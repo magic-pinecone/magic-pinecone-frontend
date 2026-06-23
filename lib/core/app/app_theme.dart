@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-class AppThemeController extends ValueNotifier<ThemeMode> {
-  AppThemeController() : super(ThemeMode.system);
+part 'app_theme.g.dart';
+
+@Riverpod(keepAlive: true)
+class AppThemeController extends _$AppThemeController {
+  @override
+  ThemeMode build() => ThemeMode.system;
 
   void toggle() {
-    value = value == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+    state = state == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
   }
 
   void setDarkMode(bool enabled) {
-    value = enabled ? ThemeMode.dark : ThemeMode.light;
+    state = enabled ? ThemeMode.dark : ThemeMode.light;
   }
 
-  bool get isDark => value == ThemeMode.dark;
+  bool get isDark => state == ThemeMode.dark;
 }
 
 class AppTheme {

@@ -1,74 +1,131 @@
 import 'package:flutter/foundation.dart';
-import 'package:prototype/features/course_selection/data/course_repository.dart';
-import 'package:prototype/features/course_selection/models/course_schedule_models.dart';
+import 'package:magic_pinecone/features/course_selection/course_selection_providers.dart';
+import 'package:magic_pinecone/features/course_selection/domain/models/course_schedule_models.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-class CourseSelectionController extends ChangeNotifier {
-  CourseSelectionController({required CourseRepository repository})
-    : _repository = repository;
+part 'course_selection_controller.g.dart';
 
-  static const defaultPageSize = 50;
+class CourseSelectionState {
+  const CourseSelectionState({
+    this.courses = const [],
+    this.isLoading = false,
+    this.isLoadingMore = false,
+    this.error,
+    this.totalCount = 0,
+    this.lastUpdated,
+    this.keyword = '',
+    this.classNo = '',
+    this.serialNo = '',
+    this.departmentName = '',
+    this.collegeName = '',
+    this.instructor = '',
+    this.courseType,
+    this.credits = const {},
+    this.hasVacancy,
+    this.classTimes = const {},
+    this.offset = 0,
+    this.limit = 50,
+  });
 
-  final CourseRepository _repository;
+  final List<CourseItem> courses;
+  final bool isLoading;
+  final bool isLoadingMore;
+  final Object? error;
+  final int totalCount;
+  final DateTime? lastUpdated;
+  final String keyword;
+  final String classNo;
+  final String serialNo;
+  final String departmentName;
+  final String collegeName;
+  final String instructor;
+  final String? courseType;
+  final Set<int> credits;
+  final bool? hasVacancy;
+  final Set<String> classTimes;
+  final int offset;
+  final int limit;
 
-  List<CourseItem> _courses = const [];
-  bool _isLoading = false;
-  bool _isLoadingMore = false;
-  Object? _error;
-  int _totalCount = 0;
-  DateTime? _lastUpdated;
-  String _keyword = '';
-  String _classNo = '';
-  String _serialNo = '';
-  String _departmentName = '';
-  String _collegeName = '';
-  String _instructor = '';
-  String? _courseType;
-  final Set<int> _credits = {};
-  bool? _hasVacancy;
-  final Set<String> _classTimes = {};
-  int _offset = 0;
-  final int _limit = defaultPageSize;
+  List<int> get sortedCredits => credits.toList()..sort();
+  List<String> get sortedClassTimes => classTimes.toList()..sort();
 
-  List<CourseItem> get courses => _courses;
-  bool get isLoading => _isLoading;
-  bool get isLoadingMore => _isLoadingMore;
-  Object? get error => _error;
-  int get totalCount => _totalCount;
-  DateTime? get lastUpdated => _lastUpdated;
-  String get keyword => _keyword;
-  String get classNo => _classNo;
-  String get serialNo => _serialNo;
-  String get departmentName => _departmentName;
-  String get collegeName => _collegeName;
-  String get instructor => _instructor;
-  String? get courseType => _courseType;
-  List<int> get credits => List.unmodifiable(_sortedCredits);
-  bool hasCredit(int credit) => _credits.contains(credit);
-  bool? get hasVacancy => _hasVacancy;
-  List<String> get classTimes => List.unmodifiable(_sortedClassTimes);
-  int get offset => _offset;
-  int get limit => _limit;
-  int get currentPage => _totalCount == 0 ? 0 : (_offset ~/ _limit) + 1;
-  int get totalPages =>
-      _totalCount == 0 ? 0 : ((_totalCount - 1) ~/ _limit) + 1;
-  bool get canGoToPreviousPage => _offset > 0;
-  bool get canGoToNextPage => _offset + _courses.length < _totalCount;
+  bool hasCredit(int credit) => credits.contains(credit);
+  int get currentPage => totalCount == 0 ? 0 : (offset ~/ limit) + 1;
+  int get totalPages => totalCount == 0 ? 0 : ((totalCount - 1) ~/ limit) + 1;
+  bool get canGoToPreviousPage => offset > 0;
+  bool get canGoToNextPage => offset + courses.length < totalCount;
+
   int get activeFilterCount {
     return [
-      _keyword.isNotEmpty,
-      _classNo.isNotEmpty,
-      _serialNo.isNotEmpty,
-      _departmentName.isNotEmpty,
-      _collegeName.isNotEmpty,
-      _instructor.isNotEmpty,
-      _courseType != null,
-      _credits.isNotEmpty,
-      _hasVacancy != null,
-      _classTimes.isNotEmpty,
+      keyword.isNotEmpty,
+      classNo.isNotEmpty,
+      serialNo.isNotEmpty,
+      departmentName.isNotEmpty,
+      collegeName.isNotEmpty,
+      instructor.isNotEmpty,
+      courseType != null,
+      credits.isNotEmpty,
+      hasVacancy != null,
+      classTimes.isNotEmpty,
     ].where((isActive) => isActive).length;
   }
 
   bool get hasActiveFilter => activeFilterCount > 0;
+
+  CourseSelectionState copyWith({
+    List<CourseItem>? courses,
+    bool? isLoading,
+    bool? isLoadingMore,
+    Object? error,
+    bool clearError = false,
+    int? totalCount,
+    DateTime? lastUpdated,
+    String? keyword,
+    String? classNo,
+    String? serialNo,
+    String? departmentName,
+    String? collegeName,
+    String? instructor,
+    String? courseType,
+    bool clearCourseType = false,
+    Set<int>? credits,
+    bool? hasVacancy,
+    bool clearHasVacancy = false,
+    Set<String>? classTimes,
+    int? offset,
+    int? limit,
+  }) {
+    return CourseSelectionState(
+      courses: courses ?? this.courses,
+      isLoading: isLoading ?? this.isLoading,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      error: clearError ? null : (error ?? this.error),
+      totalCount: totalCount ?? this.totalCount,
+      lastUpdated: lastUpdated ?? this.lastUpdated,
+      keyword: keyword ?? this.keyword,
+      classNo: classNo ?? this.classNo,
+      serialNo: serialNo ?? this.serialNo,
+      departmentName: departmentName ?? this.departmentName,
+      collegeName: collegeName ?? this.collegeName,
+      instructor: instructor ?? this.instructor,
+      courseType: clearCourseType ? null : (courseType ?? this.courseType),
+      credits: credits ?? this.credits,
+      hasVacancy: clearHasVacancy ? null : (hasVacancy ?? this.hasVacancy),
+      classTimes: classTimes ?? this.classTimes,
+      offset: offset ?? this.offset,
+      limit: limit ?? this.limit,
+    );
+  }
+}
+
+@riverpod
+class CourseSelectionController extends _$CourseSelectionController {
+  static const defaultPageSize = 50;
+
+  @override
+  CourseSelectionState build() {
+    return const CourseSelectionState();
+  }
 
   Future<void> load() {
     return search();
@@ -82,53 +139,44 @@ class CourseSelectionController extends ChangeNotifier {
     String? collegeName,
     String? instructor,
   }) async {
-    if (keyword != null) {
-      _keyword = keyword.trim();
-    }
-    if (classNo != null) {
-      _classNo = classNo.trim();
-    }
-    if (serialNo != null) {
-      _serialNo = serialNo.trim();
-    }
-    if (departmentName != null) {
-      _departmentName = departmentName.trim();
-    }
-    if (collegeName != null) {
-      _collegeName = collegeName.trim();
-    }
-    if (instructor != null) {
-      _instructor = instructor.trim();
-    }
-
-    _offset = 0;
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
+    final nextState = state.copyWith(
+      keyword: keyword?.trim(),
+      classNo: classNo?.trim(),
+      serialNo: serialNo?.trim(),
+      departmentName: departmentName?.trim(),
+      collegeName: collegeName?.trim(),
+      instructor: instructor?.trim(),
+      offset: 0,
+      isLoading: true,
+      clearError: true,
+    );
+    state = nextState;
 
     try {
-      final result = await _repository.searchCourses(
-        keyword: _keyword,
-        classNo: _classNo,
-        serialNo: _serialNo,
-        departmentName: _departmentName,
-        collegeName: _collegeName,
-        instructor: _instructor,
-        courseType: _courseType,
-        credits: _sortedCredits,
-        hasVacancy: _hasVacancy,
-        classTimes: _sortedClassTimes,
-        offset: _offset,
-        limit: _limit,
+      final result = await ref
+          .read(searchCoursesUseCaseProvider)
+          .execute(
+            keyword: state.keyword,
+            classNo: state.classNo,
+            serialNo: state.serialNo,
+            departmentName: state.departmentName,
+            collegeName: state.collegeName,
+            instructor: state.instructor,
+            courseType: state.courseType,
+            credits: state.sortedCredits,
+            hasVacancy: state.hasVacancy,
+            classTimes: state.sortedClassTimes,
+            offset: state.offset,
+            limit: state.limit,
+          );
+      state = state.copyWith(
+        courses: List.unmodifiable(result.courses),
+        totalCount: result.totalCount,
+        lastUpdated: result.lastUpdated,
+        isLoading: false,
       );
-      _courses = List.unmodifiable(result.courses);
-      _totalCount = result.totalCount;
-      _lastUpdated = result.lastUpdated;
     } catch (error) {
-      _error = error;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+      state = state.copyWith(error: error, isLoading: false);
     }
   }
 
@@ -143,158 +191,118 @@ class CourseSelectionController extends ChangeNotifier {
     required bool? hasVacancy,
     required Iterable<String> classTimes,
   }) async {
-    _classNo = classNo.trim();
-    _serialNo = serialNo.trim();
-    _departmentName = departmentName.trim();
-    _collegeName = collegeName.trim();
-    _instructor = instructor.trim();
-    _courseType = courseType;
-    _credits
-      ..clear()
-      ..addAll(credits);
-    _hasVacancy = hasVacancy;
-    _classTimes
-      ..clear()
-      ..addAll(classTimes);
+    state = state.copyWith(
+      classNo: classNo.trim(),
+      serialNo: serialNo.trim(),
+      departmentName: departmentName.trim(),
+      collegeName: collegeName.trim(),
+      instructor: instructor.trim(),
+      courseType: courseType,
+      clearCourseType: courseType == null,
+      credits: credits.toSet(),
+      hasVacancy: hasVacancy,
+      clearHasVacancy: hasVacancy == null,
+      classTimes: classTimes.toSet(),
+    );
     await search();
   }
 
   Future<void> nextPage() async {
-    if (!canGoToNextPage) return;
-    await _loadPage(_offset + _limit);
+    if (!state.canGoToNextPage) return;
+    await _loadPage(state.offset + state.limit);
   }
 
   Future<void> previousPage() async {
-    if (!canGoToPreviousPage) return;
-    await _loadPage((_offset - _limit).clamp(0, _offset));
+    if (!state.canGoToPreviousPage) return;
+    await _loadPage((state.offset - state.limit).clamp(0, state.offset));
   }
 
   Future<void> _loadPage(int offset) async {
-    if (_isLoading || _isLoadingMore) return;
+    if (state.isLoading || state.isLoadingMore) return;
 
-    _isLoadingMore = true;
-    _error = null;
-    notifyListeners();
+    state = state.copyWith(isLoadingMore: true, clearError: true);
 
     try {
-      final result = await _repository.searchCourses(
-        keyword: _keyword,
-        classNo: _classNo,
-        serialNo: _serialNo,
-        departmentName: _departmentName,
-        collegeName: _collegeName,
-        instructor: _instructor,
-        courseType: _courseType,
-        credits: _sortedCredits,
-        hasVacancy: _hasVacancy,
-        classTimes: _sortedClassTimes,
+      final result = await ref
+          .read(searchCoursesUseCaseProvider)
+          .execute(
+            keyword: state.keyword,
+            classNo: state.classNo,
+            serialNo: state.serialNo,
+            departmentName: state.departmentName,
+            collegeName: state.collegeName,
+            instructor: state.instructor,
+            courseType: state.courseType,
+            credits: state.sortedCredits,
+            hasVacancy: state.hasVacancy,
+            classTimes: state.sortedClassTimes,
+            offset: offset,
+            limit: state.limit,
+          );
+      state = state.copyWith(
+        courses: List.unmodifiable(result.courses),
+        totalCount: result.totalCount,
+        lastUpdated: result.lastUpdated,
         offset: offset,
-        limit: _limit,
+        isLoadingMore: false,
       );
-      _courses = List.unmodifiable(result.courses);
-      _totalCount = result.totalCount;
-      _lastUpdated = result.lastUpdated;
-      _offset = offset;
     } catch (error) {
-      _error = error;
-    } finally {
-      _isLoadingMore = false;
-      notifyListeners();
+      state = state.copyWith(error: error, isLoadingMore: false);
     }
   }
 
   Future<void> setCourseType(String? value) async {
-    if (_courseType == value) return;
-    _courseType = value;
+    if (state.courseType == value) return;
+    state = state.copyWith(courseType: value, clearCourseType: value == null);
     await search();
   }
 
   Future<void> toggleCredit(int value) async {
-    if (!_credits.add(value)) {
-      _credits.remove(value);
+    final nextCredits = Set<int>.from(state.credits);
+    if (!nextCredits.add(value)) {
+      nextCredits.remove(value);
     }
+    state = state.copyWith(credits: nextCredits);
     await search();
   }
 
   Future<void> setHasVacancy(bool? value) async {
-    if (_hasVacancy == value) return;
-    _hasVacancy = value;
+    if (state.hasVacancy == value) return;
+    state = state.copyWith(hasVacancy: value, clearHasVacancy: value == null);
     await search();
   }
 
   Future<void> toggleClassTime(String value) async {
-    if (!_classTimes.add(value)) {
-      _classTimes.remove(value);
+    final nextClassTimes = Set<String>.from(state.classTimes);
+    if (!nextClassTimes.add(value)) {
+      nextClassTimes.remove(value);
     }
+    state = state.copyWith(classTimes: nextClassTimes);
     await search();
   }
 
   Future<void> setClassTimes(Iterable<String> values) async {
     final nextValues = values.toSet();
-    if (setEquals(_classTimes, nextValues)) return;
-    _classTimes
-      ..clear()
-      ..addAll(nextValues);
+    if (setEquals(state.classTimes, nextValues)) return;
+    state = state.copyWith(classTimes: nextValues);
     await search();
   }
 
   Future<void> clearClassTimes() async {
-    if (_classTimes.isEmpty) return;
-    _classTimes.clear();
+    if (state.classTimes.isEmpty) return;
+    state = state.copyWith(classTimes: const {});
     await search();
   }
 
   Future<void> clearFilters() async {
-    if (!hasActiveFilter) return;
-    _keyword = '';
-    _classNo = '';
-    _serialNo = '';
-    _departmentName = '';
-    _collegeName = '';
-    _instructor = '';
-    _courseType = null;
-    _credits.clear();
-    _hasVacancy = null;
-    _classTimes.clear();
+    if (!state.hasActiveFilter) return;
+    state = const CourseSelectionState();
     await search();
   }
 
-  Future<List<CourseItem>> findCoursesBySerialNos(
-    Iterable<String> serialNos,
-  ) async {
-    final uniqueSerialNos = {
-      for (final serialNo in serialNos)
-        if (serialNo.trim().isNotEmpty) serialNo.trim(),
-    };
-    final coursesBySerialNo = {
-      for (final course in _courses) course.serialNo: course,
-    };
-
-    for (final serialNo in uniqueSerialNos) {
-      if (coursesBySerialNo.containsKey(serialNo)) continue;
-
-      final result = await _repository.searchCourses(
-        serialNo: serialNo,
-        limit: 10,
-      );
-      for (final course in result.courses) {
-        if (course.serialNo == serialNo) {
-          coursesBySerialNo[serialNo] = course;
-          break;
-        }
-      }
-    }
-
-    return [
-      for (final serialNo in uniqueSerialNos) ?coursesBySerialNo[serialNo],
-    ];
-  }
-
-  List<int> get _sortedCredits {
-    return _credits.toList()..sort();
-  }
-
-  List<String> get _sortedClassTimes {
-    return _classTimes.toList()..sort();
+  Future<List<CourseItem>> findCoursesBySerialNos(Iterable<String> serialNos) {
+    return ref
+        .read(findCoursesBySerialNosUseCaseProvider)
+        .execute(serialNos: serialNos, cachedCourses: state.courses);
   }
 }

@@ -6,56 +6,66 @@ import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter/services.dart';
 import 'package:flutter_chat_core/flutter_chat_core.dart';
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
-import 'package:prototype/core/app/app_scope.dart';
-import 'package:prototype/core/navigation/app_routes.dart';
-import 'package:prototype/core/widgets/owned_change_notifier_builder.dart';
-import 'package:prototype/features/course_selection/data/course_schedule_repository.dart';
-import 'package:prototype/features/course_selection/data/course_selection_storage.dart';
-import 'package:prototype/features/course_selection/data/course_share_codec.dart';
-import 'package:prototype/features/course_selection/data/course_supplemental_detail_catalog.dart';
-import 'package:prototype/features/course_selection/models/course_detail_models.dart';
-import 'package:prototype/features/course_selection/models/course_schedule_models.dart';
-import 'package:prototype/features/course_selection/presentation/view_models/course_selection_controller.dart';
-import 'package:prototype/features/course_selection/presentation/widgets/calendar_item.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:magic_pinecone/core/navigation/app_routes.dart';
+import 'package:magic_pinecone/features/course_selection/course_selection_providers.dart';
+import 'package:magic_pinecone/features/course_selection/data/data_sources/course_selection_storage.dart';
+import 'package:magic_pinecone/features/course_selection/data/repositories/course_schedule_repository_impl.dart';
+import 'package:magic_pinecone/features/course_selection/domain/models/course_detail_models.dart';
+import 'package:magic_pinecone/features/course_selection/domain/models/course_schedule_models.dart';
+import 'package:magic_pinecone/features/course_selection/domain/repository/course_schedule_repository.dart';
+import 'package:magic_pinecone/features/course_selection/domain/repository/course_supplemental_detail_repository.dart';
+import 'package:magic_pinecone/features/course_selection/domain/usecases/course_share_codec.dart';
+import 'package:magic_pinecone/features/course_selection/presentation/view_models/course_selection_controller.dart';
+import 'package:magic_pinecone/features/course_selection/presentation/widgets/calendar_item.dart';
 
-class CourseSelectionPage extends StatelessWidget {
+class CourseSelectionPage extends ConsumerStatefulWidget {
   const CourseSelectionPage({
     super.key,
-    this.controller,
     this.courseSupplementalDetailRepository,
     this.courseSelectionStorage,
     this.initialShareCode,
     this.showBackButton = false,
   });
 
-  final CourseSelectionController? controller;
   final CourseSupplementalDetailRepository? courseSupplementalDetailRepository;
   final CourseSelectionStorage? courseSelectionStorage;
   final String? initialShareCode;
   final bool showBackButton;
 
   @override
-  Widget build(BuildContext context) {
-    final dependencies = controller == null ? AppScope.of(context) : null;
-    final supplementalDetailRepository =
-        courseSupplementalDetailRepository ??
-        dependencies?.courseSupplementalDetailRepository ??
-        const StaticFallbackCourseSupplementalDetailRepository();
-    final courseSelectionStorage =
-        this.courseSelectionStorage ?? createCourseSelectionStorage();
+  ConsumerState<CourseSelectionPage> createState() =>
+      _CourseSelectionPageState();
+}
 
-    return OwnedChangeNotifierBuilder<CourseSelectionController>(
-      notifier: controller,
-      create: (context) => (dependencies ?? AppScope.of(context))
-          .createCourseSelectionController(),
-      onReady: (controller) => unawaited(controller.load()),
-      builder: (context, controller) => _CourseSelectionPageContent(
-        controller: controller,
-        supplementalDetailRepository: supplementalDetailRepository,
-        courseSelectionStorage: courseSelectionStorage,
-        initialShareCode: initialShareCode,
-        showBackButton: showBackButton,
-      ),
+class _CourseSelectionPageState extends ConsumerState<CourseSelectionPage> {
+  late final CourseSelectionController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = ref.read(courseSelectionControllerProvider.notifier);
+    scheduleMicrotask(() {
+      if (mounted) {
+        unawaited(_controller.load());
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    ref.watch(courseSelectionControllerProvider);
+    final CourseSupplementalDetailRepository supplementalDetailRepository =
+        widget.courseSupplementalDetailRepository ??
+        ref.watch(courseSupplementalDetailRepositoryProvider);
+    final courseSelectionStorage =
+        widget.courseSelectionStorage ?? createCourseSelectionStorage();
+
+    return _CourseSelectionPageContent(
+      supplementalDetailRepository: supplementalDetailRepository,
+      courseSelectionStorage: courseSelectionStorage,
+      initialShareCode: widget.initialShareCode,
+      showBackButton: widget.showBackButton,
     );
   }
 }
@@ -66,28 +76,26 @@ enum _CourseTypeFilter { all, required, elective }
 
 enum _VacancyFilter { all, available, full }
 
-class _CourseSelectionPageContent extends StatefulWidget {
+class _CourseSelectionPageContent extends ConsumerStatefulWidget {
   const _CourseSelectionPageContent({
-    required this.controller,
     required this.supplementalDetailRepository,
     required this.courseSelectionStorage,
     required this.initialShareCode,
     required this.showBackButton,
   });
 
-  final CourseSelectionController controller;
   final CourseSupplementalDetailRepository supplementalDetailRepository;
   final CourseSelectionStorage courseSelectionStorage;
   final String? initialShareCode;
   final bool showBackButton;
 
   @override
-  State<_CourseSelectionPageContent> createState() =>
+  ConsumerState<_CourseSelectionPageContent> createState() =>
       _CourseSelectionPageContentState();
 }
 
 class _CourseSelectionPageContentState
-    extends State<_CourseSelectionPageContent> {
+    extends ConsumerState<_CourseSelectionPageContent> {
   static const _horizontalPadding = 16.0;
   static const _wideLayoutMinWidth = 900.0;
   static const _desktopWorkspaceMinWidth = 1100.0;
@@ -123,7 +131,8 @@ class _CourseSelectionPageContentState
   final Map<String, List<ScheduledCourse>> _courseScheduledCoursesCache = {};
   final Map<String, bool> _canSyncToTimetableCache = {};
 
-  CourseSelectionController get controller => widget.controller;
+  late CourseSelectionState _state;
+  late CourseSelectionController _notifier;
 
   @override
   void dispose() {
@@ -133,32 +142,29 @@ class _CourseSelectionPageContentState
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: controller,
-      builder: (context, _) {
-        if (controller.isLoading && controller.courses.isEmpty) {
-          _courseScheduledCoursesCache.clear();
-          _canSyncToTimetableCache.clear();
+    _state = ref.watch(courseSelectionControllerProvider);
+    _notifier = ref.read(courseSelectionControllerProvider.notifier);
+
+    if (_state.isLoading && _state.courses.isEmpty) {
+      _courseScheduledCoursesCache.clear();
+      _canSyncToTimetableCache.clear();
+    }
+    if (!_state.isLoading && !_didRestoreSelectedCourses) {
+      _didRestoreSelectedCourses = true;
+      unawaited(_restoreSelectedCourses());
+    }
+    final displayedCourses = _displayedCourses();
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useDesktopWorkspace =
+            constraints.maxWidth >= _desktopWorkspaceMinWidth;
+        if (useDesktopWorkspace) {
+          return _buildDesktopWorkspace(context, displayedCourses);
         }
-        if (!controller.isLoading && !_didRestoreSelectedCourses) {
-          _didRestoreSelectedCourses = true;
-          unawaited(_restoreSelectedCourses());
-        }
-        final displayedCourses = _displayedCourses();
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final useDesktopWorkspace =
-                constraints.maxWidth >= _desktopWorkspaceMinWidth;
-            if (useDesktopWorkspace) {
-              return _buildDesktopWorkspace(context, displayedCourses);
-            }
-            return _buildMobileWorkspace(
-              context,
-              displayedCourses,
-              useDesktopCourseDetails:
-                  constraints.maxWidth >= _wideLayoutMinWidth,
-            );
-          },
+        return _buildMobileWorkspace(
+          context,
+          displayedCourses,
+          useDesktopCourseDetails: constraints.maxWidth >= _wideLayoutMinWidth,
         );
       },
     );
@@ -188,9 +194,9 @@ class _CourseSelectionPageContentState
           if (_selectedView == _CourseSelectionView.search)
             IconButton(
               tooltip: '重新整理',
-              onPressed: controller.isLoading
+              onPressed: _state.isLoading
                   ? null
-                  : () => unawaited(controller.search()),
+                  : () => unawaited(_notifier.search()),
               icon: const Icon(Icons.refresh),
             ),
         ],
@@ -266,9 +272,9 @@ class _CourseSelectionPageContentState
         actions: [
           IconButton(
             tooltip: '重新整理',
-            onPressed: controller.isLoading
+            onPressed: _state.isLoading
                 ? null
-                : () => unawaited(controller.search()),
+                : () => unawaited(_notifier.search()),
             icon: const Icon(Icons.refresh),
           ),
         ],
@@ -321,7 +327,6 @@ class _CourseSelectionPageContentState
     required bool useAdvancedFilterDialog,
   }) {
     return _CourseSearchView(
-      controller: controller,
       displayedCourses: displayedCourses,
       isCourseSelected: _isCourseSelected,
       canSyncToTimetable: _canSyncToTimetable,
@@ -447,7 +452,7 @@ class _CourseSelectionPageContentState
   List<CourseItem> _displayedCourses() {
     final courses = _onlyShowSelectedCourses
         ? _selectedCourses.values.toList(growable: false)
-        : controller.courses;
+        : _state.courses;
 
     if (!_onlyShowTimetableCompatibleCourses) return courses;
 
@@ -467,7 +472,7 @@ class _CourseSelectionPageContentState
 
   int get _localFilterTotalCount {
     if (_onlyShowSelectedCourses) return _selectedCourses.length;
-    return controller.courses.length;
+    return _state.courses.length;
   }
 
   bool _isCourseSelected(CourseItem course) {
@@ -569,7 +574,7 @@ class _CourseSelectionPageContentState
     final serialNos = _decodeShareCode(restoreState.code);
     if (serialNos == null) return;
 
-    final courses = await controller.findCoursesBySerialNos(serialNos);
+    final courses = await _notifier.findCoursesBySerialNos(serialNos);
     if (!mounted || courses.isEmpty) return;
 
     setState(() {
@@ -740,9 +745,8 @@ class _CourseTimeSlot {
   final int periodIndex;
 }
 
-class _CourseSearchView extends StatelessWidget {
+class _CourseSearchView extends ConsumerWidget {
   const _CourseSearchView({
-    required this.controller,
     required this.displayedCourses,
     required this.isCourseSelected,
     required this.canSyncToTimetable,
@@ -754,7 +758,6 @@ class _CourseSearchView extends StatelessWidget {
     required this.useAdvancedFilterDialog,
   });
 
-  final CourseSelectionController controller;
   final List<CourseItem> displayedCourses;
   final bool Function(CourseItem course) isCourseSelected;
   final bool Function(CourseItem course) canSyncToTimetable;
@@ -766,7 +769,10 @@ class _CourseSearchView extends StatelessWidget {
   final bool useAdvancedFilterDialog;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(courseSelectionControllerProvider);
+    final notifier = ref.read(courseSelectionControllerProvider.notifier);
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final useGrid =
@@ -780,12 +786,8 @@ class _CourseSearchView extends StatelessWidget {
             ),
             child: Column(
               children: [
-                _SearchPanel(
-                  controller: controller,
-                  useAdvancedFilterDialog: useAdvancedFilterDialog,
-                ),
+                _SearchPanel(useAdvancedFilterDialog: useAdvancedFilterDialog),
                 _ResultSummary(
-                  controller: controller,
                   displayedCourseCount: displayedCourses.length,
                   localFilterActive: localFilterActive,
                   localFilterTotalCount: localFilterTotalCount,
@@ -793,21 +795,20 @@ class _CourseSearchView extends StatelessWidget {
                 ),
                 Expanded(
                   child: RefreshIndicator(
-                    onRefresh: controller.search,
+                    onRefresh: notifier.search,
                     child: CustomScrollView(
                       scrollCacheExtent: const ScrollCacheExtent.pixels(900.0),
                       slivers: [
-                        if (controller.isLoading && controller.courses.isEmpty)
+                        if (state.isLoading && state.courses.isEmpty)
                           const SliverFillRemaining(
                             hasScrollBody: false,
                             child: Center(child: CircularProgressIndicator()),
                           )
-                        else if (controller.error != null &&
-                            controller.courses.isEmpty)
+                        else if (state.error != null && state.courses.isEmpty)
                           SliverFillRemaining(
                             hasScrollBody: false,
                             child: _ErrorState(
-                              onRetry: () => unawaited(controller.search()),
+                              onRetry: () => unawaited(notifier.search()),
                             ),
                           )
                         else if (displayedCourses.isEmpty)
@@ -831,10 +832,10 @@ class _CourseSearchView extends StatelessWidget {
                             onCourseTap: onCourseTap,
                             onCourseSyncToggle: onCourseSyncToggle,
                           ),
-                        if (!localFilterActive && controller.totalCount > 0)
-                          SliverToBoxAdapter(
+                        if (!localFilterActive && state.totalCount > 0)
+                          const SliverToBoxAdapter(
                             child: Padding(
-                              padding: const EdgeInsets.fromLTRB(
+                              padding: EdgeInsets.fromLTRB(
                                 _CourseSelectionPageContentState
                                     ._horizontalPadding,
                                 4.0,
@@ -842,9 +843,7 @@ class _CourseSearchView extends StatelessWidget {
                                     ._horizontalPadding,
                                 24.0,
                               ),
-                              child: _CoursePaginationControls(
-                                controller: controller,
-                              ),
+                              child: _CoursePaginationControls(),
                             ),
                           ),
                       ],
@@ -954,41 +953,41 @@ class _CourseResultGrid extends StatelessWidget {
   }
 }
 
-class _CoursePaginationControls extends StatelessWidget {
-  const _CoursePaginationControls({required this.controller});
-
-  final CourseSelectionController controller;
+class _CoursePaginationControls extends ConsumerWidget {
+  const _CoursePaginationControls();
 
   @override
-  Widget build(BuildContext context) {
-    final isBusy = controller.isLoading || controller.isLoadingMore;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(courseSelectionControllerProvider);
+    final notifier = ref.read(courseSelectionControllerProvider.notifier);
+    final isBusy = state.isLoading || state.isLoadingMore;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         OutlinedButton.icon(
-          onPressed: isBusy || !controller.canGoToPreviousPage
+          onPressed: isBusy || !state.canGoToPreviousPage
               ? null
-              : () => unawaited(controller.previousPage()),
+              : () => unawaited(notifier.previousPage()),
           icon: const Icon(Icons.chevron_left),
           label: const Text('上一頁'),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12.0),
-          child: controller.isLoadingMore
+          child: state.isLoadingMore
               ? const SizedBox.square(
                   dimension: 18.0,
                   child: CircularProgressIndicator(strokeWidth: 2.0),
                 )
               : Text(
-                  '${controller.currentPage} / ${controller.totalPages}',
+                  '${state.currentPage} / ${state.totalPages}',
                   style: Theme.of(context).textTheme.labelLarge,
                 ),
         ),
         OutlinedButton.icon(
-          onPressed: isBusy || !controller.canGoToNextPage
+          onPressed: isBusy || !state.canGoToNextPage
               ? null
-              : () => unawaited(controller.nextPage()),
+              : () => unawaited(notifier.nextPage()),
           icon: const Icon(Icons.chevron_right),
           label: const Text('下一頁'),
         ),
@@ -1514,30 +1513,25 @@ class _ScheduledCourseDetailsSheet extends StatelessWidget {
   }
 }
 
-class _SearchPanel extends StatefulWidget {
-  const _SearchPanel({
-    required this.controller,
-    required this.useAdvancedFilterDialog,
-  });
+class _SearchPanel extends ConsumerStatefulWidget {
+  const _SearchPanel({required this.useAdvancedFilterDialog});
 
   static const _creditOptions = <int>[0, 1, 2, 3, 4, 6];
 
-  final CourseSelectionController controller;
   final bool useAdvancedFilterDialog;
 
   @override
-  State<_SearchPanel> createState() => _SearchPanelState();
+  ConsumerState<_SearchPanel> createState() => _SearchPanelState();
 }
 
-class _SearchPanelState extends State<_SearchPanel> {
+class _SearchPanelState extends ConsumerState<_SearchPanel> {
   late final TextEditingController _keywordController;
-
-  CourseSelectionController get controller => widget.controller;
 
   @override
   void initState() {
     super.initState();
-    _keywordController = TextEditingController(text: controller.keyword);
+    final state = ref.read(courseSelectionControllerProvider);
+    _keywordController = TextEditingController(text: state.keyword);
   }
 
   @override
@@ -1547,7 +1541,10 @@ class _SearchPanelState extends State<_SearchPanel> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
+    final state = ref.watch(courseSelectionControllerProvider);
+    final notifier = ref.read(courseSelectionControllerProvider.notifier);
     final colorScheme = Theme.of(context).colorScheme;
 
     return Padding(
@@ -1565,26 +1562,25 @@ class _SearchPanelState extends State<_SearchPanel> {
               trailing: [
                 IconButton(
                   tooltip: '搜尋',
-                  onPressed: controller.isLoading ? null : _applyTextFilters,
+                  onPressed: state.isLoading
+                      ? null
+                      : () => _applyTextFilters(notifier),
                   icon: const Icon(Icons.arrow_forward),
                 ),
               ],
-              enabled: !controller.isLoading,
-              onSubmitted: (_) => _applyTextFilters(),
+              enabled: !state.isLoading,
+              onSubmitted: (_) => _applyTextFilters(notifier),
             ),
           ),
-          if (controller.hasActiveFilter) ...[
+          if (state.hasActiveFilter) ...[
             const SizedBox(height: 10.0),
-            _ActiveFilterSummary(
-              controller: controller,
-              onClear: _clearFilters,
-            ),
+            _ActiveFilterSummary(onClear: () => _clearFilters(notifier)),
           ],
           const SizedBox(height: 10.0),
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: controller.isLoading
+              onPressed: state.isLoading
                   ? null
                   : () => _showAdvancedFilterSheet(context),
               icon: const Icon(Icons.tune),
@@ -1592,10 +1588,10 @@ class _SearchPanelState extends State<_SearchPanel> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Text('進階查詢'),
-                  if (_advancedFilterCount > 0) ...[
+                  if (_advancedFilterCount(state) > 0) ...[
                     const SizedBox(width: 8.0),
                     Badge(
-                      label: Text(_advancedFilterCount.toString()),
+                      label: Text(_advancedFilterCount(state).toString()),
                       backgroundColor: colorScheme.primary,
                     ),
                   ],
@@ -1603,7 +1599,7 @@ class _SearchPanelState extends State<_SearchPanel> {
               ),
             ),
           ),
-          if (controller.error != null && controller.courses.isNotEmpty) ...[
+          if (state.error != null && state.courses.isNotEmpty) ...[
             const SizedBox(height: 10.0),
             Text('更新失敗，保留目前結果', style: TextStyle(color: colorScheme.error)),
           ],
@@ -1612,26 +1608,26 @@ class _SearchPanelState extends State<_SearchPanel> {
     );
   }
 
-  void _applyTextFilters() {
-    unawaited(controller.search(keyword: _keywordController.text));
+  void _applyTextFilters(CourseSelectionController notifier) {
+    unawaited(notifier.search(keyword: _keywordController.text));
   }
 
-  void _clearFilters() {
+  void _clearFilters(CourseSelectionController notifier) {
     _keywordController.clear();
-    unawaited(controller.clearFilters());
+    unawaited(notifier.clearFilters());
   }
 
-  int get _advancedFilterCount {
+  int _advancedFilterCount(CourseSelectionState state) {
     return [
-      controller.classNo.isNotEmpty,
-      controller.serialNo.isNotEmpty,
-      controller.departmentName.isNotEmpty,
-      controller.collegeName.isNotEmpty,
-      controller.instructor.isNotEmpty,
-      controller.courseType != null,
-      controller.credits.isNotEmpty,
-      controller.hasVacancy != null,
-      controller.classTimes.isNotEmpty,
+      state.classNo.isNotEmpty,
+      state.serialNo.isNotEmpty,
+      state.departmentName.isNotEmpty,
+      state.collegeName.isNotEmpty,
+      state.instructor.isNotEmpty,
+      state.courseType != null,
+      state.credits.isNotEmpty,
+      state.hasVacancy != null,
+      state.classTimes.isNotEmpty,
     ].where((isActive) => isActive).length;
   }
 
@@ -1654,10 +1650,7 @@ class _SearchPanelState extends State<_SearchPanel> {
                     680.0,
                     760.0,
                   ),
-                  child: _AdvancedFilterSheet(
-                    controller: controller,
-                    useDialogLayout: true,
-                  ),
+                  child: const _AdvancedFilterSheet(useDialogLayout: true),
                 ),
               ),
             );
@@ -1673,27 +1666,24 @@ class _SearchPanelState extends State<_SearchPanel> {
         showDragHandle: true,
         isScrollControlled: true,
         builder: (context) {
-          return _AdvancedFilterSheet(controller: controller);
+          return const _AdvancedFilterSheet();
         },
       ),
     );
   }
 }
 
-class _AdvancedFilterSheet extends StatefulWidget {
-  const _AdvancedFilterSheet({
-    required this.controller,
-    this.useDialogLayout = false,
-  });
+class _AdvancedFilterSheet extends ConsumerStatefulWidget {
+  const _AdvancedFilterSheet({this.useDialogLayout = false});
 
-  final CourseSelectionController controller;
   final bool useDialogLayout;
 
   @override
-  State<_AdvancedFilterSheet> createState() => _AdvancedFilterSheetState();
+  ConsumerState<_AdvancedFilterSheet> createState() =>
+      _AdvancedFilterSheetState();
 }
 
-class _AdvancedFilterSheetState extends State<_AdvancedFilterSheet> {
+class _AdvancedFilterSheetState extends ConsumerState<_AdvancedFilterSheet> {
   static const _classTimeWeekDays = ['一', '二', '三', '四', '五', '六', '日'];
   static const _classTimePeriods = [
     '1',
@@ -1723,24 +1713,26 @@ class _AdvancedFilterSheetState extends State<_AdvancedFilterSheet> {
   late Set<String> _classTimes;
   int _visibleClassTimeDayCount = 5;
 
-  CourseSelectionController get controller => widget.controller;
+  CourseSelectionState get _state =>
+      ref.read(courseSelectionControllerProvider);
+  CourseSelectionController get _notifier =>
+      ref.read(courseSelectionControllerProvider.notifier);
 
   @override
   void initState() {
     super.initState();
-    _classNoController = TextEditingController(text: controller.classNo);
-    _serialNoController = TextEditingController(text: controller.serialNo);
+    final state = ref.read(courseSelectionControllerProvider);
+    _classNoController = TextEditingController(text: state.classNo);
+    _serialNoController = TextEditingController(text: state.serialNo);
     _departmentNameController = TextEditingController(
-      text: controller.departmentName,
+      text: state.departmentName,
     );
-    _collegeNameController = TextEditingController(
-      text: controller.collegeName,
-    );
-    _instructorController = TextEditingController(text: controller.instructor);
-    _courseType = controller.courseType;
-    _credits = controller.credits.toSet();
-    _hasVacancy = controller.hasVacancy;
-    _classTimes = controller.classTimes.toSet();
+    _collegeNameController = TextEditingController(text: state.collegeName);
+    _instructorController = TextEditingController(text: state.instructor);
+    _courseType = state.courseType;
+    _credits = state.credits.toSet();
+    _hasVacancy = state.hasVacancy;
+    _classTimes = state.classTimes.toSet();
   }
 
   @override
@@ -1755,6 +1747,7 @@ class _AdvancedFilterSheetState extends State<_AdvancedFilterSheet> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(courseSelectionControllerProvider);
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     final contentPadding = widget.useDialogLayout
         ? const EdgeInsets.fromLTRB(28.0, 24.0, 28.0, 28.0)
@@ -1801,7 +1794,7 @@ class _AdvancedFilterSheetState extends State<_AdvancedFilterSheet> {
           ),
           const SizedBox(height: 16.0),
           _AdvancedFilterActions(
-            isLoading: controller.isLoading,
+            isLoading: _state.isLoading,
             onApply: _applyFilters,
             onClear: _clearFilters,
           ),
@@ -1827,14 +1820,14 @@ class _AdvancedFilterSheetState extends State<_AdvancedFilterSheet> {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: controller.isLoading ? null : _showClassTimePicker,
+              onPressed: _state.isLoading ? null : _showClassTimePicker,
               icon: const Icon(Icons.schedule_outlined),
               label: Text(_classTimeButtonText),
             ),
           ),
           const SizedBox(height: 12.0),
           _AdvancedFilterActions(
-            isLoading: controller.isLoading,
+            isLoading: _state.isLoading,
             onApply: _applyFilters,
             onClear: _clearFilters,
           ),
@@ -1848,7 +1841,7 @@ class _AdvancedFilterSheetState extends State<_AdvancedFilterSheet> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _AdvancedSearchFields(
-          enabled: !controller.isLoading,
+          enabled: !_state.isLoading,
           classNoController: _classNoController,
           serialNoController: _serialNoController,
           departmentNameController: _departmentNameController,
@@ -1861,7 +1854,7 @@ class _AdvancedFilterSheetState extends State<_AdvancedFilterSheet> {
         const SizedBox(height: 8.0),
         _DraftCourseTypeSegmentedControl(
           value: _courseType,
-          enabled: !controller.isLoading,
+          enabled: !_state.isLoading,
           onChanged: (value) => setState(() => _courseType = value),
         ),
         const SizedBox(height: 12.0),
@@ -1869,7 +1862,7 @@ class _AdvancedFilterSheetState extends State<_AdvancedFilterSheet> {
         const SizedBox(height: 8.0),
         _DraftCreditFilterGrid(
           selectedCredits: _credits,
-          enabled: !controller.isLoading,
+          enabled: !_state.isLoading,
           onToggle: _toggleCredit,
         ),
         const SizedBox(height: 12.0),
@@ -1877,7 +1870,7 @@ class _AdvancedFilterSheetState extends State<_AdvancedFilterSheet> {
         const SizedBox(height: 8.0),
         _DraftVacancySegmentedControl(
           value: _hasVacancy,
-          enabled: !controller.isLoading,
+          enabled: !_state.isLoading,
           onChanged: (value) => setState(() => _hasVacancy = value),
         ),
       ],
@@ -1926,7 +1919,7 @@ class _AdvancedFilterSheetState extends State<_AdvancedFilterSheet> {
             days: visibleDays,
             periods: _classTimePeriods,
             selectedValues: _classTimes,
-            enabled: !controller.isLoading,
+            enabled: !_state.isLoading,
             onToggle: _toggleClassTime,
           ),
         ),
@@ -1985,7 +1978,7 @@ class _AdvancedFilterSheetState extends State<_AdvancedFilterSheet> {
 
   void _applyFilters() {
     unawaited(
-      controller
+      _notifier
           .applyFilters(
             classNo: _classNoController.text,
             serialNo: _serialNoController.text,
@@ -2004,15 +1997,15 @@ class _AdvancedFilterSheetState extends State<_AdvancedFilterSheet> {
   }
 }
 
-class _ActiveFilterSummary extends StatelessWidget {
-  const _ActiveFilterSummary({required this.controller, required this.onClear});
+class _ActiveFilterSummary extends ConsumerWidget {
+  const _ActiveFilterSummary({required this.onClear});
 
-  final CourseSelectionController controller;
   final VoidCallback onClear;
 
   @override
-  Widget build(BuildContext context) {
-    final chips = _filterLabels()
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(courseSelectionControllerProvider);
+    final chips = _filterLabels(state)
         .map(
           (label) =>
               Chip(label: Text(label), visualDensity: VisualDensity.compact),
@@ -2028,44 +2021,44 @@ class _ActiveFilterSummary extends StatelessWidget {
         ActionChip(
           avatar: const Icon(Icons.close, size: 18.0),
           label: const Text('清除全部'),
-          onPressed: controller.isLoading ? null : onClear,
+          onPressed: state.isLoading ? null : onClear,
           visualDensity: VisualDensity.compact,
         ),
       ],
     );
   }
 
-  List<String> _filterLabels() {
+  List<String> _filterLabels(CourseSelectionState state) {
     final labels = <String>[];
-    if (controller.keyword.isNotEmpty) {
-      labels.add('關鍵字：${controller.keyword}');
+    if (state.keyword.isNotEmpty) {
+      labels.add('關鍵字：${state.keyword}');
     }
-    if (controller.classNo.isNotEmpty) {
-      labels.add('課號：${controller.classNo}');
+    if (state.classNo.isNotEmpty) {
+      labels.add('課號：${state.classNo}');
     }
-    if (controller.serialNo.isNotEmpty) {
-      labels.add('流水號：${controller.serialNo}');
+    if (state.serialNo.isNotEmpty) {
+      labels.add('流水號：${state.serialNo}');
     }
-    if (controller.departmentName.isNotEmpty) {
-      labels.add('系所：${controller.departmentName}');
+    if (state.departmentName.isNotEmpty) {
+      labels.add('系所：${state.departmentName}');
     }
-    if (controller.collegeName.isNotEmpty) {
-      labels.add('學院：${controller.collegeName}');
+    if (state.collegeName.isNotEmpty) {
+      labels.add('學院：${state.collegeName}');
     }
-    if (controller.instructor.isNotEmpty) {
-      labels.add('授課教師：${controller.instructor}');
+    if (state.instructor.isNotEmpty) {
+      labels.add('授課教師：${state.instructor}');
     }
-    if (controller.courseType != null) {
-      labels.add('類型：${_courseTypeText(controller.courseType)}');
+    if (state.courseType != null) {
+      labels.add('類型：${_courseTypeText(state.courseType)}');
     }
-    if (controller.credits.isNotEmpty) {
-      labels.add('學分：${controller.credits.join('、')}');
+    if (state.credits.isNotEmpty) {
+      labels.add('學分：${state.credits.join('、')}');
     }
-    if (controller.hasVacancy != null) {
-      labels.add(controller.hasVacancy == true ? '尚有名額' : '已額滿');
+    if (state.hasVacancy != null) {
+      labels.add(state.hasVacancy == true ? '尚有名額' : '已額滿');
     }
-    if (controller.classTimes.isNotEmpty) {
-      labels.add('時段：${controller.classTimes.length} 個');
+    if (state.classTimes.isNotEmpty) {
+      labels.add('時段：${state.classTimes.length} 個');
     }
     return labels;
   }
@@ -2805,25 +2798,24 @@ class _LocalCourseFilterState {
   final bool onlyShowSelectedCourses;
 }
 
-class _ResultSummary extends StatelessWidget {
+class _ResultSummary extends ConsumerWidget {
   const _ResultSummary({
-    required this.controller,
     required this.displayedCourseCount,
     required this.localFilterActive,
     required this.localFilterTotalCount,
     required this.onFilterPressed,
   });
 
-  final CourseSelectionController controller;
   final int displayedCourseCount;
   final bool localFilterActive;
   final int localFilterTotalCount;
   final VoidCallback onFilterPressed;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(courseSelectionControllerProvider);
     final colorScheme = Theme.of(context).colorScheme;
-    final lastUpdated = controller.lastUpdated;
+    final lastUpdated = state.lastUpdated;
     final subtitle = lastUpdated == null
         ? '資料更新時間未提供'
         : '更新於 ${_formatDateTime(lastUpdated)}';
@@ -2837,9 +2829,9 @@ class _ResultSummary extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  controller.isLoading && controller.courses.isNotEmpty
+                  state.isLoading && state.courses.isNotEmpty
                       ? '更新中...'
-                      : _courseCountText(),
+                      : _courseCountText(state),
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 2.0),
@@ -2853,7 +2845,7 @@ class _ResultSummary extends StatelessWidget {
               ],
             ),
           ),
-          if (controller.isLoading && controller.courses.isNotEmpty)
+          if (state.isLoading && state.courses.isNotEmpty)
             const SizedBox(
               width: 18.0,
               height: 18.0,
@@ -2872,11 +2864,11 @@ class _ResultSummary extends StatelessWidget {
     );
   }
 
-  String _courseCountText() {
+  String _courseCountText(CourseSelectionState state) {
     if (localFilterActive) {
       return '顯示 $displayedCourseCount / $localFilterTotalCount 門課程';
     }
-    return '顯示 ${controller.courses.length} / ${controller.totalCount} 門課程';
+    return '顯示 ${state.courses.length} / ${state.totalCount} 門課程';
   }
 
   String _formatDateTime(DateTime value) {

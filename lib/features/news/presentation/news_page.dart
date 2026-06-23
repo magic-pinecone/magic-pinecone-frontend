@@ -2,59 +2,75 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:prototype/core/app/app_scope.dart';
-import 'package:prototype/core/navigation/app_routes.dart';
-import 'package:prototype/core/widgets/owned_change_notifier_builder.dart';
-import 'package:prototype/features/news/models/scholarship_item.dart';
-import 'package:prototype/features/news/presentation/view_models/news_view_model.dart';
-import 'package:prototype/features/news/presentation/widgets/announcement_card.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:magic_pinecone/core/navigation/app_routes.dart';
+import 'package:magic_pinecone/features/news/domain/models/scholarship_item.dart';
+import 'package:magic_pinecone/features/news/presentation/view_models/news_view_model.dart';
+import 'package:magic_pinecone/features/news/presentation/widgets/announcement_card.dart';
 
 class NewsPage extends StatelessWidget {
-  const NewsPage({super.key, this.viewModel});
+  const NewsPage({super.key});
 
   static const _tabs = ['全部', '獎學金', '工讀職缺', '校務公告', '活動'];
 
-  final NewsViewModel? viewModel;
-
   @override
   Widget build(BuildContext context) {
-    return OwnedChangeNotifierBuilder<NewsViewModel>(
-      notifier: viewModel,
-      create: (context) => AppScope.of(context).createNewsViewModel(),
-      onReady: (viewModel) => unawaited(viewModel.load()),
-      builder: (context, viewModel) => DefaultTabController(
-        length: _tabs.length,
-        child: Scaffold(
-          appBar: AppBar(
-            title: const Text(
-              '訊息',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            bottom: TabBar(
-              isScrollable: true,
-              tabAlignment: TabAlignment.start,
-              tabs: _tabs.map((t) => Tab(text: t)).toList(),
-            ),
+    final hasScope =
+        context.findAncestorWidgetOfExactType<ProviderScope>() != null ||
+        context.findAncestorWidgetOfExactType<UncontrolledProviderScope>() !=
+            null;
+
+    final child = _NewsPageInner();
+
+    if (hasScope) {
+      return child;
+    } else {
+      return ProviderScope(child: child);
+    }
+  }
+}
+
+class _NewsPageInner extends ConsumerWidget {
+  const _NewsPageInner();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AsyncValue<NewsViewSnapshot> snapshot = ref.watch(
+      newsViewModelProvider,
+    );
+    return DefaultTabController(
+      length: NewsPage._tabs.length,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text(
+            '訊息',
+            style: TextStyle(fontWeight: FontWeight.bold),
           ),
-          body: TabBarView(
-            children: _tabs
-                .map(
-                  (tab) => ListenableBuilder(
-                    listenable: viewModel,
-                    builder: (context, _) {
-                      // TODO: Add the planned digest section
-                      return _NewsTabContent(
-                        category: tab,
-                        items: viewModel.items,
-                        isLoading: viewModel.isLoading,
-                        error: viewModel.error,
-                        onRetry: viewModel.load,
-                      );
-                    },
-                  ),
-                )
-                .toList(),
+          bottom: TabBar(
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            tabs: NewsPage._tabs.map((t) => Tab(text: t)).toList(),
           ),
+        ),
+        body: TabBarView(
+          children: NewsPage._tabs
+              .map(
+                (tab) => Consumer(
+                  builder: (context, ref, _) {
+                    // TODO: Add the planned digest section
+                    return _NewsTabContent(
+                      category: tab,
+                      items: snapshot.hasValue
+                          ? snapshot.value!.scholarshipItems
+                          : [],
+                      isLoading: snapshot.isLoading,
+                      error: snapshot.error,
+                      onRetry: () => ref.refresh(newsViewModelProvider.future),
+                    );
+                  },
+                ),
+              )
+              .toList(),
         ),
       ),
     );
