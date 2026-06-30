@@ -52,6 +52,7 @@
 ## 致謝
 
 **應用程式圖示**：由**吳芮葶**設計。
+
 **Course Finder Fetcher**：[NCU-Course-Finder-DataFetcher-v2](https://github.com/zetaraku/NCU-Course-Finder-DataFetcher-v2)。
 
 ## 授權
