@@ -50,6 +50,7 @@ The Flutter-based frontend for Magic Pinecone（神奇松果）, the application
 ---
 
 ## Acknowledgement
+**App Icon**: Designed by **Jui-Ting Wu**.
 **Course Finder Fetcher**: [NCU-Course-Finder-DataFetcher-v2](https://github.com/zetaraku/NCU-Course-Finder-DataFetcher-v2)
 
 ## License
