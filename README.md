@@ -1,11 +1,22 @@
 # magic-pinecone-frontend
 
 <p align="center">
-  <img src="docs/assets/screenshot_home.png" width="300" />
-  <img src="docs/assets/screenshot_timetable.png" width="300" />
+  English | <a href="README.zh-TW.md">正體中文</a>
 </p>
 
-A Flutter-based frontend for Magic Pinecone（神奇松果）the NCU campus service and course selection application.
+<p align="center">
+  <img src="docs/assets/app_icon.png" width="256" />
+  <p align="center">Magic Pinecone, the all-in-one platform for NCUers.</p>
+</p>
+
+<p align="center">
+    <img alt="Made with Flutter" src="https://img.shields.io/badge/made_with-Flutter-blue">
+    <img alt="MIT" src="https://img.shields.io/github/license/magic-pinecone/magic-pinecone-frontend" />
+</p>
+
+> Wanna try out? Check the [lite version](https://magic-pinecone.github.io/magic-pinecone-lite/) and share your schedule with your friends! 
+
+The Flutter-based frontend for Magic Pinecone（神奇松果）, the application makes your life easier in the NCU.
 
 ## Features
 
@@ -25,7 +36,7 @@ A Flutter-based frontend for Magic Pinecone（神奇松果）the NCU campus serv
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/ncu-three-way-handshake/open-ncu-prototype.git
+   git clone https://github.com/magic-pinecone/magic-pinecone-frontend.git
    ```
 2. Install dependencies:
    ```bash
@@ -39,9 +50,10 @@ A Flutter-based frontend for Magic Pinecone（神奇松果）the NCU campus serv
 ---
 
 ## Acknowledgement
+**App Icon**: Designed by **Jui-Ting Wu**.
+
 **Course Finder Fetcher**: [NCU-Course-Finder-DataFetcher-v2](https://github.com/zetaraku/NCU-Course-Finder-DataFetcher-v2)
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
