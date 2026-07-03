@@ -10,7 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   http: ^1.6.0
-  dio: ^5.9.2
+  dio: ^5.10.0
   retrofit: ^4.9.2
   logger: ^2.7.0
   json_annotation: ^4.12.0
