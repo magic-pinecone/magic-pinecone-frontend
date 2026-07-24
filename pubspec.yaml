@@ -10,12 +10,12 @@ dependencies:
   flutter:
     sdk: flutter
   http: ^1.6.0
-  dio: ^5.9.2
+  dio: ^5.10.0
   retrofit: ^4.9.2
   logger: ^2.7.0
   json_annotation: ^4.12.0
   flutter_inappwebview: ^6.2.0-beta.3
-  material_symbols_icons: ^4.2951.0
+  material_symbols_icons: ^4.2960.0
   flutter_chat_core: ^2.0.0
   flutter_chat_ui: ^2.0.0
   font_awesome_flutter: ^11.0.0
@@ -28,8 +28,8 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-  retrofit_generator: ^10.2.7
-  build_runner: ^2.6.0
+  retrofit_generator: ^10.2.8
+  build_runner: ^2.15.1
   json_serializable: ^6.14.0
   riverpod_generator: ^4.0.4
   riverpod_lint: ^3.1.4
